@@ -44,7 +44,7 @@ export type Books = {
   dme: DmeFile | null;
 };
 
-const CODE = /^(?:\d{5}|[A-Z]\d{4})$/;
+const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
 const ICD = /^[A-Z][0-9][0-9A-Z](?:\.[0-9A-Z]{1,4})?$/;
 
 export function validDiagnosis(value: string) {

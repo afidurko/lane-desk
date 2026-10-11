@@ -32,7 +32,7 @@ export type Invoice = {
   alerts: number;
 };
 
-const CODE = /(?:^|[^A-Z0-9])([A-Z]\d{4}|\d{5})(?:-([A-Z0-9]{2}))?/g;
+const CODE = /(?:^|[^A-Z0-9])(\d{4}[A-Z]|[A-Z]\d{4}|\d{5})(?:-([A-Z0-9]{2}))?/g;
 const DATE = /(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4})/;
 const MONEY = /(\d+(?:\.\d{2}))/;
 const ENTITY = /^(?:entity|provider|organization|facility)\s*[:|-]\s*(.+)$/i;

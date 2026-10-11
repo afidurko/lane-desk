@@ -75,7 +75,7 @@ export type AddedRow = {
   at: string;
 };
 
-const CODE = /^(?:\d{5}|[A-Z]\d{4})$/;
+const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
 
 export const CMS_ROWS: BookRow[] = SERVICES.map((service) => ({
   id: `cms-${service.code}`,
@@ -128,7 +128,7 @@ export function admit(input: {
   added: AddedRow[];
 }): { ok: true; row: AddedRow } | { ok: false; reason: string } {
   const code = input.code.trim().toUpperCase();
-  if (!CODE.test(code)) return { ok: false, reason: "Use a 5-digit CPT code or an HCPCS code like A0428." };
+  if (!CODE.test(code)) return { ok: false, reason: "Use a 5-digit CPT code, a PLA code like 0001U, or an HCPCS code like A0428." };
   const schedule = scheduleOf(input.scheduleId);
   if (!schedule) return { ok: false, reason: "Pick a schedule." };
   const year = Number(input.year);

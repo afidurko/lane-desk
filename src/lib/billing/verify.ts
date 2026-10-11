@@ -1,5 +1,6 @@
 import { quoteCode, type Books, type Claim, type Line } from "@/lib/billing/billing";
 import { claimGuards, lineForGuard } from "@/lib/billing/guard";
+import { quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
 
 export type Check = {
   level: "high" | "clear";
@@ -8,7 +9,8 @@ export type Check = {
   expectedCents: number | null;
 };
 
-export function checkLine(line: Line, books: Books): Check {
+export function checkLine(line: Line, books: Books, payer: "medicare" | "medicaid" = "medicare", ny: NyMedicaidFile | null = null): Check {
+  if (payer === "medicaid") return checkMedicaid(line, ny);
   const quoted = quoteCode(books, line.code, line.modifier);
   if (quoted.schedule === "Physician file, not priced") {
     return { level: "high", reason: quoted.note || "This code is not separately payable.", expectedCode: line.code, expectedCents: null };
@@ -41,8 +43,36 @@ export function checkLine(line: Line, books: Books): Check {
   return { level: "clear", reason: "Matches the loaded file.", expectedCode: line.code, expectedCents: quoted.allowedCents };
 }
 
-export function claimAlerts(claim: Claim, books: Books, today = "") {
-  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books) })).filter((item) => item.check.level === "high");
+function checkMedicaid(line: Line, ny: NyMedicaidFile | null): Check {
+  if (!ny) {
+    return {
+      level: "high",
+      reason: "The New York Medicaid file is not loaded. The Medicare amount is not used in its place.",
+      expectedCode: line.code,
+      expectedCents: null,
+    };
+  }
+  const quoted = quoteNy(ny, line.code);
+  if (quoted.allowedCents === null) {
+    return { level: "high", reason: quoted.note || "No New York Medicaid fee for this code.", expectedCode: line.code, expectedCents: null };
+  }
+  if (line.chargeCents === null) {
+    return { level: "high", reason: "No charge. Payment would wait.", expectedCode: line.code, expectedCents: quoted.allowedCents };
+  }
+  if (Math.abs(line.chargeCents - quoted.allowedCents) > 1) {
+    return {
+      level: "high",
+      reason: "Charge does not match the New York Medicaid fee-for-service amount.",
+      expectedCode: line.code,
+      expectedCents: quoted.allowedCents,
+    };
+  }
+  return { level: "clear", reason: "Matches the New York Medicaid file.", expectedCode: line.code, expectedCents: quoted.allowedCents };
+}
+
+export function claimAlerts(claim: Claim, books: Books, today = "", ny: NyMedicaidFile | null = null) {
+  const payer = claim.payer ?? "medicare";
+  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books, payer, ny) })).filter((item) => item.check.level === "high");
   const guards = claimGuards(claim, books, today).map((guard, index) => ({
     line: lineForGuard(claim, guard, index),
     check: {

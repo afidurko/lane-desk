@@ -56,7 +56,7 @@ export function BillingPage() {
   const client = clients.find((item) => item.id === (claim?.clientId ?? clientId)) ?? null;
   const fileYear = fileYearOf(claim?.dos ?? dos);
   const today = todayIso();
-  const alerts = claim ? claimAlerts(claim, books, today) : [];
+  const alerts = claim ? claimAlerts(claim, books, today, ny) : [];
   const totals = claim ? claimTotals(claim.lines) : null;
   const percent = claim ? sequestrationPercent(claim.dos) : null;
   const cut = totals?.allowedCents !== null && totals?.allowedCents !== undefined && percent !== null ? sequester(totals.allowedCents / 100, percent) : null;
@@ -203,7 +203,7 @@ export function BillingPage() {
   function setStatus(status: "draft" | "ready") {
     if (!claim) return;
     if (status === "ready") {
-      const step = nextGap(claim, client, submitter, claimAlerts(claim, books, todayIso()).length);
+      const step = nextGap(claim, client, submitter, claimAlerts(claim, books, todayIso(), ny).length);
       if (step.title !== "Download the packet") {
         setMessage(`${step.title}. ${step.detail}`);
         return;
@@ -240,7 +240,7 @@ export function BillingPage() {
 
   function runFixes() {
     if (!claim || claim.status !== "draft") return;
-    const result = safeFixes(claim, books);
+    const result = safeFixes(claim, books, ny);
     setClaims((current) => current.map((item) => (item.id === claim.id ? result.claim : item)));
     setMessage(result.notes.join(" "));
   }

@@ -1,3 +1,4 @@
+import { quoteCode } from "../src/lib/billing/billing.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
 import { buildPacket, nextGap, packetJson } from "../src/lib/billing/packet.ts";
 import { submitterReady } from "../src/lib/billing/submitter.ts";
@@ -71,6 +72,8 @@ check("ambulance place is set by the routine", amb.claim.pos === "41" && amb.cla
 const left = safeFixes(bare, books);
 check("a blank modifier is not guessed", left.claim.lines[0].modifier === "" && left.claim.pos === "12");
 check("a ready claim is not rewritten", safeFixes({ ...claim, status: "ready" }, books).changed === 0);
+check("a PLA code is a real code shape", quoteCode(books, "0001U", "").schedule !== "none");
+check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);
