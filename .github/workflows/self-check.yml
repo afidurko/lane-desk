@@ -1,0 +1,19 @@
+# Runs the in-app checks on every push. It does not need the preview, and it does not submit a claim.
+name: Self check
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs

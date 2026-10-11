@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/landing/shell";
 import { countStatus, isWatchReport, type WatchReport, type WatchStatus } from "@/lib/ops/watch";
+import { regulate, type Duty } from "@/lib/watch/regulate";
 
 function statusClass(status: WatchStatus) {
   if (status === "current") return "text-sm font-medium text-teal";
@@ -17,24 +18,29 @@ function statusLabel(status: WatchStatus) {
 export function OpsPage() {
   const [report, setReport] = useState<WatchReport | null>(null);
   const [missing, setMissing] = useState(false);
+  const [duties, setDuties] = useState<Duty[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/file-status.json")
-      .then((response) => {
-        if (!response.ok) throw new Error("missing");
-        return response.json() as Promise<unknown>;
-      })
-      .then((value) => {
+    Promise.all([
+      fetch("/file-status.json").then((response) => (response.ok ? response.json() : null)),
+      fetch("/years/physician/9.json").then((response) => (response.ok ? response.json() : null)),
+      fetch("/years/ambulance/A.json").then((response) => (response.ok ? response.json() : null)),
+    ])
+      .then(([status, physician, ambulance]) => {
         if (cancelled) return;
-        if (!isWatchReport(value)) {
-          setMissing(true);
-          return;
-        }
-        setReport(value);
+        if (!isWatchReport(status)) setMissing(true);
+        else setReport(status);
+        const files = status && typeof status === "object" ? (status as { place?: string; files?: unknown[] }) : null;
+        const physicianFile = physician && typeof physician === "object" ? (physician as { "97110"?: { n?: string; a?: Record<string, number | null>; s?: string } })["97110"] ?? null : null;
+        const ambulanceFile = ambulance && typeof ambulance === "object" ? (ambulance as { A0428?: { n?: string; a?: Record<string, number | null> } }).A0428 ?? null : null;
+        setDuties(regulate({ physician: physicianFile, ambulance: ambulanceFile, status: files }));
       })
       .catch(() => {
-        if (!cancelled) setMissing(true);
+        if (!cancelled) {
+          setMissing(true);
+          setDuties(regulate({ physician: null, ambulance: null, status: null }));
+        }
       });
     return () => {
       cancelled = true;
@@ -52,8 +58,9 @@ export function OpsPage() {
           What is loaded, and what is next.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Rest of New York, Olean 14760, MAC 13282, locality 99. This page does not download a new schedule and it does not submit a claim. A Monday job on the repository checks that the 2026 files are still there.
+          Rest of New York, Olean 14760, MAC 13282, locality 99. This page does not download a new schedule and it does not submit a claim. The preview can stop. The published site is the last deploy, and these checks run from the repository on every push.
         </p>
+        <SelfCheck duties={duties} />
 
         {missing ? (
           <p className="mt-8 text-sm font-medium text-deep" role="status">
@@ -108,5 +115,32 @@ export function OpsPage() {
         ) : null}
       </main>
     </Shell>
+  );
+}
+
+function SelfCheck({ duties }: { duties: Duty[] | null }) {
+  const failed = duties?.filter((duty) => !duty.ok).length ?? 0;
+  const teams = [...new Set(duties?.map((duty) => duty.team) ?? [])];
+  return (
+    <section className="mt-8" aria-label="Self check">
+      <h2 className="font-display text-3xl text-ink">Self check</h2>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+        {duties ? (failed === 0 ? "All checks passed." : `${failed} failed.`) : "Running the checks."} File, Invoice, Code, and Files each own a part. They read the loaded amounts. They do not keep a server alive and they do not send a claim.
+      </p>
+      {teams.map((team) => (
+        <div key={team} className="mt-4">
+          <h3 className="text-xs font-medium tracking-widest text-teal uppercase">{team}</h3>
+          <ul className="mt-2 space-y-2">
+            {duties?.filter((duty) => duty.team === team).map((duty) => (
+              <li key={`${duty.team}-${duty.sub}`} className="rounded-2xl border border-line px-4 py-3">
+                <p className="font-medium text-ink">{duty.sub} · {duty.name}</p>
+                <p className={duty.ok ? "text-sm font-medium text-teal" : "text-sm font-medium text-deep"}>{duty.ok ? "Pass" : "Fail"}</p>
+                <p className="mt-1 text-sm text-muted">{duty.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
   );
 }
