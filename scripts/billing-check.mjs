@@ -1,4 +1,5 @@
 import { quoteCode } from "../src/lib/billing/billing.ts";
+import { readInvoiceLines } from "../src/lib/lookup/check.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
 import { buildPacket, nextGap, packetJson } from "../src/lib/billing/packet.ts";
 import { submitterReady } from "../src/lib/billing/submitter.ts";
@@ -73,6 +74,9 @@ const left = safeFixes(bare, books);
 check("a blank modifier is not guessed", left.claim.lines[0].modifier === "" && left.claim.pos === "12");
 check("a ready claim is not rewritten", safeFixes({ ...claim, status: "ready" }, books).changed === 0);
 check("a PLA code is a real code shape", quoteCode(books, "0001U", "").schedule !== "none");
+const pasted = readInvoiceLines("97110 2026-03-01 28.27\nA0428 6/12/2025 277.09\npatient walked the hall");
+check("an invoice keeps the code, year, and amount", pasted.length === 2 && pasted[0].year === 2026 && pasted[0].billedCents === 2827 && pasted[1].year === 2025);
+check("words that are not a code are ignored", pasted.every((line) => line.code === "97110" || line.code === "A0428"));
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));

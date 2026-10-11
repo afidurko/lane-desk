@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
 
-const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
+export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
-const FAMILIES = [
+export const FAMILIES = [
   { id: "physician", label: "Physician" },
   { id: "ambulance", label: "Ambulance" },
   { id: "lab", label: "Lab" },
   { id: "dme", label: "Equipment" },
 ] as const;
 
-type Family = (typeof FAMILIES)[number]["id"];
-type Row = { n: string; a: Record<string, number | null> };
+export type Family = (typeof FAMILIES)[number]["id"];
+export type Row = { n: string; a: Record<string, number | null> };
 
 const cache = new Map<string, Record<string, Row>>();
 
-function loadShard(family: Family, prefix: string) {
+export function loadShard(family: Family, prefix: string) {
   const key = `${family}/${prefix}`;
   const hit = cache.get(key);
   if (hit) return Promise.resolve(hit);
@@ -25,6 +25,22 @@ function loadShard(family: Family, prefix: string) {
     cache.set(key, data);
     return data;
   });
+}
+
+export async function findAcross(code: string) {
+  const clean = code.trim().toUpperCase();
+  if (!CODE.test(clean)) return [];
+  const hits: { family: Family; label: string; row: Row }[] = [];
+  for (const family of FAMILIES) {
+    try {
+      const shard = await loadShard(family.id, clean[0]);
+      const row = shard[clean];
+      if (row) hits.push({ family: family.id, label: family.label, row });
+    } catch {
+      /* This schedule has no codes with that first character. */
+    }
+  }
+  return hits;
 }
 
 export function YearList({ family, code, quiet = false }: { family: Family; code: string; quiet?: boolean }) {
@@ -73,58 +89,71 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
     <div>
       <p className="font-display text-3xl text-ink">{code.trim().toUpperCase()}</p>
       {row.n ? <p className="mt-1 text-sm leading-relaxed text-muted">{row.n}</p> : null}
-      <ol className="mt-4 divide-y divide-line overflow-hidden rounded-2xl border border-line">
-        {YEARS.map((year, index) => {
-          const cents = row.a[String(year)];
-          const older = row.a[String(year - 1)];
-          const changed = typeof cents === "number" && typeof older === "number" && cents !== older;
-          const delta = changed ? cents - older : 0;
-          return (
-            <li key={year} className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
-              <span className="font-display text-2xl text-ink tabular-nums">{year}</span>
-              <span className="text-right">
-                <span className="block text-base font-medium text-ink tabular-nums">
-                  {typeof cents === "number" ? money(cents / 100) : cents === null ? "No separate amount" : "Not on the file"}
-                </span>
-                {changed ? (
-                  <span className="text-xs text-teal">
-                    {delta > 0 ? "Up" : "Down"} {money(Math.abs(delta) / 100)} from {year - 1}
-                  </span>
-                ) : index < YEARS.length - 1 && typeof cents === "number" && cents === older ? (
-                  <span className="text-xs text-muted">Same as {year - 1}</span>
-                ) : null}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+      <YearPrices row={row} />
     </div>
   );
 }
 
+export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
+  return (
+    <ol className="mt-3 grid grid-cols-2 gap-2">
+      {YEARS.map((year) => {
+        const cents = row.a[String(year)];
+        const older = row.a[String(year - 1)];
+        const changed = typeof cents === "number" && typeof older === "number" && cents !== older;
+        const marked = mark === year;
+        return (
+          <li key={year} className={marked ? "rounded-xl border border-teal bg-paper-2 px-3 py-2" : "rounded-xl border border-line px-3 py-2"}>
+            <span className="block text-xs text-muted">{year}{marked ? " · on the invoice" : ""}</span>
+            <span className="mt-0.5 block text-base font-medium text-ink tabular-nums">
+              {typeof cents === "number" ? money(cents / 100) : cents === null ? "No amount" : "Not on file"}
+            </span>
+            {changed ? (
+              <span className="text-xs text-teal">{cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}</span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function YearLookup() {
-  const [family, setFamily] = useState<Family>("physician");
   const [text, setText] = useState("");
+  const [hits, setHits] = useState<{ family: Family; label: string; row: Row }[]>([]);
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad">("idle");
+
+  useEffect(() => {
+    const clean = text.trim().toUpperCase();
+    if (!clean) {
+      setHits([]);
+      setState("idle");
+      return;
+    }
+    if (!CODE.test(clean)) {
+      setHits([]);
+      setState("bad");
+      return;
+    }
+    let cancel = false;
+    setState("loading");
+    findAcross(clean)
+      .then((found) => {
+        if (cancel) return;
+        setHits(found);
+        setState(found.length > 0 ? "ready" : "miss");
+      })
+      .catch(() => {
+        if (!cancel) setState("miss");
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [text]);
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Schedule">
-        {FAMILIES.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setFamily(item.id)}
-            className={
-              family === item.id
-                ? "h-11 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink"
-                : "h-11 rounded-full border border-line px-4 text-sm text-ink"
-            }
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <label className="mt-4 block text-sm font-medium text-ink" htmlFor="code-lookup">
+      <label className="block text-sm font-medium text-ink" htmlFor="code-lookup">
         Code
         <input
           id="code-lookup"
@@ -137,11 +166,18 @@ export function YearLookup() {
         />
       </label>
       <div className="mt-5">
-        <YearList family={family} code={text} />
+        {state === "idle" ? <p className="text-sm text-muted">Type a code. The schedule is chosen for you.</p> : null}
+        {state === "bad" ? <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p> : null}
+        {state === "loading" ? <p className="text-sm text-muted">Checking every schedule.</p> : null}
+        {state === "miss" ? <p className="text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
+        {hits.map((hit) => (
+          <section key={hit.family} className="mt-4">
+            <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
+            {hit.row.n && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{hit.row.n}</p> : null}
+            <YearPrices row={hit.row} />
+          </section>
+        ))}
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-muted">
-        Rest of New York, locality 99. Physician amounts are non-facility. The same code is listed once for each year because the amount changes.
-      </p>
     </div>
   );
 }

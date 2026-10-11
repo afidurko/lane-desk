@@ -18,15 +18,13 @@ export const NAV = [
 
 const PRIMARY = [
   { href: "/", label: "Look up" },
-  { href: "/filter", label: "Table" },
   { href: "/ny", label: "New York" },
   { href: "/billing", label: "Claim" },
 ] as const;
 
 const LAYERS = [
   { to: "/", n: "1", label: "Code" },
-  { to: "/filter", n: "2", label: "Table" },
-  { to: "/billing", n: "3", label: "Claim" },
+  { to: "/billing", n: "2", label: "Claim" },
 ] as const;
 
 export function Mark() {
