@@ -12,7 +12,9 @@ export function readBilling(): BillingBook {
     const book = parsed as BillingBook;
     return {
       clients: Array.isArray(book.clients) ? book.clients.filter(isClient) : [],
-      claims: Array.isArray(book.claims) ? book.claims.filter(isClaim) : [],
+      claims: Array.isArray(book.claims)
+        ? book.claims.filter(isClaim).map((claim) => ({ ...claim, number: claim.number ?? "", note: claim.note ?? "" }))
+        : [],
     };
   } catch {
     return { clients: [], claims: [] };

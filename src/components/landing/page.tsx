@@ -1,30 +1,24 @@
 import { Link } from "@tanstack/react-router";
 import { Shell } from "./shell";
 
-const LAYERS = [
+const STEPS = [
   {
-    n: "01",
-    title: "Why",
-    body: "The chart stays. The cost is the coder and the fee-schedule clerk.",
-    to: "/why",
-    className: "relative z-30 border-line bg-paper-2 text-ink",
-    offset: "",
-  },
-  {
-    n: "02",
-    title: "Desk",
-    body: "Paste one de-identified note. Shield, Claims Wedge, and CMS Codes price it or they stop.",
+    n: "1",
+    title: "Price a note",
+    body: "Paste a de-identified note. The desk names the code and the Olean rate.",
     to: "/desk",
-    className: "relative z-20 border-teal bg-wash text-ink",
-    offset: "ml-3 sm:ml-10",
   },
   {
-    n: "03",
-    title: "File",
-    body: "One row. Script side filled. Human side blank until you time the same note.",
-    to: "/run",
-    className: "relative z-10 border-ink bg-ink text-paper",
-    offset: "ml-6 sm:ml-20",
+    n: "2",
+    title: "Check a code",
+    body: "Look up any code on the Rest of New York file. Change locality only if the service was somewhere else.",
+    to: "/book",
+  },
+  {
+    n: "3",
+    title: "Build the claim",
+    body: "Paste an invoice or open a worksheet. Fix any high alert. Save the submitter. Download the packet.",
+    to: "/billing",
   },
 ] as const;
 
@@ -38,29 +32,23 @@ export function LandingPage() {
           <span className="block text-teal">Price it for Olean.</span>
         </h1>
         <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">
-          You are in Cattaraugus County. That is Rest of New York: MAC 13282, locality 99. This desk prices the note and builds the claim a PACE program currently staffs with people.
+          Cattaraugus County is Rest of New York: MAC 13282, locality 99. Start with a note, a code, or an invoice. The claim is ready when the packet says so.
         </p>
+        <Link to="/desk" className="mt-8 inline-flex h-12 items-center rounded-full bg-teal px-6 text-sm font-medium text-teal-ink">
+          Start with a note
+        </Link>
 
-        <div className="mt-12">
-          {LAYERS.map((layer) => (
-            <Link
-              key={layer.to}
-              to={layer.to}
-              className={`-mt-8 block rounded-2xl border p-6 shadow-sm transition-transform duration-200 first:mt-0 hover:-translate-y-1 ${layer.offset} ${layer.className}`}
-            >
-              <p className="text-xs font-medium tracking-widest uppercase opacity-70">{layer.n}</p>
-              <div className="mt-2 flex items-end justify-between gap-4">
-                <div>
-                  <h2 className="font-display text-3xl sm:text-4xl">{layer.title}</h2>
-                  <p className={`mt-2 max-w-lg text-sm leading-relaxed ${layer.to === "/run" ? "text-paper/80" : "text-muted"}`}>
-                    {layer.body}
-                  </p>
-                </div>
-                <span className="hidden shrink-0 text-sm font-medium sm:inline">Open</span>
-              </div>
-            </Link>
+        <ol className="mt-12 grid gap-4 sm:grid-cols-3">
+          {STEPS.map((step) => (
+            <li key={step.to}>
+              <Link to={step.to} className="block h-full rounded-2xl border border-line bg-paper-2 p-5 hover:border-teal">
+                <p className="text-xs font-medium tracking-widest text-teal uppercase">Step {step.n}</p>
+                <h2 className="mt-2 font-display text-2xl text-ink">{step.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ol>
 
         <dl className="mt-12 grid grid-cols-3 gap-4 border-t border-line pt-6">
           <div>

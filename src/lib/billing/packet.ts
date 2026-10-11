@@ -17,6 +17,7 @@ export type Packet = {
     dos: string;
     pos: string;
     diagnosis: string;
+    claimNumber: string;
     lines: { code: string; modifier: string; units: number; chargeCents: number | null; allowedCents: number | null }[];
   };
   next: string;
@@ -31,6 +32,7 @@ export type Cms1500 = {
   box32: string;
   box33: string;
   box33a: string;
+  box26: string;
 };
 
 const RECEIVER = "National Government Services, MAC 13282, Jurisdiction K";
@@ -46,7 +48,7 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
   else if (!validNpi(client.npi)) missing.push("Billing NPI that passes the check digit");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(claim.dos)) missing.push("Date of service");
   if (!/^\d{2}$/.test(claim.pos)) missing.push("Place of service");
-  if (!claim.diagnosis) missing.push("Diagnosis");
+  if (!claim.number) missing.push("Claim number");
   if (claim.lines.length === 0) missing.push("At least one line");
   if (claim.lines.some((line) => line.chargeCents === null)) missing.push("A charge on every line");
 
@@ -69,6 +71,7 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
     box32: SERVICE_FACILITY,
     box33: client?.name ?? "",
     box33a: client?.npi ?? "",
+    box26: claim.number,
   };
 
   return {
@@ -86,6 +89,7 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
       dos: claim.dos,
       pos: claim.pos,
       diagnosis: claim.diagnosis,
+      claimNumber: claim.number,
       lines: claim.lines.map((line) => ({
         code: line.code,
         modifier: line.modifier,

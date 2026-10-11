@@ -31,13 +31,17 @@ const claim = {
   dos: "2026-07-01",
   pos: "12",
   diagnosis: "M25.561",
+  number: "OLN-1001",
+  note: "",
   payer: "medicare",
   status: "draft",
   lines: [{ id: "l1", code: "97110", modifier: "", units: 1, chargeCents: 2827, allowedCents: 2827, schedule: "Physician", note: "exercise" }],
 };
 const client = { id: "org-1", name: "Olean General", npi: "1234567893" };
 const packet = buildPacket(claim, client, submitter);
-check("packet ready", packet.ready && packet.form === "837P" && packet.fields.submitterId === "NGS-1");
+check("packet ready", packet.ready && packet.form === "837P" && packet.fields.submitterId === "NGS-1" && packet.cms1500.box26 === "OLN-1001");
+const noNumber = buildPacket({ ...claim, number: "" }, client, submitter);
+check("packet waits for claim number", !noNumber.ready && noNumber.missing.some((item) => item.includes("Claim number")));
 const missing = buildPacket(claim, client, null);
 check("packet waits for submitter", !missing.ready && missing.missing.some((item) => item.includes("submitter")));
 

@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { Shell } from "./shell";
-import { Signup } from "./signup";
 import type { PlanId } from "./types";
 
 const PLANS: {
@@ -65,13 +63,6 @@ const PLANS: {
 ];
 
 export function PricingPage() {
-  const [plan, setPlan] = useState<PlanId>("parallel");
-
-  function choose(next: PlanId) {
-    setPlan(next);
-    document.getElementById("join")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   return (
     <Shell>
       <main>
@@ -108,7 +99,6 @@ export function PricingPage() {
                 </ul>
                 <button
                   type="button"
-                  onClick={() => choose(tier.id)}
                   className={
                     tier.featured
                       ? "mt-6 inline-flex h-12 items-center justify-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink transition-colors duration-200 hover:bg-deep"
@@ -119,27 +109,6 @@ export function PricingPage() {
                 </button>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section id="join" className="scroll-mt-24 bg-ink text-paper">
-          <div className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-16 lg:grid-cols-2 lg:py-24">
-            <div>
-              <p className="text-xs font-medium tracking-widest text-teal-ink uppercase">Call</p>
-              <h2 className="mt-3 font-display text-3xl text-paper sm:text-5xl">
-                Six codes. One national schedule.
-              </h2>
-              <p className="mt-5 max-w-md text-base leading-relaxed text-paper/80">
-                De-identified text only. The gold-set row is written before a label exists. If it cannot be timed
-                against the human desk, it does not ship.
-              </p>
-              <ul className="mt-8 space-y-3 text-sm text-paper/80">
-                <li>No live PHI on this list.</li>
-                <li>No portal password. No scrape.</li>
-                <li>No code off this schedule until the run has a number.</li>
-              </ul>
-            </div>
-            <Signup plan={plan} onPlan={setPlan} />
           </div>
         </section>
       </main>

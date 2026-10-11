@@ -74,11 +74,10 @@ export function Shell({ children }: { children: ReactNode }) {
           </nav>
           <div className="flex items-center gap-2">
             <Link
-              to="/pricing"
-              hash="join"
-              className="inline-flex h-11 items-center justify-center rounded-full border border-muted px-4 text-sm font-medium text-ink transition-colors duration-200 hover:border-teal"
+              to="/desk"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-teal px-4 text-sm font-medium text-teal-ink"
             >
-              Join the list
+              Open the desk
             </Link>
             <button
               type="button"
@@ -150,9 +149,6 @@ export function Shell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
-            <Link to="/pricing" hash="join" className="font-medium text-teal hover:text-deep">
-              Join the list
-            </Link>
           </nav>
         </div>
       </footer>

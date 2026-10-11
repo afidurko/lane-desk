@@ -3,7 +3,7 @@ import { Shell } from "@/components/landing/shell";
 import type { AmbulanceFile } from "@/lib/book/ambulance";
 import type { DmeFile, LabFile } from "@/lib/book/other";
 import { sequester, sequestrationPercent, type PfsFile } from "@/lib/book/price";
-import { centsFromDollars, checkClaim, checkClient, claimTotals, quoteCode, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
+import { centsFromDollars, checkClaim, checkClaimNumber, checkClient, checkNote, claimTotals, quoteCode, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
 import { buildPacket, packetJson } from "@/lib/billing/packet";
 import { claimAlerts } from "@/lib/billing/verify";
 import { readSubmitter, writeSubmitter, type Submitter } from "@/lib/billing/submitter";
@@ -27,6 +27,8 @@ export function BillingPage() {
   const [dos, setDos] = useState("2026-07-01");
   const [pos, setPos] = useState("12");
   const [diagnosis, setDiagnosis] = useState("");
+  const [claimNumber, setClaimNumber] = useState("");
+  const [note, setNote] = useState("");
   const [code, setCode] = useState("");
   const [modifier, setModifier] = useState("");
   const [units, setUnits] = useState("1");
@@ -94,12 +96,24 @@ export function BillingPage() {
       setMessage(result.error);
       return;
     }
+    const numbered = checkClaimNumber(claimNumber);
+    if (!numbered.ok) {
+      setMessage(numbered.error);
+      return;
+    }
+    const noted = checkNote(note);
+    if (!noted.ok) {
+      setMessage(noted.error);
+      return;
+    }
     const next: Claim = {
       id: `claim-${Date.now()}`,
       clientId,
       dos: result.dos,
       pos: result.pos,
       diagnosis: result.diagnosis,
+      number: numbered.number,
+      note: noted.note,
       payer,
       status: "draft",
       lines: [],
@@ -169,11 +183,12 @@ export function BillingPage() {
 
   function download() {
     if (!claim || !client) return;
-    const header = "organization,npi,payer,date,place,diagnosis,code,modifier,units,charge,allowed,schedule,other,note";
+    const header = "organization,npi,claim,payer,date,place,diagnosis,code,modifier,units,charge,allowed,schedule,other,note";
     const body = claim.lines.map((line) =>
       [
         client.name,
         client.npi,
+        claim.number,
         claim.payer ?? "medicare",
         claim.dos,
         claim.pos,
@@ -209,11 +224,16 @@ export function BillingPage() {
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760 · claims</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Build the claim. Hand it to an enrolled submitter.
+          Three steps to a packet.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          This is the desk a PACE program staffs with people. The note is priced for Rest of New York. A complete packet is an 837P for MAC 13282. Transmission needs a submitter ID with National Government Services. This browser does not have one.
+          Add the organization. Paste an invoice or open a worksheet. Save the submitter. A high alert means the code or the amount does not match the Olean file. Fix it before you download.
         </p>
+        <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
+          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
+          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">2. What.</span> <span className="text-muted">Invoice or worksheet lines.</span></li>
+          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">3. Ready.</span> <span className="text-muted">No alerts, then download.</span></li>
+        </ol>
         <dl className="mt-8 grid grid-cols-2 gap-4">
           <div className="rounded-2xl border border-line bg-paper-2 p-5">
             <dt className="text-xs font-medium tracking-widest text-muted uppercase">Draft</dt>
@@ -273,8 +293,16 @@ export function BillingPage() {
             </select>
           </label>
           <label className="text-sm font-medium text-ink sm:col-span-2">
+            Claim number
+            <input value={claimNumber} onChange={(event) => setClaimNumber(event.target.value.toUpperCase())} placeholder="OLN-1001" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+          </label>
+          <label className="text-sm font-medium text-ink sm:col-span-2">
             Diagnosis code, optional
             <input value={diagnosis} onChange={(event) => setDiagnosis(event.target.value.toUpperCase())} placeholder="M25.561" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+          </label>
+          <label className="text-sm font-medium text-ink sm:col-span-2">
+            Note, de-identified
+            <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Therapeutic exercise, 15 minutes. No names." className="mt-1.5 w-full rounded-xl border border-line bg-paper-2 px-3 py-2 text-base" />
           </label>
           <button type="submit" className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink sm:col-span-2">Open a worksheet</button>
         </form>
@@ -318,7 +346,7 @@ export function BillingPage() {
             Open worksheets
             <select value={claimId ?? ""} onChange={(event) => setClaimId(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
               {claims.map((item) => (
-                <option key={item.id} value={item.id}>{item.dos} · {(item.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · {item.status}</option>
+                <option key={item.id} value={item.id}>{item.number || "No number"} · {item.dos} · {(item.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · {item.status}</option>
               ))}
             </select>
           </label>
@@ -326,7 +354,44 @@ export function BillingPage() {
 
         {claim ? (
           <section className="mt-6 rounded-2xl border border-line p-5">
-            <p className="text-sm text-muted">{client?.name ?? "No organization"} · {claim.dos} · {(claim.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · place {claim.pos || "not set"}{claim.diagnosis ? ` · ${claim.diagnosis}` : ""} · {claim.status}</p>
+            <p className="text-sm text-muted">{claim.number || "No claim number"} · {client?.name ?? "No organization"} · {claim.dos} · {(claim.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · place {claim.pos || "not set"}{claim.diagnosis ? ` · ${claim.diagnosis}` : ""} · {claim.status}</p>
+            <label className="mt-4 block text-sm font-medium text-ink">
+              Claim number
+              <input
+                value={claim.number ?? ""}
+                disabled={claim.status === "ready"}
+                onChange={(event) => {
+                  const checked = checkClaimNumber(event.target.value);
+                  if (!checked.ok) {
+                    setMessage(checked.error);
+                    return;
+                  }
+                  setMessage(null);
+                  setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, number: checked.number } : item)));
+                }}
+                placeholder="OLN-1001"
+                className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base"
+              />
+            </label>
+            <section className="mt-4 rounded-2xl border border-line p-4">
+              <h2 className="font-display text-2xl text-ink">Note</h2>
+              <p className="mt-1 text-sm text-muted">The de-identified note for this claim. A name or member number is stopped.</p>
+              <textarea
+                value={claim.note ?? ""}
+                onChange={(event) => {
+                  const checked = checkNote(event.target.value);
+                  if (!checked.ok) {
+                    setMessage(checked.error);
+                    return;
+                  }
+                  setMessage(null);
+                  setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, note: checked.note } : item)));
+                }}
+                rows={4}
+                disabled={claim.status === "ready"}
+                className="mt-3 w-full rounded-xl border border-line bg-paper px-3 py-2 text-base"
+              />
+            </section>
             <form onSubmit={addLine} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className="text-sm font-medium text-ink">
                 Code
@@ -399,6 +464,7 @@ export function BillingPage() {
                     <div><dt className="text-xs tracking-widest text-muted uppercase">Box 1</dt><dd className="mt-1 text-ink">{packet.cms1500.box1}</dd></div>
                     <div><dt className="text-xs tracking-widest text-muted uppercase">Box 21</dt><dd className="mt-1 text-ink tabular-nums">{packet.cms1500.box21 || "blank"}</dd></div>
                     <div><dt className="text-xs tracking-widest text-muted uppercase">Box 32</dt><dd className="mt-1 text-ink">{packet.cms1500.box32}</dd></div>
+                    <div><dt className="text-xs tracking-widest text-muted uppercase">Box 26</dt><dd className="mt-1 text-ink tabular-nums">{packet.cms1500.box26 || "blank"}</dd></div>
                     <div><dt className="text-xs tracking-widest text-muted uppercase">Box 33a</dt><dd className="mt-1 text-ink tabular-nums">{packet.cms1500.box33a || "blank"}</dd></div>
                   </dl>
                   {packet.missing.length > 0 ? (

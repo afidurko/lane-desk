@@ -117,6 +117,8 @@ export function claimsFromInvoice(invoice: Invoice, clientId: string): Claim[] {
       dos,
       pos: placeFor(lines),
       diagnosis: "",
+      number: "",
+      note: "",
       payer: "medicare",
       status: "draft",
       lines,

@@ -26,9 +26,11 @@ export type Line = {
 export type Claim = {
   id: string;
   clientId: string;
+  number: string;
   dos: string;
   pos: string;
   diagnosis: string;
+  note: string;
   payer: "medicare" | "medicaid";
   status: "draft" | "ready";
   lines: Line[];
@@ -84,6 +86,24 @@ export function checkClaim(dos: string, pos: string, diagnosis: string) {
   const dx = diagnosis.trim().toUpperCase();
   if (dx !== "" && !ICD.test(dx)) return { ok: false as const, error: "Diagnosis must be a code, like M25.561. Do not type a description." };
   return { ok: true as const, dos, pos, diagnosis: dx };
+}
+
+export function checkClaimNumber(value: string) {
+  const text = value.trim().toUpperCase();
+  if (text === "") return { ok: true as const, number: "" };
+  if (!/^[A-Z0-9-]{1,20}$/.test(text)) {
+    return { ok: false as const, error: "Claim number is letters, digits, and hyphens, up to 20." };
+  }
+  if (/^\d{3}-?\d{2}-?\d{4}$/.test(text)) {
+    return { ok: false as const, error: "That looks like an identifier. Use a claim number, not a person." };
+  }
+  return { ok: true as const, number: text };
+}
+
+export function checkNote(value: string) {
+  const contained = contain(value);
+  if (contained.decision === "stop") return { ok: false as const, error: "That note was stopped. No identifier is stored." };
+  return { ok: true as const, note: contained.text.trim() };
 }
 
 export function quoteCode(books: Books, code: string, modifier: string): { schedule: string; allowedCents: number | null; note: string } {

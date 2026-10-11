@@ -181,6 +181,8 @@ export function DeskPage() {
       dos: "2026-07-01",
       pos: "12",
       diagnosis: "",
+      number: "",
+      note: lane.text,
       payer: "medicare" as const,
       status: "draft" as const,
       lines: lane.lines.map((line) => ({
@@ -227,10 +229,10 @@ export function DeskPage() {
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Paste the note. It prices for Rest of New York.
+          Paste the note. See the Olean price.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Cattaraugus County is locality 99, MAC 13282. Shield scans first. Claims Wedge names the code. CMS Codes checks the Olean rate from the loaded 2026 file. Nothing leaves this browser.
+          One note at a time. No names, no member numbers. If it prices, send it to Billing. If it stops, the reason is on the screen.
         </p>
 
         <div className="mt-8 overflow-hidden rounded-2xl border border-line">

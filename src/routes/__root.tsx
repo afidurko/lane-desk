@@ -1,7 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
-import { PrivateGate } from "@/components/landing/private-gate";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Lane";
@@ -40,9 +39,7 @@ export const Route = createRootRoute({
       <body>
         <PreviewHostBridge />
         <AuthProvider>
-          <PrivateGate>
-            <Outlet />
-          </PrivateGate>
+          <Outlet />
         </AuthProvider>
         <Scripts />
       </body>
