@@ -18,6 +18,7 @@ import {
   type PfsFile,
   type PfsRow,
 } from "@/lib/book/price";
+import { YearList } from "@/components/lookup/year-lookup";
 import { money } from "@/lib/desk/clock";
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
@@ -264,6 +265,9 @@ export function BookPage() {
             <p className="mt-3 text-sm text-muted">
               {physician.rows.length.toLocaleString()} codes. Default is Olean, ZIP 14760, Cattaraugus County. That is Rest of New York, MAC 13282, locality 99. Work GPCI {place?.work ?? "1.000"}, practice expense {place?.pe ?? "1.000"}, malpractice {place?.mp ?? "1.000"}.
             </p>
+            <div className="mt-6">
+              <YearList family={family} code={query} quiet />
+            </div>
             <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
               <ul className="overflow-hidden rounded-2xl border border-line">
                 {matches.length === 0 ? (
@@ -342,6 +346,11 @@ export function BookPage() {
           </section>
         ) : null}
 
+        {family !== "physician" ? (
+          <div className="mt-6">
+            <YearList family={family} code={query} quiet />
+          </div>
+        ) : null}
         {lab ? <LabList rows={lab.rows} query={query} onQuery={setQuery} source={lab.source} percent={percent} /> : null}
         {dme ? <DmeList rows={dme.rows} query={query} onQuery={setQuery} source={dme.source} percent={percent} side={dmeSide} onSide={setDmeSide} /> : null}
 

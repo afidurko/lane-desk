@@ -4,31 +4,29 @@ import { Menu, X } from "lucide-react";
 import { HelpChat } from "@/components/help/help-chat";
 
 export const NAV = [
-  { href: "/why", label: "Why" },
-  { href: "/compete", label: "Compare" },
-  { href: "/operate", label: "Rules" },
-  { href: "/desk", label: "Desk" },
-  { href: "/team", label: "Team" },
-  { href: "/book", label: "Codes" },
-  { href: "/ops", label: "Files" },
+  { href: "/", label: "Look up" },
+  { href: "/filter", label: "Table" },
   { href: "/ny", label: "New York" },
-  { href: "/filter", label: "Filter" },
   { href: "/billing", label: "Claim" },
-  { href: "/run", label: "File" },
+  { href: "/book", label: "Codes" },
+  { href: "/desk", label: "Desk" },
+  { href: "/ops", label: "Files" },
+  { href: "/why", label: "Why" },
+  { href: "/operate", label: "Rules" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
 
 const PRIMARY = [
-  { href: "/desk", label: "Desk" },
+  { href: "/", label: "Look up" },
   { href: "/filter", label: "Table" },
-  { href: "/billing", label: "Claim" },
   { href: "/ny", label: "New York" },
+  { href: "/billing", label: "Claim" },
 ] as const;
 
 const LAYERS = [
-  { to: "/desk", n: "01", label: "Desk" },
-  { to: "/filter", n: "02", label: "Table" },
-  { to: "/billing", n: "03", label: "Claim" },
+  { to: "/", n: "1", label: "Code" },
+  { to: "/filter", n: "2", label: "Table" },
+  { to: "/billing", n: "3", label: "Claim" },
 ] as const;
 
 export function Mark() {
@@ -51,7 +49,6 @@ export function Mark() {
 export function Shell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (state) => state.location.pathname });
-  const home = path === "/";
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -82,12 +79,6 @@ export function Shell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
-            <Link
-              to="/desk"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-teal px-4 text-sm font-medium text-teal-ink"
-            >
-              Open the desk
-            </Link>
             <button
               type="button"
               className="grid size-11 place-items-center rounded-full border border-line text-ink lg:hidden"
@@ -115,31 +106,29 @@ export function Shell({ children }: { children: ReactNode }) {
           </nav>
         ) : null}
       </header>
-      {home ? null : (
-        <nav className="border-b border-line" aria-label="Layers">
-          <ol className="mx-auto flex max-w-6xl gap-2 px-5 py-3">
-            {LAYERS.map((layer) => {
-              const current = path === layer.to;
-              return (
-                <li key={layer.to} className="min-w-0 flex-1">
-                  <Link
-                    to={layer.to}
-                    aria-current={current ? "page" : undefined}
-                    className={
-                      current
-                        ? "flex h-11 items-center gap-2 rounded-full bg-teal px-3 text-sm font-medium text-teal-ink"
-                        : "flex h-11 items-center gap-2 rounded-full border border-line bg-paper-2 px-3 text-sm text-ink hover:border-teal"
-                    }
-                  >
-                    <span className="tabular-nums">{layer.n}</span>
-                    <span className="truncate">{layer.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-      )}
+      <nav className="border-b border-line" aria-label="Steps">
+        <ol className="mx-auto flex max-w-6xl gap-2 px-5 py-3">
+          {LAYERS.map((layer) => {
+            const current = path === layer.to;
+            return (
+              <li key={layer.to} className="min-w-0 flex-1">
+                <Link
+                  to={layer.to}
+                  aria-current={current ? "page" : undefined}
+                  className={
+                    current
+                      ? "flex h-11 items-center justify-center gap-2 rounded-full bg-teal px-3 text-sm font-medium text-teal-ink"
+                      : "flex h-11 items-center justify-center gap-2 rounded-full border border-line bg-paper-2 px-3 text-sm text-ink"
+                  }
+                >
+                  <span className="tabular-nums">{layer.n}</span>
+                  <span className="truncate">{layer.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
       {children}
       <HelpChat />
       <footer className="border-t border-line bg-paper">
@@ -150,7 +139,7 @@ export function Shell({ children }: { children: ReactNode }) {
               Lane
             </p>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-              Three layers. The reason, the clock, and the file. The chart stays where it is.
+              Type a code. See the amount for each year. The claim is the last step.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Footer">

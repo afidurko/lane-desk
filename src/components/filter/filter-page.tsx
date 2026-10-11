@@ -7,6 +7,7 @@ import { type DmeFile, type LabFile } from "@/lib/book/other";
 import { conversionFor, localityDollars, type PfsFile } from "@/lib/book/price";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
+import { YearList } from "@/components/lookup/year-lookup";
 import { Link } from "@tanstack/react-router";
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
@@ -107,10 +108,10 @@ export function FilterPage() {
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Filter</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          One table. Filter the schedule, the year, or the code.
+          Find a code, then check every year.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          No note is required. Pick a schedule and a year, then type a code or a word. Amounts are Rest of New York where the file has a locality. A blank amount means the file did not price that row.
+          The table is one year. Type a full code and the years appear under the filters.
         </p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -161,6 +162,10 @@ export function FilterPage() {
             <input type="checkbox" checked={onlyKept} onChange={(event) => setOnlyKept(event.target.checked)} />
             Only codes I kept
           </label>
+        </div>
+
+        <div className="mt-6">
+          <YearList family={family} code={query.trim()} quiet />
         </div>
 
         {added ? (
