@@ -11,7 +11,7 @@ export const FAMILIES = [
 ] as const;
 
 export type Family = (typeof FAMILIES)[number]["id"];
-export type Row = { n: string; a: Record<string, number | null> };
+export type Row = { n: string; a: Record<string, number | null>; s?: string };
 
 const cache = new Map<string, Record<string, Row>>();
 

@@ -35,6 +35,14 @@ export const SEATS: readonly Seat[] = [
     doesNot: "Does not invent a rate. Does not search a portal.",
   },
   {
+    id: "describe",
+    agentId: "code-describe",
+    name: "Describe",
+    reportsTo: "Check",
+    job: "One code. States what the fee file calls it, and the amount for each year from 2020 through 2026.",
+    doesNot: "Does not invent a longer clinical definition. Does not change an amount.",
+  },
+  {
     id: "intel",
     agentId: "e909ce1b-b9a3-471b-a451-5ed70e3314ce",
     name: "Compare",

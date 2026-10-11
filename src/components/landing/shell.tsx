@@ -5,6 +5,7 @@ import { HelpChat } from "@/components/help/help-chat";
 
 export const NAV = [
   { href: "/", label: "Look up" },
+  { href: "/code", label: "Code" },
   { href: "/filter", label: "Table" },
   { href: "/ny", label: "New York" },
   { href: "/billing", label: "Claim" },
@@ -17,14 +18,16 @@ export const NAV = [
 ] as const;
 
 const PRIMARY = [
-  { href: "/", label: "Look up" },
+  { href: "/", label: "Invoice" },
+  { href: "/code", label: "Code" },
   { href: "/ny", label: "New York" },
   { href: "/billing", label: "Claim" },
 ] as const;
 
 const LAYERS = [
-  { to: "/", n: "1", label: "Code" },
-  { to: "/billing", n: "2", label: "Claim" },
+  { to: "/", n: "1", label: "Invoice" },
+  { to: "/code", n: "2", label: "Code" },
+  { to: "/billing", n: "3", label: "Claim" },
 ] as const;
 
 export function Mark() {

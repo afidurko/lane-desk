@@ -9,10 +9,11 @@ function bucket() {
   return {};
 }
 
-function put(map, code, year, cents, name) {
+function put(map, code, year, cents, name, status) {
   const key = code.trim().toUpperCase();
   if (!map[key]) map[key] = { n: "", a: {} };
   if (name && (!map[key].n || year === 2026)) map[key].n = name.slice(0, 90);
+  if (status) map[key].s = status;
   map[key].a[String(year)] = cents;
 }
 
@@ -25,7 +26,7 @@ for (const year of YEARS) {
     const conversion = conversionFor(row, "nonQp", file);
     const payable = row.s === "A" || row.s === "R" || row.s === "T";
     const dollars = payable && conversion && place ? localityDollars(row, "nf", place, conversion) : 0;
-    put(physician, row.c, year, dollars > 0 ? Math.round(dollars * 100) : null, row.d);
+    put(physician, row.c, year, dollars > 0 ? Math.round(dollars * 100) : null, row.d, row.s);
   }
 }
 
