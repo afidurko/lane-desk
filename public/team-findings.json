@@ -1,0 +1,44 @@
+{
+  "asOf": "2026-10-10",
+  "source": "Prior verified reports from CMS Codes and Claims Wedge. The seats returned no text when asked this session.",
+  "note": "PACE is capitated. A dollar shown is a Medicare fee-for-service reference price for checking vendor bills and encounter data, not a payment.",
+  "physician": [
+    { "code": "97110", "name": "Therapeutic exercise", "year": 2026, "locality": "Rest of New York, MAC 13282, locality 99", "cents": 2827, "source": "Loaded pfs-2026.json" },
+    { "code": "97110", "name": "Therapeutic exercise", "year": 2007, "locality": "national paid", "cents": 2653, "source": "CMS Codes, wedge index" },
+    { "code": "99213", "name": "Office visit, established, low", "year": 2026, "locality": "Rest of New York", "cents": 9186, "source": "Loaded pfs-2026.json" }
+  ],
+  "lab": [
+    { "code": "80053", "name": "Comprehensive metabolic panel", "year": 2026, "cents": 1056, "source": "Loaded clfs-2026.json, fourth quarter" }
+  ],
+  "hospice": [
+    { "name": "Routine home care, days 1–60, with quality reporting", "year": "FY 2026", "cents": 23083, "source": "CMS Codes, 90 FR 37414 Table 1" },
+    { "name": "Routine home care, days 1–60, without quality reporting", "year": "FY 2026", "cents": 22183, "source": "CMS Codes" },
+    { "name": "Aggregate cap", "year": "FY 2026", "cents": 3536144, "source": "CMS Codes, 90 FR 37415–37416" },
+    { "name": "Routine home care, days 1–60, with quality reporting", "year": "FY 2027", "cents": 23633, "source": "CMS Codes, 91 FR 61793" },
+    { "name": "Aggregate cap", "year": "FY 2027", "cents": 3617475, "source": "CMS Codes, 91 FR 49129" },
+    { "name": "Rural New York wage index", "year": "FY 2026", "cents": null, "index": 0.8892, "source": "CMS Codes, CMS wage index file" },
+    { "name": "Rural New York wage index", "year": "FY 2027", "cents": null, "index": 0.9122, "source": "CMS Codes" }
+  ],
+  "pace": [
+    { "name": "New York County Medicare A/B", "year": 2026, "cents": 198361, "source": "CMS Codes, CMS MA/PACE ratebook" },
+    { "name": "Kings County Medicare A/B", "year": 2026, "cents": 180485, "source": "CMS Codes" },
+    { "name": "Monroe, Erie, Albany Medicare A/B", "year": 2026, "cents": 139641, "source": "CMS Codes" },
+    { "name": "ESRD", "year": 2026, "cents": 1205155, "source": "CMS Codes" },
+    { "name": "New York County Medicare A/B", "year": 2027, "cents": 205376, "source": "CMS Codes" },
+    { "name": "Part D national average bid", "year": 2026, "cents": 23927, "source": "CMS Codes" }
+  ],
+  "mue": [
+    { "code": "97110", "limit": 6, "unit": "per day", "span": "2020 Q1 through 2026 Q4", "source": "CMS Codes, practitioner MUE" },
+    { "code": "97530", "limit": 6, "unit": "per day", "span": "2020 Q1 through 2026 Q4", "source": "CMS Codes, practitioner MUE" }
+  ],
+  "wedge": [
+    { "name": "Sample 1 provisional reference price", "cents": 9569, "source": "Claims Wedge, camera view" },
+    { "name": "Rest of New York internal totals", "amounts": [46843, 36726, 45784], "source": "Claims Wedge, internal" }
+  ],
+  "blocked": [
+    "NY Medicaid PACE rates are not public. The DOH model contract Appendix H is blank.",
+    "HCPCS 2009 and 2010 are behind a license page.",
+    "MUE bundling-pair edits are behind a license page.",
+    "2023 Q2 MUE is missing from the CMS archive."
+  ]
+}

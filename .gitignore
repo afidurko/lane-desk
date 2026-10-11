@@ -1,0 +1,7 @@
+node_modules
+.grok
+artifacts
+attachments
+screenshots
+.env
+.env.*
