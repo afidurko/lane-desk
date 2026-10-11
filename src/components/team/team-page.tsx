@@ -42,10 +42,10 @@ export function TeamPage() {
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Team</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Shield, then the wedge, then the codes, then Takeover, then Kai.
+          The note is screened, priced, and checked.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          A note is priced locally first. A cleared packet is queued here. The live seats were contacted this session and returned no text, so the queue stays local until they reply. Nothing is submitted.
+          A note is priced in this browser. A cleared packet waits here. Nothing is submitted.
         </p>
 
         <ol className="mt-8 grid gap-3 lg:grid-cols-2">

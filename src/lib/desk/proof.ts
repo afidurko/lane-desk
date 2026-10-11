@@ -3,7 +3,7 @@ export type ProofStatus = "did-not-run" | "stop" | "hold" | "pass";
 export type ProofReport = {
   name: "Proof";
   status: ProofStatus;
-  job: "Decide whether this row can ship, name the next proof, and write the Kai brief";
+  job: "Decide whether this row can ship, name the next proof, and write the brief";
   forbidden: "Cash, trading, career, code merges, full-platform talk";
   detail: string;
   nextProof: string;
@@ -20,7 +20,7 @@ export function proofIdle(): ProofReport {
   return {
     name: "Proof",
     status: "did-not-run",
-    job: "Decide whether this row can ship, name the next proof, and write the Kai brief",
+    job: "Decide whether this row can ship, name the next proof, and write the brief",
     forbidden: "Cash, trading, career, code merges, full-platform talk",
     detail: "Did not run.",
     nextProof: "None.",
@@ -30,7 +30,7 @@ export function proofIdle(): ProofReport {
 export function judgeProof(note: string, priced: boolean, timed: boolean): ProofReport {
   const base = {
     name: "Proof" as const,
-    job: "Decide whether this row can ship, name the next proof, and write the Kai brief" as const,
+    job: "Decide whether this row can ship, name the next proof, and write the brief" as const,
     forbidden: "Cash, trading, career, code merges, full-platform talk" as const,
   };
   if (!priced && note.trim() === "") return proofIdle();

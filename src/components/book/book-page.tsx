@@ -401,7 +401,7 @@ export function BookPage() {
               </ul>
             ) : null}
             <p className="mt-4 text-sm text-muted">
-              The note clock still reads six adult-day therapy codes. <Link to="/desk" className="font-medium text-teal">Open the desk.</Link>
+              The note clock reads the 2026 physical, occupational, and speech therapy codes. <Link to="/desk" className="font-medium text-teal">Open the desk.</Link>
             </p>
           </div>
         </section>

@@ -1,5 +1,5 @@
-import type { Claim, Client } from "@/lib/billing/billing";
-import { validNpi } from "@/lib/billing/billing";
+import { validDiagnosis, validNpi, type Books, type Claim, type Client } from "@/lib/billing/billing";
+import { claimGuards } from "@/lib/billing/guard";
 import { submitterReady, type Submitter } from "@/lib/billing/submitter";
 
 export type Packet = {
@@ -40,7 +40,7 @@ const LOCALITY = "Rest of New York, locality 99, Olean 14760";
 const SERVICE_FACILITY = "Olean, NY 14760 · Cattaraugus County";
 
 /** A claim is ready to hand to an enrolled submitter. This function does not transmit it. */
-export function buildPacket(claim: Claim, client: Client | null | undefined, submitter?: Submitter | null): Packet {
+export function buildPacket(claim: Claim, client: Client | null | undefined, submitter?: Submitter | null, books: Books | null = null, today = ""): Packet {
   const missing: string[] = [];
   if (!submitter || !submitterReady(submitter)) missing.push("Enrolled submitter with NPI and submitter ID");
   else if (!validNpi(submitter.npi)) missing.push("Submitter NPI that passes the check digit");
@@ -48,9 +48,13 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
   else if (!validNpi(client.npi)) missing.push("Billing NPI that passes the check digit");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(claim.dos)) missing.push("Date of service");
   if (!/^\d{2}$/.test(claim.pos)) missing.push("Place of service");
+  if (!validDiagnosis(claim.diagnosis)) missing.push("Diagnosis code");
   if (!claim.number) missing.push("Claim number");
   if (claim.lines.length === 0) missing.push("At least one line");
   if (claim.lines.some((line) => line.chargeCents === null)) missing.push("A charge on every line");
+  for (const guard of claimGuards(claim, books, today)) {
+    if (!missing.includes(guard.reason)) missing.push(guard.reason);
+  }
 
   const ready = missing.length === 0;
   const payer = claim.payer === "medicaid" ? "NY Medicaid" : "Medicare Part B";
@@ -100,12 +104,32 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
     },
     next: ready
       ? "Packet includes the enrolled submitter. Hand it to the clearinghouse or MAC. This browser does not transmit."
-      : "Fill the missing fields, including the submitter, before the packet can be handed off.",
+      : `Next: ${missing[0]}.`,
   };
 }
 
-export function packetJson(claim: Claim, client: Client | null | undefined, submitter?: Submitter | null) {
-  const packet = buildPacket(claim, client, submitter);
+export function nextGap(
+  claim: Claim | null,
+  client: Client | null | undefined,
+  submitter: Submitter | null | undefined,
+  alertCount: number,
+) {
+  if (!client) return { title: "Add the organization", detail: "Nothing else opens until the organization is saved." };
+  if (!validNpi(client.npi)) return { title: "Add a billing NPI", detail: "The packet needs a 10-digit NPI that passes the check digit." };
+  if (!submitter || !submitterReady(submitter)) return { title: "Save the submitter", detail: "MAC 13282 needs a name, NPI, and submitter ID. Nothing is sent." };
+  if (!validNpi(submitter.npi)) return { title: "Fix the submitter NPI", detail: "The check digit did not pass." };
+  if (!claim || claim.lines.length === 0) return { title: "Add the service", detail: "Import an invoice, or type a code on the worksheet." };
+  if (alertCount > 0) return { title: "Clear the high alert", detail: "Use the file amount on the flagged line, or dispute it. Ready stays blocked." };
+  if (claim.lines.some((line) => line.chargeCents === null)) return { title: "Enter a charge", detail: "Every line needs a charge." };
+  if (!claim.number) return { title: "Add a claim number", detail: "Letters, numbers, and hyphens. It lands in box 26." };
+  if (!validDiagnosis(claim.diagnosis)) return { title: "Add a diagnosis code", detail: "Box 21 takes a code, such as M25.561, not a description." };
+  if (!/^\d{2}$/.test(claim.pos)) return { title: "Set the place of service", detail: "Choose 11, 12, 41, 49, or 99." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(claim.dos)) return { title: "Set the date of service", detail: "The file and sequestration both follow this date." };
+  return { title: "Download the packet", detail: "It is complete for handoff. This browser does not transmit it." };
+}
+
+export function packetJson(claim: Claim, client: Client | null | undefined, submitter?: Submitter | null, books: Books | null = null, today = "") {
+  const packet = buildPacket(claim, client, submitter, books, today);
   return JSON.stringify(
     {
       form: packet.form,

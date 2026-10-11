@@ -41,19 +41,35 @@ export type Review = {
   lines: Line[];
 };
 
+function unitsFromMinutes(minutes: number): number | "bad" {
+  if (!Number.isInteger(minutes) || minutes < 8) return "bad";
+  const count = Math.floor((minutes - 8) / 15) + 1;
+  return count >= 1 && count <= 8 ? count : "bad";
+}
+
 function countIn(text: string): number | "none" | "bad" {
-  const named = text.match(/\b(zero|one|two|three|four|five|six|seven|eight|\d+)\s+units?\b/i);
+  if (/\b\d+\.\d+\s+units?\b/i.test(text)) return "bad";
+  const named = text.match(/\b([a-z]+|\d+)\s+units?\b/i);
+  const minutes = text.match(/\b(\d+)\s+minutes?\b/i);
+  let fromUnits: number | "none" | "bad" = "none";
   if (named) {
     const word = named[1].toLowerCase();
-    const count = word in UNIT_WORD ? UNIT_WORD[word] : Number(word);
-    return count >= 1 && count <= 8 ? count : "bad";
+    if (word === "a" || word in UNIT_WORD) {
+      const count = word === "a" ? 1 : UNIT_WORD[word];
+      fromUnits = count >= 1 && count <= 8 ? count : "bad";
+    } else if (/^\d+$/.test(word)) {
+      const count = Number(word);
+      fromUnits = count >= 1 && count <= 8 ? count : "bad";
+    } else {
+      return "bad";
+    }
   }
-  const minutes = text.match(/\b(\d+)\s+minutes?\b/i);
-  if (minutes) {
-    const count = Math.round(Number(minutes[1]) / 15);
-    return count >= 1 && count <= 8 ? count : "bad";
-  }
-  return "none";
+  let fromMinutes: number | "none" | "bad" = "none";
+  if (minutes) fromMinutes = unitsFromMinutes(Number(minutes[1]));
+  if (fromUnits === "bad" || fromMinutes === "bad") return "bad";
+  if (fromUnits !== "none" && fromMinutes !== "none" && fromUnits !== fromMinutes) return "bad";
+  if (fromUnits !== "none") return fromUnits;
+  return fromMinutes;
 }
 
 export function unitsOf(note: string): number | null {
@@ -76,19 +92,26 @@ function sameLine(note: string, a: number, b: number) {
 }
 
 export function linesOf(note: string, rates?: Record<string, number>): Line[] | "split" | "units" | "none" {
-  const hits: { code: string; name: string; index: number; span: string }[] = [];
+  const found: { code: string; name: string; index: number; length: number; span: string }[] = [];
   for (const service of SERVICES) {
-    const pattern = new RegExp(service.cue.source, `${service.cue.flags}g`);
+    const pattern = new RegExp(service.cue.source, "gi");
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(note))) {
-      hits.push({
+      found.push({
         code: service.code,
         name: service.name,
         index: match.index,
+        length: match[0].length,
         span: lineOf(note, match.index, match[0]),
       });
       if (match[0].length === 0) pattern.lastIndex += 1;
     }
+  }
+  found.sort((left, right) => left.index - right.index || right.length - left.length);
+  const hits: typeof found = [];
+  for (const hit of found) {
+    const covered = hits.some((kept) => hit.index < kept.index + kept.length && kept.index < hit.index + hit.length);
+    if (!covered) hits.push(hit);
   }
   if (hits.length === 0) return "none";
   for (let i = 0; i < hits.length; i += 1) {
@@ -171,7 +194,9 @@ export function spanOf(note: string, code = CODE) {
 }
 
 export function allowedOf(units: number, code = CODE, rates?: Record<string, number>) {
-  const dollars = rates?.[code] ?? serviceOf(code)?.unitDollars ?? UNIT_DOLLARS;
+  const service = serviceOf(code);
+  if (service && !service.separate) return 0;
+  const dollars = rates?.[code] ?? service?.unitDollars ?? UNIT_DOLLARS;
   return Math.round(units * dollars * 100) / 100;
 }
 

@@ -85,7 +85,7 @@ export function OperatePage() {
 
         <h2 className="mt-12 font-display text-3xl text-ink">Patch network</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-          Shield strips markup and drops an identifier or an oversized request. Takeover stops a submit, a portal, a scrape, or a transmit. Kai then closes pricing, storage, and export. The text is not kept, and nothing is sent out to look for anyone.
+          The screen strips markup and drops an identifier or an oversized request. A later check stops a submit, a portal, a scrape, or a transmit, then closes pricing, storage, and export. The text is not kept.
         </p>
 
         <h2 className="mt-12 font-display text-3xl text-ink">Stops recorded here</h2>

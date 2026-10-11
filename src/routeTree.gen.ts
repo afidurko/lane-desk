@@ -17,6 +17,7 @@ import { Route as DeskRouteImport } from './routes/desk'
 import { Route as FilterRouteImport } from './routes/filter'
 import { Route as NyRouteImport } from './routes/ny'
 import { Route as OperateRouteImport } from './routes/operate'
+import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as RunRouteImport } from './routes/run'
 import { Route as TeamRouteImport } from './routes/team'
@@ -62,6 +63,11 @@ const OperateRoute = OperateRouteImport.update({
   path: '/operate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OpsRoute = OpsRouteImport.update({
+  id: '/ops',
+  path: '/ops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/filter': typeof FilterRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
+  '/ops': typeof OpsRoute
   '/pricing': typeof PricingRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/filter': typeof FilterRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
+  '/ops': typeof OpsRoute
   '/pricing': typeof PricingRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/filter': typeof FilterRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
+  '/ops': typeof OpsRoute
   '/pricing': typeof PricingRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/filter'
     | '/ny'
     | '/operate'
+    | '/ops'
     | '/pricing'
     | '/run'
     | '/team'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/filter'
     | '/ny'
     | '/operate'
+    | '/ops'
     | '/pricing'
     | '/run'
     | '/team'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/filter'
     | '/ny'
     | '/operate'
+    | '/ops'
     | '/pricing'
     | '/run'
     | '/team'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   FilterRoute: typeof FilterRoute
   NyRoute: typeof NyRoute
   OperateRoute: typeof OperateRoute
+  OpsRoute: typeof OpsRoute
   PricingRoute: typeof PricingRoute
   RunRoute: typeof RunRoute
   TeamRoute: typeof TeamRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilterRoute: FilterRoute,
   NyRoute: NyRoute,
   OperateRoute: OperateRoute,
+  OpsRoute: OpsRoute,
   PricingRoute: PricingRoute,
   RunRoute: RunRoute,
   TeamRoute: TeamRoute,

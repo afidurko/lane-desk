@@ -16,7 +16,7 @@ export type Layer = {
 };
 
 export type Brief = {
-  to: "Kai";
+  to: "File";
   from: "Proof";
   wedge: string;
   proofPath: string;
@@ -42,7 +42,7 @@ export type LaneRun = {
 };
 
 const PUBLIC_FACT =
-  "Collabrios Health announced CollabriosONE on September 17, 2026. The company said the platform joins clinical care, transportation, enrollment, home-based care, an ambient scribe, claims, and analytics, and moves PACECare, TruChart, and PACELogic onto it.";
+  "Our competitors run the full operating platform: clinical care, transportation, enrollment, home-based care, documentation, claims, and analytics.";
 
 const GATE_DETAIL: Record<Exclude<Gate, "ok">, string> = {
   empty: "No note.",
@@ -55,10 +55,10 @@ const GATE_DETAIL: Record<Exclude<Gate, "ok">, string> = {
 
 export const IDLE: Layer[] = [
   { id: "gate", name: "Gate", status: "did-not-run", detail: "Has not run." },
-  { id: "claims", name: "Claims Wedge", status: "did-not-run", detail: "Has not run." },
-  { id: "intel", name: "Incumbent Intel", status: "did-not-run", detail: "Has not run." },
+  { id: "claims", name: "Price", status: "did-not-run", detail: "Has not run." },
+  { id: "intel", name: "Compare", status: "did-not-run", detail: "Has not run." },
   { id: "proof", name: "Proof", status: "did-not-run", detail: "Has not run." },
-  { id: "kai", name: "Kai", status: "did-not-run", detail: "Has not run." },
+  { id: "kai", name: "File", status: "did-not-run", detail: "Has not run." },
 ];
 
 /** Public record only. This function takes no note. */
@@ -97,10 +97,10 @@ export function runLane(
     return {
       layers: [
         { id: "gate", name: "Gate", status: "stop", detail: scan.detail },
-        skipped("claims", "Claims Wedge"),
-        skipped("intel", "Incumbent Intel"),
+        skipped("claims", "Price"),
+        skipped("intel", "Compare"),
         skipped("proof", "Proof"),
-        skipped("kai", "Kai"),
+        skipped("kai", "File"),
       ],
       lines: [],
       allowed: 0,
@@ -145,10 +145,10 @@ export function runLane(
       text: reviewed.gate === "phi" ? "" : base.text,
       layers: [
         { id: "gate", name: "Gate", status: "stop", detail: GATE_DETAIL[reviewed.gate] },
-        skipped("claims", "Claims Wedge"),
-        skipped("intel", "Incumbent Intel"),
+        skipped("claims", "Price"),
+        skipped("intel", "Compare"),
         skipped("proof", "Proof"),
-        skipped("kai", "Kai"),
+        skipped("kai", "File"),
       ],
     };
   }
@@ -156,10 +156,10 @@ export function runLane(
   const gate: Layer = { id: "gate", name: "Gate", status: "pass", detail: "No identifier. Size is inside the limit." };
 
   if (reviewed.gate !== "ok") {
-    const claims: Layer = { id: "claims", name: "Claims Wedge", status: "stop", detail: GATE_DETAIL[reviewed.gate] };
+    const claims: Layer = { id: "claims", name: "Price", status: "stop", detail: GATE_DETAIL[reviewed.gate] };
     const judged = judgeProof(reviewed.text, false, false);
     const brief: Brief = {
-      to: "Kai",
+      to: "File",
       from: "Proof",
       wedge: "None. Claims did not price a line.",
       proofPath: claims.detail,
@@ -179,27 +179,27 @@ export function runLane(
       layers: [
         gate,
         claims,
-        skipped("intel", "Incumbent Intel"),
+        skipped("intel", "Compare"),
         { id: "proof", name: "Proof", status: "stop", detail: judged.detail },
-        { id: "kai", name: "Kai", status: "pass", detail: "Filed the stop. Nothing was priced." },
+        { id: "kai", name: "File", status: "pass", detail: "Filed the stop. Nothing was priced." },
       ],
     };
   }
 
   const claims: Layer = {
     id: "claims",
-    name: "Claims Wedge",
+    name: "Price",
     status: "pass",
     detail: pathFrom(reviewed.lines),
   };
   const intelSource = incumbentIntel();
-  const intel: Layer = { id: "intel", name: "Incumbent Intel", status: "pass", detail: intelSource.detail };
+  const intel: Layer = { id: "intel", name: "Compare", status: "pass", detail: intelSource.detail };
   const timed = humanSeconds !== null && scriptSeconds !== null;
   const judged = judgeProof(reviewed.text, true, timed);
   const killed = judged.status === "stop";
   const proofLayer: Layer = { id: "proof", name: "Proof", status: judged.status, detail: judged.detail };
   const brief: Brief = {
-    to: "Kai",
+    to: "File",
     from: "Proof",
     wedge: killed ? "None. Proof stopped the scope." : `${SCHEDULE.name}, ${SCHEDULE.setting}, ${SCHEDULE.asOf}.`,
     proofPath: killed ? judged.detail : claims.detail,
@@ -223,7 +223,7 @@ export function runLane(
       claims,
       intel,
       proofLayer,
-      { id: "kai", name: "Kai", status: "pass", detail: killed ? "Filed the kill." : timed ? "Brief is complete." : "Brief is a hold. The delta field is empty." },
+      { id: "kai", name: "File", status: "pass", detail: killed ? "Filed the kill." : timed ? "Brief is complete." : "Brief is a hold. The delta field is empty." },
     ],
   };
 }
@@ -234,7 +234,7 @@ export function briefFromRows(rows: DeskRow[]): Brief | null {
   const sameRun = rows.filter((row) => row.at === newest.at);
   const timed = newest.humanSeconds !== null && newest.scriptSeconds !== null;
   return {
-    to: "Kai",
+    to: "File",
     from: "Proof",
     wedge: `${SCHEDULE.name}, ${SCHEDULE.setting}, ${SCHEDULE.asOf}.`,
     proofPath: sameRun

@@ -5,6 +5,8 @@ import { contain } from "../src/lib/security/patch-net.ts";
 import { briefFromRows, incumbentIntel, runLane } from "../src/lib/desk/lane.ts";
 import { dollarsFromTotal, sequester, sequestrationPercent } from "../src/lib/book/price.ts";
 import { admit, filterRows, rowsOf } from "../src/lib/book/book.ts";
+import { classifyIssue } from "../src/lib/help/issues.ts";
+import { scanPhysician } from "../src/lib/desk/scan.ts";
 
 const failures = [];
 let ran = 0;
@@ -25,6 +27,14 @@ check("split words", gate("therapeutic\nexercise for 15 minutes") === "ok");
 check("split span", spanOf("therapeutic\nexercise for 15 minutes") === "therapeutic exercise");
 
 check("nine units", review("therapeutic exercise, 9 units").gate === "units");
+check("spelled nine stops", review("Therapeutic exercise, nine units.").gate === "units");
+check("ten units stop", review("Therapeutic exercise, ten units.").gate === "units");
+check("fraction stops", review("Therapeutic exercise, 1.5 units.").gate === "units");
+check("minutes disagree with units", review("Therapeutic exercise, one unit, 45 minutes.").gate === "units");
+check("home management alone is not a code", review("home management of the medication box.").gate === "wrong-type");
+check("eight minutes is one unit", review("Therapeutic exercise, 8 minutes.").lines[0]?.units === 1);
+check("seven minutes stop", review("Therapeutic exercise, 7 minutes.").gate === "units");
+check("twenty-three minutes is two units", review("Therapeutic exercise, 23 minutes.").lines[0]?.units === 2);
 check("zero units", review("therapeutic exercise, zero units").gate === "units");
 check("135 minutes", review("therapeutic exercise, 135 minutes").gate === "units");
 check("two units", unitsOf("therapeutic exercise, two units") === 2);
@@ -67,7 +77,13 @@ check(
 );
 check("same line splits", review("Therapeutic exercise and manual therapy, 15 minutes.").gate === "split");
 check("waiver code stops", gate("Therapeutic exercise, 15 minutes. S5100.") === "wrong-type");
-check("eval code stops", gate("97161 low complexity evaluation.") === "wrong-type");
+check("pt eval is read", review("97161 low complexity evaluation.").lines[0]?.code === "97161" && review("97161 low complexity evaluation.").lines[0]?.allowed === 95.46);
+check("speech fluency", review("Evaluation of speech fluency.").lines[0]?.code === "92521" && review("Evaluation of speech fluency.").lines[0]?.allowed === 130.26);
+check("hot packs are not paid separately", review("Hot packs.").lines[0]?.code === "97010" && review("Hot packs.").lines[0]?.allowed === 0);
+check("estim is the unattended code", review("Electrical stimulation.").lines[0]?.code === "G0283" && review("Electrical stimulation.").lines[0]?.allowed === 12.28);
+check("attended estim is not the unattended code", review("Attended electrical stimulation.").lines[0]?.code === "97032");
+check("group caregiver is one code", review("Group caregiver training.").lines.length === 1 && review("Group caregiver training.").lines[0]?.code === "97552");
+check("wound code is not therapy", gate("Debridement 97597.") === "wrong-type");
 
 const sealedOther = sealRow({
   id: "row-97140",
@@ -83,18 +99,18 @@ check("other code reseals", sealedOther !== null && sealedOther.allowed === 53.9
 
 const lane = runLane(SAMPLE_NOTE, null, 2.3);
 check("lane order", lane.layers.map((layer) => layer.id).join(",") === "gate,claims,intel,proof,kai");
-check("teams on a price", lane.teams.map((team) => team.name).join(",") === "Shield,Claims Wedge,CMS Codes,Incumbent Intel,Center Hunt,Handoff,Takeover,Kai");
-check("scan stays off a claim", lane.teams.find((team) => team.name === "Center Hunt")?.status === "did-not-run");
-check("capability refuses", runLane("Office visit, 99214.", null, null).teams.find((team) => team.name === "Claims Wedge")?.status === "stop");
+check("teams on a price", lane.teams.map((team) => team.name).join(",") === "Screen,Price,Check,Compare,Centers,Queue,Rank,File");
+check("scan stays off a claim", lane.teams.find((team) => team.name === "Centers")?.status === "did-not-run");
+check("capability refuses", runLane("Office visit, 99214.", null, null).teams.find((team) => team.name === "Price")?.status === "stop");
 check("phi skips teams", runLane("MRN 100. Therapeutic exercise.", null, null).teams.every((team) => team.status === "did-not-run"));
 check("untimed hold", lane.layers[3].status === "hold" && lane.ship === false && lane.brief?.decision.startsWith("Hold") && lane.proof.status === "hold");
 check("boundary blocks a scrape", runLane("Therapeutic exercise, 15 minutes. Scrape the portal.", null, null).boundary?.includes("does not scrape") === true);
 check("intel has no note", incumbentIntel.length === 0 && !incumbentIntel().detail.includes("Participant"));
 check("boundary blocks a claim", runLane("Submit the 837 claim.", null, null).boundary?.includes("does not submit") === true);
 const contained = contain("<script>alert(1)</script> Therapeutic exercise, 15 minutes.");
-check("markup is removed and not kept as a payload", contained.decision === "clear" && !contained.text.includes("script") && contained.actions.some((action) => action.team === "Shield"));
+check("markup is removed and not kept as a payload", contained.decision === "clear" && !contained.text.includes("script") && contained.actions.some((action) => action.team === "Screen"));
 const dropped = contain("SSN 123-45-6789 therapeutic exercise");
-check("identifier is dropped before use", dropped.decision === "stop" && dropped.text === "" && dropped.kept === false && dropped.actions.some((action) => action.team === "Shield"));
+check("identifier is dropped before use", dropped.decision === "stop" && dropped.text === "" && dropped.kept === false && dropped.actions.some((action) => action.team === "Screen"));
 check("boundary blocks an hpi", runLane("Write the HPI for this visit.", null, null).lines.length === 0);
 check("an hpi heading can still be priced", runLane("History of present illness. Therapeutic exercise, 15 minutes.", null, null).lines.length === 1);
 check("phi text is dropped", runLane("MRN 100. Therapeutic exercise.", null, null).text === "");
@@ -246,6 +262,26 @@ for (let i = 0; i < 20000; i += 1) {
     break;
   }
 }
+
+const amount = classifyIssue("The billed amount does not match the file.");
+check("help amount is workable", amount.kind === "workable" && amount.href === "/billing");
+const csv = classifyIssue("How do I import a CSV invoice?");
+check("help import is workable", csv.kind === "workable" && csv.href === "/billing");
+const sent = classifyIssue("Can this be submitted?");
+check("help submit is a stop", sent.kind === "stop" && sent.title.startsWith("Not workable"));
+const named = classifyIssue("Patient Jane Doe MRN 100 needs 97110.");
+check("help drops an identifier", named.kind === "stop" && !named.body.includes("Jane"));
+const thin = classifyIssue("I don't have adequate notes.");
+check("thin note goes to the table", thin.kind === "workable" && thin.href === "/filter");
+const locality = { mac: "13282", state: "NY", number: "99", name: "Rest of New York", work: 1, pe: 1, mp: 1 };
+const therapyRow = { c: "97110", m: "", d: "Therapeutic exercises", s: "A", w: 1, pn: 1, pf: 1, mp: 1, tn: 1, tf: 1 };
+const currentFile = { release: "test", posted: "", year: 2026, gpci: "", conversion: { nonQp: "1", qp: null }, source: "test file", localities: [locality], rows: [therapyRow] };
+const priorFile = { ...currentFile, year: 2025, conversion: { nonQp: "2", qp: null } };
+const scanned = scanPhysician(currentFile, priorFile);
+const moved = scanned.changes.find((row) => row.code === "97110");
+check("scan sees a 97110 change", scanned.card.changed >= 1 && moved?.current === 300 && moved?.prior === 600);
+const vague = classifyIssue("Hello there");
+check("help asks when it is unclear", vague.kind === "ask");
 
 console.log(JSON.stringify({ ran, failures: failures.slice(0, 12), failCount: failures.length }));
 if (failures.length > 0) process.exit(1);

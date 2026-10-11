@@ -20,7 +20,7 @@ const PLANS: {
     unit: "one fee schedule",
     lede: "One clock. The gold row is written before anyone labels it.",
     points: [
-      "Six adult-day therapy codes",
+      "Physical, occupational, and speech therapy codes",
       "Manual seconds and script seconds",
       "Code, allowed dollars, mismatch notes",
       "Rows labeled by your SME",

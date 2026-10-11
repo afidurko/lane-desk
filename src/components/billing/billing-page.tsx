@@ -4,7 +4,7 @@ import type { AmbulanceFile } from "@/lib/book/ambulance";
 import type { DmeFile, LabFile } from "@/lib/book/other";
 import { sequester, sequestrationPercent, type PfsFile } from "@/lib/book/price";
 import { centsFromDollars, checkClaim, checkClaimNumber, checkClient, checkNote, claimTotals, quoteCode, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
-import { buildPacket, packetJson } from "@/lib/billing/packet";
+import { buildPacket, nextGap, packetJson } from "@/lib/billing/packet";
 import { claimAlerts } from "@/lib/billing/verify";
 import { readSubmitter, writeSubmitter, type Submitter } from "@/lib/billing/submitter";
 import { readBilling, writeBilling } from "@/lib/billing/store";
@@ -45,19 +45,6 @@ export function BillingPage() {
     setClaimId(saved.claims[0]?.id ?? null);
     setReady(true);
     setSubmitter(readSubmitter());
-    const year = 2026;
-    Promise.all([
-      fetch(`/pfs-${year}.json`).then((response) => response.json() as Promise<PfsFile>),
-      fetch(`/afs-${year}.json`).then((response) => response.json() as Promise<AmbulanceFile>),
-      fetch(`/clfs-${year}.json`).then((response) => response.json() as Promise<LabFile>),
-      fetch(`/dme-${year}.json`).then((response) => response.json() as Promise<DmeFile>),
-      fetch("/ny-medicaid.json").then((response) => response.json() as Promise<NyMedicaidFile>),
-    ])
-      .then(([physician, ambulance, lab, dme, medicaid]) => {
-        setBooks({ physician, ambulance, lab, dme });
-        setNy(medicaid);
-      })
-      .catch(() => setMessage("A fee file did not load. Lines can still be drafted without an allowed amount."));
   }, []);
 
   useEffect(() => {
@@ -66,9 +53,35 @@ export function BillingPage() {
 
   const claim = claims.find((item) => item.id === claimId) ?? null;
   const client = clients.find((item) => item.id === (claim?.clientId ?? clientId)) ?? null;
+  const fileYear = fileYearOf(claim?.dos ?? dos);
+  const today = todayIso();
+  const alerts = claim ? claimAlerts(claim, books, today) : [];
   const totals = claim ? claimTotals(claim.lines) : null;
   const percent = claim ? sequestrationPercent(claim.dos) : null;
   const cut = totals?.allowedCents !== null && totals?.allowedCents !== undefined && percent !== null ? sequester(totals.allowedCents / 100, percent) : null;
+  const gap = nextGap(claim, client, submitter, alerts.length);
+
+  useEffect(() => {
+    let cancel = false;
+    Promise.all([
+      fetch(`/pfs-${fileYear}.json`).then((response) => response.json() as Promise<PfsFile>),
+      fetch(`/afs-${fileYear}.json`).then((response) => response.json() as Promise<AmbulanceFile>),
+      fetch(`/clfs-${fileYear}.json`).then((response) => response.json() as Promise<LabFile>),
+      fetch(`/dme-${fileYear}.json`).then((response) => response.json() as Promise<DmeFile>),
+      fetch("/ny-medicaid.json").then((response) => response.json() as Promise<NyMedicaidFile>),
+    ])
+      .then(([physician, ambulance, lab, dme, medicaid]) => {
+        if (cancel) return;
+        setBooks({ physician, ambulance, lab, dme });
+        setNy(medicaid);
+      })
+      .catch(() => {
+        if (!cancel) setMessage("A fee file did not load. Lines can still be drafted without an allowed amount.");
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [fileYear]);
 
   function addClient(event: FormEvent) {
     event.preventDefault();
@@ -146,13 +159,15 @@ export function BillingPage() {
       setMessage(selected.note);
       return;
     }
+    const fileCents = selected.allowedCents;
+    const chargeCents = priced.cents ?? fileCents;
     const line: Line = {
       id: `line-${Date.now()}`,
       code: code.trim().toUpperCase(),
       modifier: modifier.trim().toUpperCase(),
       units: count,
-      chargeCents: priced.cents,
-      allowedCents: selected.allowedCents,
+      chargeCents,
+      allowedCents: fileCents,
       schedule: selected.schedule,
       note: selected.note,
       otherCents: other.allowedCents,
@@ -162,27 +177,71 @@ export function BillingPage() {
     setCode("");
     setModifier("");
     setCharge("");
-    setMessage(null);
+    setMessage(priced.cents === null && fileCents !== null ? "Charge set to the file amount." : null);
+  }
+
+  function disputeLine(lineId: string) {
+    if (!claim || claim.status === "ready") return;
+    setClaims((current) =>
+      current.map((item) =>
+        item.id !== claim.id
+          ? item
+          : {
+              ...item,
+              lines: item.lines.map((line) =>
+                line.id === lineId
+                  ? { ...line, dispute: "Disputed against the Olean file. The high alert stays until the charge matches." }
+                  : line,
+              ),
+            },
+      ),
+    );
+    setMessage("Dispute is on the line. The high alert stays until the numbers agree.");
   }
 
   function setStatus(status: "draft" | "ready") {
     if (!claim) return;
+    if (status === "ready") {
+      const step = nextGap(claim, client, submitter, claimAlerts(claim, books, todayIso()).length);
+      if (step.title !== "Download the packet") {
+        setMessage(`${step.title}. ${step.detail}`);
+        return;
+      }
+    }
+    setMessage(null);
     setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, status } : item)));
+  }
+
+  function useFileAmount(lineId: string, cents: number) {
+    if (!claim || claim.status === "ready") return;
+    setClaims((current) =>
+      current.map((item) =>
+        item.id !== claim.id
+          ? item
+          : { ...item, lines: item.lines.map((line) => (line.id === lineId ? { ...line, chargeCents: cents, dispute: "" } : line)) },
+      ),
+    );
+    setMessage("Charge set to the file amount.");
   }
 
   function downloadPacket() {
     if (!claim) return;
-    const blob = new Blob([packetJson(claim, client, submitter)], { type: "application/json" });
+    const packet = buildPacket(claim, client, submitter, books, today);
+    const blob = new Blob([packetJson(claim, client, submitter, books, today)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `${claim.id}-837p.json`;
     link.click();
+    setMessage(packet.ready ? "Packet downloaded. It was not transmitted." : `Downloaded, but not complete. Next: ${packet.missing[0]}.`);
     URL.revokeObjectURL(url);
   }
 
   function download() {
-    if (!claim || !client) return;
+    if (!claim || !client) {
+      setMessage("Add the organization before the CSV can be downloaded.");
+      return;
+    }
     const header = "organization,npi,claim,payer,date,place,diagnosis,code,modifier,units,charge,allowed,schedule,other,note";
     const body = claim.lines.map((line) =>
       [
@@ -227,13 +286,16 @@ export function BillingPage() {
           Three steps to a packet.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Add the organization. Paste an invoice or open a worksheet. Save the submitter. A high alert means the code or the amount does not match the Olean file. Fix it before you download.
+          Organization, then the service, then one fix if something fails. Ready stays blocked when the year, the fee, the therapy modifier, the place of service, or the filing date is wrong. This desk does not decide coverage and it does not send the claim.
         </p>
         <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
           <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
-          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">2. What.</span> <span className="text-muted">Invoice or worksheet lines.</span></li>
+          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">2. What.</span> <span className="text-muted">Import a file or add a line.</span></li>
           <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">3. Ready.</span> <span className="text-muted">No alerts, then download.</span></li>
         </ol>
+        <p className="mt-4 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink">
+          <span className="font-medium">{gap.title}.</span> {gap.detail} Pricing from the {books.physician?.year ?? fileYear} files.
+        </p>
         <dl className="mt-8 grid grid-cols-2 gap-4">
           <div className="rounded-2xl border border-line bg-paper-2 p-5">
             <dt className="text-xs font-medium tracking-widest text-muted uppercase">Draft</dt>
@@ -297,7 +359,7 @@ export function BillingPage() {
             <input value={claimNumber} onChange={(event) => setClaimNumber(event.target.value.toUpperCase())} placeholder="OLN-1001" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
           </label>
           <label className="text-sm font-medium text-ink sm:col-span-2">
-            Diagnosis code, optional
+            Diagnosis code
             <input value={diagnosis} onChange={(event) => setDiagnosis(event.target.value.toUpperCase())} placeholder="M25.561" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
           </label>
           <label className="text-sm font-medium text-ink sm:col-span-2">
@@ -355,6 +417,48 @@ export function BillingPage() {
         {claim ? (
           <section className="mt-6 rounded-2xl border border-line p-5">
             <p className="text-sm text-muted">{claim.number || "No claim number"} · {client?.name ?? "No organization"} · {claim.dos} · {(claim.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · place {claim.pos || "not set"}{claim.diagnosis ? ` · ${claim.diagnosis}` : ""} · {claim.status}</p>
+            <label className="mt-4 block text-sm font-medium text-ink">
+              Diagnosis
+              <input
+                value={claim.diagnosis}
+                disabled={claim.status === "ready"}
+                onChange={(event) => {
+                  const checked = checkClaim(claim.dos, claim.pos, event.target.value);
+                  if (!checked.ok) {
+                    setMessage(checked.error);
+                    return;
+                  }
+                  setMessage(null);
+                  setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, diagnosis: checked.diagnosis } : item)));
+                }}
+                placeholder="M25.561"
+                className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base"
+              />
+            </label>
+            <label className="mt-4 block text-sm font-medium text-ink">
+              Place of service
+              <select
+                value={claim.pos}
+                disabled={claim.status === "ready"}
+                onChange={(event) => {
+                  const checked = checkClaim(claim.dos, event.target.value, claim.diagnosis);
+                  if (!checked.ok) {
+                    setMessage(checked.error);
+                    return;
+                  }
+                  setMessage(null);
+                  setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, pos: checked.pos } : item)));
+                }}
+                className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base"
+              >
+                <option value="11">11 Office</option>
+                <option value="12">12 Home</option>
+                <option value="41">41 Ambulance, land</option>
+                <option value="49">49 Independent clinic</option>
+                <option value="99">99 Other</option>
+                <option value="">Not set</option>
+              </select>
+            </label>
             <label className="mt-4 block text-sm font-medium text-ink">
               Claim number
               <input
@@ -421,6 +525,7 @@ export function BillingPage() {
                     <p className="mt-1 text-sm text-muted">{line.note}</p>
                     <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {moneyOrBlank(line.allowedCents, line.units) || "none on the selected file"}.</p>
                     <p className="mt-1 text-sm text-muted">Other payer, {line.otherSchedule ?? "not compared"}: {line.otherCents == null ? "no amount" : money((line.otherCents * line.units) / 100)}.</p>
+                    {line.dispute ? <p className="mt-1 text-sm font-medium text-deep">Dispute. {line.dispute}</p> : null}
                   </li>
                 ))
               )}
@@ -441,8 +546,8 @@ export function BillingPage() {
               <button type="button" onClick={downloadPacket} className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">Download 837P packet</button>
             </div>
             {(() => {
-              const packet = buildPacket(claim, client, submitter);
-              const alerts = claimAlerts(claim, books);
+              const packet = buildPacket(claim, client, submitter, books, today);
+              const shown = alerts;
               return (
                 <section className="mt-6 rounded-2xl border border-line bg-paper p-4">
                   <p className="text-xs font-medium tracking-widest text-teal uppercase">{packet.ready ? "Ready to hand off" : "Not complete"}</p>
@@ -454,6 +559,16 @@ export function BillingPage() {
                         <li key={item.line.id} className="rounded-xl border border-deep px-3 py-2 text-sm">
                           <p className="font-medium text-deep">High alert · {item.line.code}</p>
                           <p className="mt-1 text-ink">{item.check.reason} Expected {item.check.expectedCode} at {item.check.expectedCents === null ? "no loaded amount" : money(item.check.expectedCents / 100)}.</p>
+                          {item.check.expectedCents !== null && claim.status === "draft" && claim.lines.some((line) => line.id === item.line.id) ? (
+                            <button type="button" onClick={() => useFileAmount(item.line.id, item.check.expectedCents as number)} className="mt-2 h-10 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">
+                              Use the file amount
+                            </button>
+                          ) : null}
+                          {claim.status === "draft" && claim.lines.some((line) => line.id === item.line.id) && !claim.lines.find((line) => line.id === item.line.id)?.dispute ? (
+                            <button type="button" onClick={() => disputeLine(item.line.id)} className="mt-2 ml-2 h-10 rounded-full border border-deep px-4 text-sm font-medium text-deep">
+                              Dispute this line
+                            </button>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
@@ -483,6 +598,18 @@ export function BillingPage() {
       </main>
     </Shell>
   );
+}
+
+function fileYearOf(dos: string) {
+  const year = Number(dos.slice(0, 4));
+  return year >= 2020 && year <= 2026 ? year : 2026;
+}
+
+function todayIso() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 function moneyOrBlank(cents: number | null, units: number) {

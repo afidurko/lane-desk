@@ -6,6 +6,8 @@ import { readInterest, writeInterest, type Interest } from "@/lib/book/interest"
 import { type DmeFile, type LabFile } from "@/lib/book/other";
 import { conversionFor, localityDollars, type PfsFile } from "@/lib/book/price";
 import { money } from "@/lib/desk/clock";
+import { addToOpenClaim } from "@/lib/billing/store";
+import { Link } from "@tanstack/react-router";
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
 type Family = "physician" | "ambulance" | "lab" | "dme";
@@ -15,16 +17,18 @@ type AnyFile = PfsFile | AmbulanceFile | LabFile | DmeFile;
 type Shown = {
   key: string;
   code: string;
+  modifier: string;
   name: string;
   note: string;
   amount: string | null;
+  cents: number | null;
 };
 
 export function FilterPage() {
   const cache = useRef(new Map<string, AnyFile>());
   const [family, setFamily] = useState<Family>("physician");
   const [year, setYear] = useState(2026);
-  const [preset, setPreset] = useState<Preset>("transport");
+  const [preset, setPreset] = useState<Preset>("all");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("any");
   const [file, setFile] = useState<AnyFile | null>(null);
@@ -32,6 +36,8 @@ export function FilterPage() {
   const [interest, setInterest] = useState<Interest[]>([]);
   const [onlyKept, setOnlyKept] = useState(false);
   const [ready, setReady] = useState(false);
+  const [limit, setLimit] = useState(40);
+  const [added, setAdded] = useState<string | null>(null);
 
   useEffect(() => {
     setInterest(readInterest());
@@ -41,6 +47,10 @@ export function FilterPage() {
   useEffect(() => {
     if (ready) writeInterest(interest);
   }, [interest, ready]);
+
+  useEffect(() => {
+    setLimit(40);
+  }, [family, year, preset, query, status, onlyKept]);
 
   useEffect(() => {
     const key = `${family}-${year}`;
@@ -65,10 +75,11 @@ export function FilterPage() {
       .catch(() => setFailed(true));
   }, [family, year]);
 
-  const rows = useMemo(() => buildRows(file, family, query, preset, status), [file, family, query, preset, status]);
+  const built = useMemo(() => buildRows(file, family, query, preset, status), [file, family, query, preset, status]);
   const keptIds = new Set(interest.map((item) => item.id));
-  const visible = onlyKept ? rows.filter((row) => keptIds.has(row.key)) : rows;
-  const listed = visible.slice(0, 80);
+  const visible = onlyKept ? built.rows.filter((row) => keptIds.has(row.key)) : built.rows;
+  const listed = visible.slice(0, limit);
+  const scheduleName = family === "physician" ? "Physician" : family === "ambulance" ? "Ambulance" : family === "lab" ? "Clinical lab" : "DMEPOS, New York";
 
   function toggle(row: Shown) {
     setInterest((current) => {
@@ -77,15 +88,29 @@ export function FilterPage() {
     });
   }
 
+  function add(row: Shown) {
+    const result = addToOpenClaim({
+      code: row.code,
+      modifier: row.modifier,
+      units: 1,
+      chargeCents: row.cents,
+      allowedCents: row.cents,
+      schedule: `${scheduleName}, ${year}`,
+      note: row.name,
+      year,
+    });
+    setAdded(result.createdClaim ? `${row.code} opened a ${year} claim.` : `${row.code} was added to the open ${year} claim.`);
+  }
+
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Filter</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Keep the codes you want. The rest stay in the file.
+          One table. Filter the schedule, the year, or the code.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Procedures in the surgery range are on the physician file. Transportation is split. Ambulance trips are priced on the ambulance file. Taxi, bus, and van codes are on the physician file as not valid for Medicare. Transport chairs are on New York DME.
+          No note is required. Pick a schedule and a year, then type a code or a word. Amounts are Rest of New York where the file has a locality. A blank amount means the file did not price that row.
         </p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -138,36 +163,75 @@ export function FilterPage() {
           </label>
         </div>
 
+        {added ? (
+          <p className="mt-4 text-sm text-ink" role="status">
+            {added}{" "}
+            <Link to="/billing" className="font-medium text-teal">
+              Open the claim.
+            </Link>{" "}
+            The charge is the file amount. A therapy line still needs GP, GO, or GN.
+          </p>
+        ) : null}
         {failed ? <p className="mt-4 text-sm font-medium text-deep">That file did not load.</p> : null}
         {!file && !failed ? <p className="mt-4 text-sm text-muted">Loading the {year} file.</p> : null}
         {file ? (
           <p className="mt-4 text-sm text-muted">
-            {visible.length.toLocaleString()} match{visible.length === 1 ? "" : "es"}. Showing {listed.length}. Physician amounts are Rest of New York, non-facility, non-QP. A code with no amount is still listed.
+            {built.total.toLocaleString()} on {scheduleName}, {year}. Showing {listed.length}. Type a code or a word to narrow. Physician amounts are non-facility, non-QP, locality 99.
           </p>
         ) : null}
 
-        <ul className="mt-4 overflow-hidden rounded-2xl border border-line">
-          {listed.length === 0 ? (
-            <li className="px-4 py-4 text-sm text-muted">
-              {preset === "all" || preset === "procedure" ? "Type at least two characters. The procedure set is the surgery range, and it is too large to list whole." : "Nothing in this set on this file."}
-            </li>
-          ) : (
-            listed.map((row) => (
-              <li key={row.key} className="border-t border-line px-4 py-3 first:border-t-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium text-ink tabular-nums">{row.code}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-ink">{row.name}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted">{row.note}{row.amount ? ` ${row.amount}.` : ""}</p>
-                  </div>
-                  <button type="button" onClick={() => toggle(row)} className="shrink-0 rounded-full border border-line px-3 py-2 text-sm font-medium text-ink">
-                    {keptIds.has(row.key) ? "Kept" : "Keep"}
-                  </button>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-line">
+          <table className="w-full min-w-[40rem] text-left text-sm">
+            <thead className="border-b border-line bg-paper-2 text-xs tracking-widest text-muted uppercase">
+              <tr>
+                <th className="px-3 py-3 font-medium">Code</th>
+                <th className="px-3 py-3 font-medium">Description</th>
+                <th className="px-3 py-3 font-medium">Schedule</th>
+                <th className="px-3 py-3 font-medium">Year</th>
+                <th className="px-3 py-3 font-medium">Amount</th>
+                <th className="px-3 py-3 font-medium"> </th>
+              </tr>
+            </thead>
+            <tbody>
+              {listed.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-4 text-muted">Nothing on this schedule for that filter.</td>
+                </tr>
+              ) : (
+                listed.map((row) => (
+                  <tr key={row.key} className="border-t border-line">
+                    <td className="px-3 py-3 font-medium text-ink tabular-nums">{row.code}</td>
+                    <td className="px-3 py-3 text-ink">
+                      {row.name}
+                      <span className="mt-1 block text-muted">{row.note}</span>
+                    </td>
+                    <td className="px-3 py-3 text-ink">{scheduleName}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{year}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{row.amount ?? "—"}</td>
+                    <td className="px-3 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => add(row)} className="rounded-full bg-teal px-3 py-2 text-sm font-medium text-teal-ink">
+                          Add to claim
+                        </button>
+                        <button type="button" onClick={() => toggle(row)} className="rounded-full border border-line px-3 py-2 text-sm font-medium text-ink">
+                          {keptIds.has(row.key) ? "Kept" : "Keep"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {built.total > built.rows.length ? (
+          <p className="mt-3 text-sm text-muted">The table is holding the first 400 matches. Type a code or a word to narrow.</p>
+        ) : null}
+        {listed.length < visible.length ? (
+          <button type="button" onClick={() => setLimit((value) => value + 40)} className="mt-3 h-11 rounded-full border border-line px-4 text-sm font-medium text-ink">
+            Show 40 more
+          </button>
+        ) : null}
 
         <h2 className="mt-12 font-display text-3xl text-ink">Kept in this browser</h2>
         <ul className="mt-4 space-y-2">
@@ -186,8 +250,8 @@ export function FilterPage() {
   );
 }
 
-function buildRows(file: AnyFile | null, family: Family, query: string, preset: Preset, status: string): Shown[] {
-  if (!file) return [];
+function buildRows(file: AnyFile | null, family: Family, query: string, preset: Preset, status: string): { total: number; rows: Shown[] } {
+  if (!file) return { total: 0, rows: [] };
   const needle = query.trim().toLowerCase();
   const textOk = (code: string, name: string) => needle.length < 2 || code.toLowerCase().includes(needle) || name.toLowerCase().includes(needle);
   const presetOk = (code: string, name: string) => {
@@ -195,63 +259,78 @@ function buildRows(file: AnyFile | null, family: Family, query: string, preset: 
     if (preset === "procedure") return isProcedure(code);
     return true;
   };
-  const needsQuery = preset === "all" || preset === "procedure";
+  const needsQuery = false;
 
   if ("rows" in file && family === "physician" && "localities" in file) {
     const place = file.localities.find((item) => item.mac === "13282" && item.number === "99") ?? null;
-    return file.rows
-      .filter((row) => row.m === "" && (status === "any" || row.s === status) && presetOk(row.c, row.d) && textOk(row.c, row.d) && (!needsQuery || needle.length >= 2))
-      .map((row) => {
+    return take(
+      file.rows.filter((row) => row.m === "" && (status === "any" || row.s === status) && presetOk(row.c, row.d) && textOk(row.c, row.d) && (!needsQuery || needle.length >= 2)),
+      (row) => {
         const label = STATUS_LABEL[row.s] ?? `Status ${row.s}.`;
         let amount: string | null = null;
+        let dollars = 0;
         if (payableStatus(row.s)) {
           const conversion = conversionFor(row, "nonQp", file);
-          const dollars = conversion ? localityDollars(row, "nf", place, conversion) : 0;
+          dollars = conversion ? localityDollars(row, "nf", place, conversion) : 0;
           amount = dollars > 0 ? money(dollars) : null;
         }
-        return { key: `physician-${file.year}-${row.c}`, code: row.c, name: row.d, note: label, amount };
-      });
+        return { key: `physician-${file.year}-${row.c}`, code: row.c, modifier: "", name: row.d, note: label, amount, cents: dollars > 0 ? Math.round(dollars * 100) : null };
+      },
+    );
   }
 
   if (family === "ambulance" && "rows" in file && file.rows[0] && "carrier" in file.rows[0]) {
     const ambulance = file as AmbulanceFile;
     const mine = ambulance.rows.filter((row) => row.carrier === "13282" && row.loc === "99");
-    return mine
-      .filter((row) => presetOk(row.c, AMBULANCE_NAMES[row.c] ?? "") && textOk(row.c, AMBULANCE_NAMES[row.c] ?? "") && (!needsQuery || needle.length >= 2))
-      .map((row) => ({
+    return take(
+      mine.filter((row) => presetOk(row.c, AMBULANCE_NAMES[row.c] ?? "") && textOk(row.c, AMBULANCE_NAMES[row.c] ?? "") && (!needsQuery || needle.length >= 2)),
+      (row) => ({
         key: `ambulance-${ambulance.year}-${row.c}`,
         code: row.c,
+        modifier: "",
         name: AMBULANCE_NAMES[row.c] ?? row.c,
         note: "Ambulance file, Rest of New York, rural ground.",
         amount: row.rural === null ? null : money(row.rural / 100),
-      }));
+        cents: row.rural,
+      }),
+    );
   }
 
   if (family === "lab" && "rows" in file && file.rows[0] && "rate" in file.rows[0]) {
     const lab = file as LabFile;
-    return lab.rows
-      .filter((row) => presetOk(row.c, row.name) && textOk(row.c, row.name) && (!needsQuery || needle.length >= 2))
-      .map((row) => ({
+    return take(
+      lab.rows.filter((row) => presetOk(row.c, row.name) && textOk(row.c, row.name) && (!needsQuery || needle.length >= 2)),
+      (row) => ({
         key: `lab-${lab.year}-${row.c}-${row.m}`,
-        code: row.m ? `${row.c}-${row.m}` : row.c,
+        code: row.c,
+        modifier: row.m,
         name: row.name,
         note: `Lab file. Indicator ${row.indicator || "blank"}.`,
         amount: row.rate === null ? null : money(row.rate / 100),
-      }));
+        cents: row.rate,
+      }),
+    );
   }
 
   if (family === "dme" && "rows" in file && (file.rows.length === 0 || ("rural" in file.rows[0]))) {
     const dme = file as DmeFile;
-    return dme.rows
-      .filter((row) => presetOk(row.c, row.name) && textOk(row.c, row.name) && (!needsQuery || needle.length >= 2))
-      .map((row) => ({
+    return take(
+      dme.rows.filter((row) => presetOk(row.c, row.name) && textOk(row.c, row.name) && (!needsQuery || needle.length >= 2)),
+      (row) => ({
         key: `dme-${dme.year}-${row.c}-${row.m}-${row.m2}`,
-        code: [row.c, row.m, row.m2].filter(Boolean).join(" "),
+        code: row.c,
+        modifier: row.m,
         name: row.name || "No description in the file.",
-        note: "New York rural DME.",
+        note: row.m2 ? `New York rural DME. Second modifier ${row.m2} is not on the claim line.` : "New York rural DME.",
         amount: row.rural === null ? null : money(row.rural / 100),
-      }));
+        cents: row.rural,
+      }),
+    );
   }
 
-  return [];
+  return { total: 0, rows: [] };
+}
+
+function take<T>(rows: T[], map: (row: T) => Shown): { total: number; rows: Shown[] } {
+  return { total: rows.length, rows: rows.slice(0, 400).map(map) };
 }

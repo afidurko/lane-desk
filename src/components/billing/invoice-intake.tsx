@@ -17,20 +17,33 @@ export function InvoiceIntake({
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
-  function read(event: FormEvent) {
-    event.preventDefault();
-    if (text.trim().length < 4) {
-      setMessage("Paste the invoice. Include the code and the amount.");
+  function load(raw: string) {
+    if (raw.trim().length < 4) {
+      setMessage("The file is empty. Use a text or CSV invoice with a code and an amount.");
       return;
     }
-    const next = parseInvoice(text, books, date);
+    const next = parseInvoice(raw, books, date);
     if (next.lines.length === 0) {
-      setMessage("No HCPCS or CPT code was found on that invoice.");
+      setMessage("No HCPCS or CPT code was found. A CSV needs a column named code, plus an amount.");
       return;
     }
     setInvoices((current) => [next, ...current]);
     setText("");
     setMessage(`${next.lines.length} lines across ${next.entities.length} entities.`);
+  }
+
+  function read(event: FormEvent) {
+    event.preventDefault();
+    load(text);
+  }
+
+  function onFile(file: File | undefined) {
+    if (!file) return;
+    if (file.size > 1_000_000) {
+      setMessage("That file is over 1 MB. Export a smaller invoice.");
+      return;
+    }
+    file.text().then(load).catch(() => setMessage("That file could not be read."));
   }
 
   function prepare(invoice: Invoice) {
@@ -59,20 +72,29 @@ export function InvoiceIntake({
 
   return (
     <section className="mt-6 rounded-2xl border border-line p-5">
-      <h2 className="font-display text-3xl text-ink">Invoices</h2>
+      <h2 className="font-display text-3xl text-ink">Import an invoice</h2>
       <p className="mt-2 text-sm text-muted">
-        Paste one or more invoices. Start a new entity with “Entity: name” or “NPI: 10 digits”. Each coded line stays with that entity and is categorized by the service the code names. Open as claims makes one claim per entity.
+        Bring a file from another system, or paste the invoice. A CSV works when it has a code column and an amount column. Optional columns: entity, date, service. The file stays in this browser. It is not sent to a clearinghouse.
       </p>
       <form onSubmit={read} className="mt-4 grid gap-3">
         <label className="text-sm font-medium text-ink">
-          Invoice date if a line has none
+          Invoice file
+          <input
+            type="file"
+            accept=".txt,.csv,.tsv,text/plain,text/csv"
+            onChange={(event) => onFile(event.target.files?.[0])}
+            className="mt-1.5 block w-full text-sm text-ink file:mr-3 file:h-11 file:rounded-full file:border-0 file:bg-teal file:px-4 file:text-sm file:font-medium file:text-teal-ink"
+          />
+        </label>
+        <label className="text-sm font-medium text-ink">
+          Date if a line has none
           <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
         </label>
         <label className="text-sm font-medium text-ink">
-          Invoice text
-          <textarea value={text} onChange={(event) => setText(event.target.value)} rows={7} placeholder={"Entity: Olean General\n97110 Therapeutic exercise 2026-07-01 28.27\nEntity: Rural transport\nA0428 Ambulance, land 2026-07-01 250.00"} className="mt-1.5 w-full rounded-xl border border-line bg-paper-2 px-3 py-2 text-base" />
+          Or paste the invoice
+          <textarea value={text} onChange={(event) => setText(event.target.value)} rows={7} placeholder={"Entity: Olean General\n97110 Therapeutic exercise 2026-07-01 28.27"} className="mt-1.5 w-full rounded-xl border border-line bg-paper-2 px-3 py-2 text-base" />
         </label>
-        <button type="submit" className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">Read this invoice</button>
+        <button type="submit" className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">Read pasted invoice</button>
       </form>
       {invoices.map((invoice) => (
         <article key={invoice.id} className="mt-5 rounded-2xl border border-line p-4">

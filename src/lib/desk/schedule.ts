@@ -1,3 +1,5 @@
+import { THERAPY } from "@/lib/desk/therapy-codes";
+
 export const SCHEDULE = {
   id: "mpfs-2026-nf",
   name: "2026 Medicare Physician Fee Schedule",
@@ -11,23 +13,32 @@ export type Service = {
   code: string;
   name: string;
   unitDollars: number;
+  separate: boolean;
   cue: RegExp;
 };
 
-/** Timed adult-day therapy codes. 2026 non-facility, non-QP, Rest of New York (MAC 13282, locality 99). */
-export const SERVICES = [
-  { code: "97110", name: "Therapeutic exercise", unitDollars: 28.27, cue: /therapeutic\s+exercise|\b97110\b/i },
-  { code: "97112", name: "Neuromuscular reeducation", unitDollars: 31.85, cue: /neuromuscular\s+re-?education|\b97112\b/i },
-  { code: "97116", name: "Gait training", unitDollars: 28.27, cue: /gait\s+training|\b97116\b/i },
-  { code: "97140", name: "Manual therapy", unitDollars: 26.97, cue: /manual\s+therapy|\b97140\b/i },
-  { code: "97530", name: "Therapeutic activities", unitDollars: 33.97, cue: /therapeutic\s+activities|\b97530\b/i },
-  { code: "97535", name: "Self-care training", unitDollars: 31.45, cue: /self-care\s+training|home\s+management|\b97535\b/i },
-] as const satisfies readonly Service[];
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function cueFor(code: string, phrases: readonly string[]) {
+  const parts = [code, ...phrases].map((part) => escapeRegExp(part).replace(/\s+/g, "\\s+"));
+  return new RegExp(`\\b(?:${parts.join("|")})\\b`, "i");
+}
+
+/** Therapy the note clock can read. Amounts are the 2026 Rest of New York fee, or zero when Medicare does not pay the code separately. */
+export const SERVICES: readonly Service[] = THERAPY.map((item) => ({
+  code: item.code,
+  name: item.name,
+  unitDollars: item.unitDollars,
+  separate: item.separate,
+  cue: cueFor(item.code, item.phrases),
+}));
 
 const KNOWN = new Set<string>(SERVICES.map((item) => item.code));
 
 export function serviceOf(code: string) {
-  return SERVICES.find((item) => item.code === code);
+  return SERVICES.find((item) => item.code.toUpperCase() === code.toUpperCase());
 }
 
 export function offBook(text: string) {

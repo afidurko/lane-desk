@@ -6,7 +6,7 @@ export const Route = createFileRoute("/team")({
   head: () => ({
     meta: [
       { title: "Lane — Team" },
-      { name: "description", content: "The Hostile Takeover chain, the scoreboard, the gold set, and the file update registry." },
+      { name: "description", content: "The desk chain, the scoreboard, the gold set, and the file update registry." },
     ],
   }),
 });

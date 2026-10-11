@@ -17,7 +17,7 @@ const STEPS = [
   {
     n: "3",
     title: "Build the claim",
-    body: "Paste an invoice or open a worksheet. Fix any high alert. Save the submitter. Download the packet.",
+    body: "Import an invoice file or open a worksheet. Fix any high alert. Save the submitter. Download the packet.",
     to: "/billing",
   },
 ] as const;

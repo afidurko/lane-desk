@@ -28,7 +28,7 @@ function scanReason(reason: ReturnType<typeof contain>["reason"]): StopReason {
 
 export const SKILLS = [
   { id: "boundary-scan", name: "Boundary scan", does: "Classifies a request. Stores nothing." },
-  { id: "price-note", name: "Price a de-identified note", does: "Runs only after the boundary is clear. Six adult-day therapy codes." },
+  { id: "price-note", name: "Price a de-identified note", does: "Runs only after the boundary is clear. Physical, occupational, and speech therapy codes." },
   { id: "lookup-code", name: "Look up a code", does: "Reads the local CMS files. Does not search a portal." },
   { id: "sequester", name: "Sequestration for a date", does: "Applies the rate for that date of service. Does not change the fee." },
 ] as const;

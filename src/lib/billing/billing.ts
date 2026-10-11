@@ -21,6 +21,7 @@ export type Line = {
   note: string;
   otherCents?: number | null;
   otherSchedule?: string;
+  dispute?: string;
 };
 
 export type Claim = {
@@ -45,6 +46,10 @@ export type Books = {
 
 const CODE = /^(?:\d{5}|[A-Z]\d{4})$/;
 const ICD = /^[A-Z][0-9][0-9A-Z](?:\.[0-9A-Z]{1,4})?$/;
+
+export function validDiagnosis(value: string) {
+  return ICD.test(value.trim().toUpperCase());
+}
 
 export function validNpi(value: string) {
   if (!/^\d{10}$/.test(value)) return false;

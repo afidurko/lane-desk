@@ -19,7 +19,7 @@ const THEY = [
   "Enrollment, day center, transportation, and interdisciplinary team tools.",
   "Claims administration, in-house or through a third-party administrator.",
   "Analytics, scorecards, and compliance reporting.",
-  "More than half of PACE centers, 23 states, 30 years, HITRUST e1, SOC 2 Type II.",
+  "A full center platform, already installed, with compliance reports.",
 ] as const;
 
 const WE = [
@@ -39,7 +39,7 @@ export function CompetePage() {
           Price the note. Leave the chart.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          CollabriosONE is an operating platform. This is the claims desk that sits beside it. A person currently reads the note, assigns the code, and looks up the allowed amount. That labor is what gets automated.
+          Our competitors run the operating platform. This is the claims desk that sits beside it. A person currently reads the note, assigns the code, and looks up the allowed amount. That labor is what gets automated.
         </p>
 
         <dl className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -62,13 +62,13 @@ export function CompetePage() {
 
         <section className="mt-12 grid gap-6 lg:grid-cols-2">
           <article className="rounded-2xl border border-line bg-paper-2 p-6">
-            <h2 className="font-display text-2xl text-ink">What Collabrios runs</h2>
+            <h2 className="font-display text-2xl text-ink">What our competitors run</h2>
             <ul className="mt-4 space-y-2 text-sm leading-relaxed text-ink">
               {THEY.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            <p className="mt-4 text-sm text-muted">Public claims from collabrios.com and the September 17, 2026 CollabriosONE announcement. No pricing is published.</p>
+            <p className="mt-4 text-sm text-muted">No competitor price is published on this page.</p>
           </article>
           <article className="rounded-2xl border border-teal bg-wash p-6">
             <h2 className="font-display text-2xl text-deep">What this desk automates</h2>

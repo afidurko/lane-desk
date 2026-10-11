@@ -9,7 +9,7 @@ export const Route = createFileRoute("/why")({
       {
         name: "description",
         content:
-          "Why Lane leaves the chart in place and times six adult-day therapy codes on one national fee schedule.",
+          "Why Lane leaves the chart in place and prices therapy codes on the Rest of New York fee schedule.",
       },
     ],
   }),

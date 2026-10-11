@@ -47,8 +47,50 @@ export function categorize(schedule: string) {
   return "Unmatched";
 }
 
+function splitCsv(row: string) {
+  const cells: string[] = [];
+  let current = "";
+  let quoted = false;
+  for (const char of row) {
+    if (char === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (char === "," && !quoted) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+/** Turn a spreadsheet export into the line shape the reader already understands. */
+export function invoiceText(raw: string) {
+  const lines = raw.replace(/^\uFEFF/, "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2 || !lines[0].includes(",")) return raw;
+  const header = splitCsv(lines[0]).map((cell) => cell.toLowerCase());
+  const codeAt = header.findIndex((cell) => /code|hcpcs|cpt|proc/.test(cell));
+  if (codeAt < 0) return raw;
+  const entityAt = header.findIndex((cell) => /entity|provider|org|facility|vendor/.test(cell));
+  const dateAt = header.findIndex((cell) => /date|dos|service date/.test(cell));
+  const amountAt = header.findIndex((cell) => /amount|charge|billed|due|paid|total/.test(cell));
+  const noteAt = header.findIndex((cell) => /desc|service|note|procedure/.test(cell));
+  return lines.slice(1).map((line) => {
+    const cells = splitCsv(line);
+    const entity = entityAt >= 0 ? cells[entityAt] : "";
+    const code = cells[codeAt] ?? "";
+    const date = dateAt >= 0 ? cells[dateAt] : "";
+    const amount = amountAt >= 0 ? cells[amountAt]?.replace(/[$,]/g, "") : "";
+    const note = noteAt >= 0 && noteAt !== codeAt ? cells[noteAt] : "";
+    return [entity ? `Entity: ${entity}` : "", [code, note, date, amount].filter(Boolean).join(" ")].filter(Boolean).join("\n");
+  }).join("\n");
+}
+
 export function parseInvoice(text: string, books: Books, fallbackDate: string): Invoice {
-  const rows = text
+  const rows = invoiceText(text)
     .split(/\n+/)
     .map((row) => row.trim())
     .filter(Boolean);

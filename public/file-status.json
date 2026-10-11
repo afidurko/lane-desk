@@ -1,0 +1,194 @@
+{
+  "built": "2026-10-11",
+  "place": "Rest of New York, locality 99, MAC 13282, Olean 14760",
+  "note": "Status only. No rate in this file is a price. Dollars stay in the schedule files. The Monday repository job checks that these files are still present. It does not download a new schedule and it does not submit a claim.",
+  "files": [
+    {
+      "id": "pfs",
+      "name": "Physician fee schedule",
+      "cadence": "Annual, with quarterly corrections",
+      "loaded": "2020–2026. 2026 file is RVU26D, 19,453 rows.",
+      "source": "CMS rvu26d PPRRVU file. Non-facility and facility totals are the file totals times the conversion factor in that file.",
+      "rows": 19453,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "Rest of New York locality 99 is in the 2026 file. A quarterly correction is not a separate file on this desk."
+    },
+    {
+      "id": "afs",
+      "name": "Ambulance",
+      "cadence": "Annual",
+      "loaded": "2020–2026. 2026 public use file, 1,308 rows.",
+      "source": "CMS Ambulance Fee Schedule public use file, calendar year 2026. Amounts are the published file amounts for carrier locality 99.",
+      "rows": 1308,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "Ground amounts are the rural file amounts for MAC 13282, locality 99."
+    },
+    {
+      "id": "clfs",
+      "name": "Clinical laboratory",
+      "cadence": "Quarterly",
+      "loaded": "Fourth quarter, 2020–2026. 2026 release 2026CLABQ4, 2,243 rows.",
+      "source": "CMS clinical laboratory fee schedule, 2026 fourth quarter. The rate is the amount in the file. Coverage is not implied.",
+      "rows": 2243,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "The quarter in force on October 11, 2026 is loaded. January, April, and July 2026 quarters are not separate files."
+    },
+    {
+      "id": "dme",
+      "name": "DMEPOS",
+      "cadence": "Quarterly",
+      "loaded": "October files, 2021–2026. 2026 release DME26-D, 3,538 New York rows.",
+      "source": "CMS DMEPOS fee schedule, October 2026. New York non-rural and New York rural. ZIP 14760 is on the 2026 fourth-quarter rural ZIP list.",
+      "rows": 3538,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "The 2020 fee file was not in that year’s zip. The October 2026 New York rural file is loaded."
+    },
+    {
+      "id": "asp",
+      "name": "Part B drug ASP",
+      "cadence": "Quarterly",
+      "loaded": "October 1 through December 31, 2026. 918 rows.",
+      "source": "October 2026 Medicare Part B Payment Limit File, posted September 17, 2026.",
+      "rows": 918,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "The quarter in force is loaded. Earlier 2026 quarters are not on this desk."
+    },
+    {
+      "id": "opps",
+      "name": "Hospital outpatient",
+      "cadence": "Quarterly",
+      "loaded": "October 2026 Addendum B. 17,387 rows.",
+      "source": "October 2026 Hospital OPPS Addendum B. A blank rate is not a separate payment. The 340B offset is not applied.",
+      "rows": 17387,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "A blank rate stays blank. This is not a hospital-specific wage-adjusted payment."
+    },
+    {
+      "id": "asc",
+      "name": "Ambulatory surgical center",
+      "cadence": "Quarterly",
+      "loaded": "October 2026 Addendum AA and BB. 7,156 rows.",
+      "source": "October 2026 ASC Addendum AA and BB. A blank rate is packaged or not paid separately.",
+      "rows": 7156,
+      "status": "current",
+      "next": "January 2027",
+      "detail": "The October 2026 addenda are loaded. Earlier 2026 quarters are not."
+    },
+    {
+      "id": "ipps",
+      "name": "Inpatient PPS",
+      "cadence": "Fiscal year",
+      "loaded": "FY 2026. 772 weight rows.",
+      "source": "CMS-1833-F Table 5 and Tables 1A and 1B. Weights are the 10 percent cap applied weight.",
+      "rows": 772,
+      "status": "current",
+      "next": "FY 2027",
+      "detail": "National amounts are loaded. They are not wage-adjusted for a specific hospital."
+    },
+    {
+      "id": "ny-medicaid",
+      "name": "NY Medicaid fee-for-service",
+      "cadence": "As the Department posts",
+      "loaded": "Physician 8,410 rows. Lab file LAB 6.2024, 1,070 rows. Transport file dated 4/5/26, 2,318 rows. More schedules, 5,583 rows.",
+      "source": "eMedNY fee-for-service schedules. These are not managed-care plan rates, and they are not Medicare.",
+      "rows": 17381,
+      "status": "current",
+      "next": "Next posted file",
+      "detail": "Managed-care plan rates are not loaded. The lab file is the June 2024 post, not a 2026 file."
+    },
+    {
+      "id": "nadac",
+      "name": "NADAC",
+      "cadence": "Weekly",
+      "loaded": "Week of October 7, 2026. 30,048 rows.",
+      "source": "CMS NADAC file nadac-national-average-drug-acquisition-cost-10-07-2026. Acquisition cost per unit, not a pharmacy payment.",
+      "rows": 30048,
+      "status": "current",
+      "next": "October 14, 2026",
+      "detail": "This is an acquisition cost. It is not the amount a pharmacy is paid."
+    },
+    {
+      "id": "ny-hospice",
+      "name": "NY Medicaid hospice",
+      "cadence": "Fiscal year",
+      "loaded": "October 1, 2025 through September 30, 2026. Rural counties including Cattaraugus. 88 rows.",
+      "source": "New York Medicaid certified hospice rate sheet. The total includes the worker recruitment and retention add-on.",
+      "rows": 88,
+      "status": "current",
+      "next": "FY 2027",
+      "detail": "The fiscal year in force on October 11, 2026 is loaded."
+    },
+    {
+      "id": "apg",
+      "name": "NY Medicaid APG procedures",
+      "cadence": "As the Department posts",
+      "loaded": "July 1, 2026 column. 117 rows.",
+      "source": "New York Medicaid APG fee-schedule procedures. These are carved-out procedure fees, not an APG visit weight.",
+      "rows": 117,
+      "status": "current",
+      "next": "Next posted column",
+      "detail": "Not a visit weight and not a base rate."
+    },
+    {
+      "id": "wc-dental",
+      "name": "Workers’ compensation dental",
+      "cadence": "As the Board posts",
+      "loaded": "Effective November 13, 2025. 577 rows.",
+      "source": "Official New York Workers' Compensation Dental Fee Schedule. This is not Medicaid and not no-fault.",
+      "rows": 577,
+      "status": "current",
+      "next": "Next Board file",
+      "detail": "The loaded file is the November 13, 2025 schedule. A later Board file is not on this desk."
+    },
+    {
+      "id": "wc-dme",
+      "name": "Workers’ compensation equipment",
+      "cadence": "As the Board posts",
+      "loaded": "Effective June 28, 2024. 1,736 rows with a dollar in the file.",
+      "source": "Official New York Workers' Compensation Durable Medical Equipment Fee Schedule, corrected August 28, 2024.",
+      "rows": 1736,
+      "status": "current",
+      "next": "Next Board file",
+      "detail": "Rows with no dollar in the file are not stored. Physician and therapy workers’ compensation schedules are sold and are not here."
+    },
+    {
+      "id": "personal-care",
+      "name": "Personal care, Cattaraugus",
+      "cadence": "As the Department posts",
+      "loaded": "2025 file. Cattaraugus County is not in it.",
+      "source": "2025 Personal Care Rates. Erie, Chautauqua, and Wyoming are the nearest counties that are listed.",
+      "rows": 10,
+      "status": "gap",
+      "next": "When Cattaraugus is posted",
+      "detail": "Do not use a neighboring county rate for Olean."
+    },
+    {
+      "id": "ny-rehab",
+      "name": "NY Medicaid rehabilitation procedure 97110",
+      "cadence": "Unknown",
+      "loaded": "Not loaded.",
+      "source": "The January 2026 PDF is a policy. It has no fee table.",
+      "rows": null,
+      "status": "gap",
+      "next": "When a fee table is posted",
+      "detail": "A policy is not a price. The Medicare physician file still prices 97110 for Rest of New York."
+    },
+    {
+      "id": "no-fault",
+      "name": "No-fault",
+      "cadence": "Unknown",
+      "loaded": "Not loaded.",
+      "source": "No separate free fee file was found.",
+      "rows": null,
+      "status": "gap",
+      "next": "When a free file is posted",
+      "detail": "This desk will not invent a no-fault amount."
+    }
+  ]
+}

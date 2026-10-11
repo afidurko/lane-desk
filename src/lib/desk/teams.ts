@@ -43,11 +43,11 @@ const HANDOFF: Member[] = [
 
 const TAKEOVER: Member[] = [
   { role: "wedge", job: "Keep the stopwatch. Kill full EHR, PE bids, and live PHI." },
-  { role: "brief", job: "Write the Kai brief from what the seats produced." },
+  { role: "brief", job: "Write the File brief from what the seats produced." },
 ];
 
 const KAI: Member[] = [
-  { role: "file", job: "File the brief. Pull Aaron only for a decision." },
+  { role: "file", job: "File the brief. Pull the owner only for a decision." },
 ];
 
 function seat(
@@ -66,18 +66,18 @@ function idle(id: string, name: string, lead: string, members: Member[], detail 
 }
 
 export const IDLE_TEAMS: TeamReport[] = [
-  idle("seat.shield", "Shield", "Shield", SHIELD),
-  idle("seat.claims", "Claims Wedge", "Claims Wedge", CLAIMS),
-  idle("seat.codes", "CMS Codes", "CMS Codes", CODES),
-  idle("seat.intel", "Incumbent Intel", "Incumbent Intel", INTEL),
-  idle("seat.hunt", "Center Hunt", "Center Hunt", HUNT, "Does not run on a note. Owns the center list."),
-  idle("seat.handoff", "Handoff", "Handoff", HANDOFF),
-  idle("seat.takeover", "Takeover", "Takeover", TAKEOVER),
-  idle("seat.kai", "Kai", "Kai", KAI),
+  idle("seat.shield", "Screen", "Screen", SHIELD),
+  idle("seat.claims", "Price", "Price", CLAIMS),
+  idle("seat.codes", "Check", "Check", CODES),
+  idle("seat.intel", "Compare", "Compare", INTEL),
+  idle("seat.hunt", "Centers", "Centers", HUNT, "Does not run on a note. Owns the center list."),
+  idle("seat.handoff", "Queue", "Queue", HANDOFF),
+  idle("seat.takeover", "Rank", "Rank", TAKEOVER),
+  idle("seat.kai", "File", "File", KAI),
 ];
 
 export function teamReports(kind: "closed" | "refused" | "priced", lines: Line[], timed: boolean): TeamReport[] {
-  const hunt = idle("seat.hunt", "Center Hunt", "Center Hunt", HUNT, "Did not run. A note is not a center list.");
+  const hunt = idle("seat.hunt", "Centers", "Centers", HUNT, "Did not run. A note is not a center list.");
   if (kind === "closed") {
     return IDLE_TEAMS.map((item) =>
       item.id === "seat.hunt" ? item : { ...item, detail: "Did not run." },
@@ -85,14 +85,14 @@ export function teamReports(kind: "closed" | "refused" | "priced", lines: Line[]
   }
   if (kind === "refused") {
     return [
-      seat("seat.shield", "Shield", "Shield", SHIELD, "pass", "No identifier. Size is inside the limit."),
-      seat("seat.claims", "Claims Wedge", "Claims Wedge", CLAIMS, "stop", "No work unit on the adult-day therapy schedule."),
-      idle("seat.codes", "CMS Codes", "CMS Codes", CODES, "Did not run. Claims did not name a code."),
-      idle("seat.intel", "Incumbent Intel", "Incumbent Intel", INTEL, "Did not run."),
+      seat("seat.shield", "Screen", "Screen", SHIELD, "pass", "No identifier. Size is inside the limit."),
+      seat("seat.claims", "Price", "Price", CLAIMS, "stop", "No work unit on the adult-day therapy schedule."),
+      idle("seat.codes", "Check", "Check", CODES, "Did not run. Claims did not name a code."),
+      idle("seat.intel", "Compare", "Compare", INTEL, "Did not run."),
       hunt,
-      idle("seat.handoff", "Handoff", "Handoff", HANDOFF, "Nothing to record."),
-      seat("seat.takeover", "Takeover", "Takeover", TAKEOVER, "stop", "Wedge stopped. No priced line to rank."),
-      seat("seat.kai", "Kai", "Kai", KAI, "pass", "Filed the stop. Nothing was priced."),
+      idle("seat.handoff", "Queue", "Queue", HANDOFF, "Nothing to record."),
+      seat("seat.takeover", "Rank", "Rank", TAKEOVER, "stop", "Price stopped. No priced line to rank."),
+      seat("seat.kai", "File", "File", KAI, "pass", "Filed the stop. Nothing was priced."),
     ];
   }
   const cited = lines
@@ -107,19 +107,19 @@ export function teamReports(kind: "closed" | "refused" | "priced", lines: Line[]
     return Math.round(line.units * service.unitDollars * 100) / 100 === line.allowed;
   });
   return [
-    seat("seat.shield", "Shield", "Shield", SHIELD, "pass", "No identifier. Size is inside the limit. Text was not stored."),
+    seat("seat.shield", "Screen", "Screen", SHIELD, "pass", "No identifier. Size is inside the limit. Text was not stored."),
     seat(
       "seat.claims",
-      "Claims Wedge",
-      "Claims Wedge",
+      "Price",
+      "Price",
       CLAIMS,
       "pass",
       `${lines.length} line${lines.length === 1 ? "" : "s"}: ${lines.map((line) => `${line.code} × ${line.units}`).join(", ")}. Provisional until a clinician labels it.`,
     ),
     seat(
       "seat.codes",
-      "CMS Codes",
-      "CMS Codes",
+      "Check",
+      "Check",
       CODES,
       arithmetic ? "pass" : "stop",
       arithmetic
@@ -128,8 +128,8 @@ export function teamReports(kind: "closed" | "refused" | "priced", lines: Line[]
     ),
     seat(
       "seat.intel",
-      "Incumbent Intel",
-      "Incumbent Intel",
+      "Compare",
+      "Compare",
       INTEL,
       "pass",
       "Standing public fact only. No new scan was run.",
@@ -137,26 +137,26 @@ export function teamReports(kind: "closed" | "refused" | "priced", lines: Line[]
     hunt,
     seat(
       "seat.handoff",
-      "Handoff",
-      "Handoff",
+      "Queue",
+      "Queue",
       HANDOFF,
       timed ? "pass" : "hold",
       timed ? "Both clocks are filled. The row can move." : "Hold. The human desk has not been timed.",
     ),
     seat(
       "seat.takeover",
-      "Takeover",
-      "Takeover",
+      "Rank",
+      "Rank",
       TAKEOVER,
       arithmetic ? "pass" : "stop",
       arithmetic
-        ? "Wedge is the adult-day therapy stopwatch. Not an EHR. Not a bid."
-        : "Wedge stopped. CMS Codes rejected the price.",
+        ? "This is the adult-day therapy stopwatch. Not an EHR. Not a bid."
+        : "Price stopped. Check rejected the price.",
     ),
     seat(
       "seat.kai",
-      "Kai",
-      "Kai",
+      "File",
+      "File",
       KAI,
       "pass",
       arithmetic ? "Filed the brief. No decision needed." : "Filed the stop.",

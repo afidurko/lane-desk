@@ -1,4 +1,5 @@
 import { quoteCode, type Books, type Claim, type Line } from "@/lib/billing/billing";
+import { claimGuards, lineForGuard } from "@/lib/billing/guard";
 
 export type Check = {
   level: "high" | "clear";
@@ -9,11 +10,25 @@ export type Check = {
 
 export function checkLine(line: Line, books: Books): Check {
   const quoted = quoteCode(books, line.code, line.modifier);
-  if (quoted.schedule === "Not loaded" || quoted.schedule === "none" || quoted.schedule === "Physician file, not priced") {
+  if (quoted.schedule === "Physician file, not priced") {
+    return { level: "high", reason: quoted.note || "This code is not separately payable.", expectedCode: line.code, expectedCents: null };
+  }
+  if (quoted.schedule === "Not loaded" || quoted.schedule === "none") {
     return { level: "high", reason: "Code is not on a loaded Olean file.", expectedCode: line.code, expectedCents: null };
   }
   if (line.chargeCents === null) {
     return { level: "high", reason: "No charge. Payment would wait.", expectedCode: line.code, expectedCents: quoted.allowedCents };
+  }
+  if (quoted.allowedCents !== null && line.chargeCents !== null) {
+    const shaved = Math.round(quoted.allowedCents * 0.98);
+    if (Math.abs(line.chargeCents - shaved) <= 1 && Math.abs(line.chargeCents - quoted.allowedCents) > 1) {
+      return {
+        level: "high",
+        reason: "Do not reduce the charge for sequestration. The 2 percent cut comes out of the Medicare payment, not the fee on the file.",
+        expectedCode: line.code,
+        expectedCents: quoted.allowedCents,
+      };
+    }
   }
   if (quoted.allowedCents !== null && Math.abs(line.chargeCents - quoted.allowedCents) > 1) {
     return {
@@ -26,6 +41,16 @@ export function checkLine(line: Line, books: Books): Check {
   return { level: "clear", reason: "Matches the loaded file.", expectedCode: line.code, expectedCents: quoted.allowedCents };
 }
 
-export function claimAlerts(claim: Claim, books: Books) {
-  return claim.lines.map((line) => ({ line, check: checkLine(line, books) })).filter((item) => item.check.level === "high");
+export function claimAlerts(claim: Claim, books: Books, today = "") {
+  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books) })).filter((item) => item.check.level === "high");
+  const guards = claimGuards(claim, books, today).map((guard, index) => ({
+    line: lineForGuard(claim, guard, index),
+    check: {
+      level: "high" as const,
+      reason: guard.reason,
+      expectedCode: guard.code,
+      expectedCents: guard.expectedCents,
+    },
+  }));
+  return [...guards, ...amount];
 }

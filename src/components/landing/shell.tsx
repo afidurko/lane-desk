@@ -1,24 +1,33 @@
 import { useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
+import { HelpChat } from "@/components/help/help-chat";
 
 export const NAV = [
   { href: "/why", label: "Why" },
-  { href: "/compete", label: "Leave-behind" },
+  { href: "/compete", label: "Compare" },
   { href: "/operate", label: "Rules" },
   { href: "/desk", label: "Desk" },
   { href: "/team", label: "Team" },
   { href: "/book", label: "Codes" },
+  { href: "/ops", label: "Files" },
   { href: "/ny", label: "New York" },
   { href: "/filter", label: "Filter" },
-  { href: "/billing", label: "Billing" },
+  { href: "/billing", label: "Claim" },
   { href: "/run", label: "File" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
 
+const PRIMARY = [
+  { href: "/desk", label: "Desk" },
+  { href: "/filter", label: "Table" },
+  { href: "/billing", label: "Claim" },
+  { href: "/ny", label: "New York" },
+] as const;
+
 const LAYERS = [
   { to: "/desk", n: "01", label: "Desk" },
-  { to: "/book", n: "02", label: "Codes" },
+  { to: "/filter", n: "02", label: "Table" },
   { to: "/billing", n: "03", label: "Claim" },
 ] as const;
 
@@ -54,7 +63,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </Link>
           <p className="hidden text-sm text-muted sm:block">Olean, NY 14760 · Rest of NY · 13282 / 99</p>
           <nav className="hidden items-center gap-5 lg:flex" aria-label="Primary">
-            {NAV.map((item) => {
+            {PRIMARY.map((item) => {
               const current = path === item.href;
               return (
                 <Link
@@ -132,6 +141,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
       )}
       {children}
+      <HelpChat />
       <footer className="border-t border-line bg-paper">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-end sm:justify-between">
           <div>

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { DeskScan } from "@/components/desk/desk-scan";
 import { Shell } from "@/components/landing/shell";
-import { readBilling, writeBilling } from "@/lib/billing/store";
-import { money, SAMPLE_NOTE, SERVICES, type Gate } from "@/lib/desk/clock";
+import { addToOpenClaim } from "@/lib/billing/store";
+import { money, SAMPLE_NOTE, SERVICES, serviceOf, type Gate } from "@/lib/desk/clock";
 import { briefFromRows, runLane, type LaneRun } from "@/lib/desk/lane";
-import { IDLE_TEAMS } from "@/lib/desk/teams";
 import { readRows, sealRow, writeRows, type DeskRow } from "@/lib/desk/store";
 import { conversionFor, localityDollars, type PfsFile, type PfsRow } from "@/lib/book/price";
 import { addGold } from "@/lib/team/gold";
@@ -16,13 +16,13 @@ const MARKS_MS = [420, 980, 1540, 2100];
 const DONE_MS = 2300;
 
 const GATE_COPY: Record<Exclude<Gate, "ok">, string> = {
-  empty: "Paste a de-identified note first.",
+  empty: "No note yet. You do not have to write one. Open the table and pick the code.",
   phi: "The base gate stopped this note. It looks like an identifier. Nothing was saved.",
   oversize: "The base gate stopped this note. It is past the size limit. Nothing was saved.",
-  units: "Each code on this schedule prices 1 to 8 units. This note is outside that range. Nothing was saved.",
+  units: "Units have to be a whole number from 1 to 8. Under 8 minutes is not a unit. A fraction, a number past 8, or minutes that disagree with the unit count stops the note. Nothing was saved.",
   split: "Two codes are on the same line. Put each service on its own line. Nothing was saved.",
   "wrong-type":
-    "This clock only prices the six adult-day therapy codes on the 2026 national schedule. Anything else does not get a price.",
+    "This note does not name a therapy service the clock can read. It reads physical, occupational, and speech therapy codes from the 2026 file, by code or by description. An office visit, a lab, or a wound code is not guessed. Open the table and pick it.",
 };
 
 type Phase = "idle" | "running" | "done";
@@ -42,6 +42,7 @@ export function DeskPage() {
   const [kept, setKept] = useState(false);
   const [sent, setSent] = useState(false);
   const [queued, setQueued] = useState(false);
+  const [codeQuery, setCodeQuery] = useState("");
   const [rates, setRates] = useState<Record<string, number>>({});
   const [patches, setPatches] = useState<string[]>([]);
   const timeouts = useRef<number[]>([]);
@@ -170,40 +171,27 @@ export function DeskPage() {
 
   function sendToWorksheet() {
     if (!lane || lane.lines.length === 0 || lane.block || lane.proof.status === "stop") return;
-    const book = readBilling();
-    const clientId = book.clients[0]?.id ?? crypto.randomUUID();
-    if (book.clients.length === 0) {
-      book.clients.push({ id: clientId, name: "Desk draft", npi: "" });
-    }
-    const claim = {
-      id: crypto.randomUUID(),
-      clientId,
-      dos: "2026-07-01",
-      pos: "12",
-      diagnosis: "",
-      number: "",
-      note: lane.text,
-      payer: "medicare" as const,
-      status: "draft" as const,
-      lines: lane.lines.map((line) => ({
-        id: crypto.randomUUID(),
+    for (const line of lane.lines) {
+      const separate = serviceOf(line.code)?.separate !== false && line.allowed > 0;
+      const cents = separate ? Math.round(line.allowed * 100) : null;
+      addToOpenClaim({
         code: line.code,
         modifier: "",
         units: line.units,
-        chargeCents: null,
-        allowedCents: Math.round(line.allowed * 100),
+        chargeCents: cents,
+        allowedCents: cents,
         schedule: "2026 physician, Rest of New York",
         note: line.span,
-      })),
-    };
-    book.claims = [claim, ...book.claims];
-    writeBilling(book);
+        year: 2026,
+        claimNote: lane.text,
+      });
+    }
     setSent(true);
   }
 
   function download() {
     const file = {
-      to: "Kai",
+      to: "File",
       brief: briefFromRows(rows),
       rows,
     };
@@ -222,78 +210,18 @@ export function DeskPage() {
     human.trim() !== "" &&
     (!Number.isFinite(Number(human)) || Number(human) < 0 || Number(human) > 86_400);
   const humanSeconds = human.trim() === "" || humanBad ? null : Number(human);
-  const shown = lane ?? { teams: IDLE_TEAMS };
 
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Paste the note. See the Olean price.
+          Price the note for Olean.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          One note at a time. No names, no member numbers. If it prices, send it to Billing. If it stops, the reason is on the screen.
+          The scan is the file change. The note below is the clock. Send a priced line to the claim when the amount is the one on the 2026 file.
         </p>
-
-        <div className="mt-8 overflow-hidden rounded-2xl border border-line">
-          <table className="w-full text-left text-sm">
-            <caption className="sr-only">
-              Adult day therapy codes, Rest of New York, 2026 non-facility amount per unit
-            </caption>
-            <thead className="bg-paper-2 text-xs tracking-widest text-muted uppercase">
-              <tr>
-                <th className="px-4 py-3 font-medium">Code</th>
-                <th className="px-4 py-3 font-medium">Service</th>
-                <th className="px-4 py-3 text-right font-medium">Per unit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {SERVICES.map((service) => (
-                <tr key={service.code} className="border-t border-line">
-                  <td className="px-4 py-3 font-medium text-ink tabular-nums">{service.code}</td>
-                  <td className="px-4 py-3 text-ink">{service.name}</td>
-                  <td className="px-4 py-3 text-right text-ink tabular-nums">{money(service.unitDollars)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-3 text-sm text-muted">
-          These six rows are what the clock can read from prose. Any other code written in the note is priced from the loaded 2026 physician file when that code is in it.{" "}
-          <Link to="/book" className="font-medium text-teal">
-            Look up a code.
-          </Link>
-        </p>
-
-        <ol className="mt-6 grid gap-3 lg:grid-cols-2">
-          {shown.teams.map((team) => (
-            <li key={team.id} className="rounded-2xl border border-line bg-paper-2 p-4">
-              <p className="text-xs font-medium tracking-widest text-teal uppercase">{team.status.replaceAll("-", " ")}</p>
-              <h2 className="mt-2 font-display text-2xl text-ink">{team.name}</h2>
-              <p className="mt-1 text-xs font-medium text-muted">Lead {team.lead}</p>
-              <p className="mt-3 text-sm leading-relaxed text-ink">{team.detail}</p>
-              <ul className="mt-3 space-y-1">
-                {team.members.map((member) => (
-                  <li key={member.role} className="text-sm text-muted">
-                    <span className="font-medium text-ink">{member.role}. </span>
-                    {member.job}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ol>
-
-        {lane ? (
-          <section className="mt-6 rounded-2xl border border-line bg-paper-2 p-5">
-            <p className="text-xs font-medium tracking-widest text-teal uppercase">{lane.proof.status.replaceAll("-", " ")}</p>
-            <h2 className="mt-2 font-display text-3xl text-ink">{lane.proof.name}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink">{lane.proof.job}</p>
-            <p className="mt-3 text-sm leading-relaxed text-ink">{lane.proof.detail}</p>
-            <p className="mt-3 text-sm leading-relaxed text-muted">Next proof. {lane.proof.nextProof}</p>
-            <p className="mt-3 text-sm leading-relaxed text-muted">Forbidden. {lane.proof.forbidden}</p>
-          </section>
-        ) : null}
+        <DeskScan />
 
         <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
           <div>
@@ -319,7 +247,7 @@ export function DeskPage() {
             >
               {phase === "running" ? "Running" : "Run this note"}
             </button>
-            <p className="mt-1 text-sm text-muted">Every note crosses the base gate before the clock. Markup is stripped. An identifier stops the run.</p>
+            <p className="mt-1 text-sm text-muted">Every note crosses the base gate before the clock. Markup is stripped. An identifier stops the run. A unit count and the minutes have to agree. Under 8 minutes is not a unit.</p>
             {patches.length > 0 ? (
               <ul className="mt-2 space-y-1 text-sm text-deep" role="status">
                 {patches.map((patch) => (
@@ -333,9 +261,61 @@ export function DeskPage() {
               </p>
             ) : block ? (
               <p className="mt-3 text-sm font-medium text-deep" role="alert">
-                {GATE_COPY[block]}
+                {GATE_COPY[block]}{" "}
+                {block === "wrong-type" || block === "empty" ? (
+                  <Link to="/filter" className="text-teal">
+                    Open the table.
+                  </Link>
+                ) : null}
               </p>
             ) : null}
+            <div className="mt-6">
+              <label htmlFor="code-find" className="text-sm font-medium text-ink">
+                Find a therapy code
+              </label>
+              <input
+                id="code-find"
+                value={codeQuery}
+                onChange={(event) => setCodeQuery(event.target.value)}
+                placeholder="97110 or gait training"
+                className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base"
+              />
+              <div className="mt-3 overflow-hidden rounded-2xl border border-line">
+                <table className="w-full text-left text-sm">
+                  <caption className="sr-only">Therapy codes, Rest of New York, 2026</caption>
+                  <thead className="bg-paper-2 text-xs tracking-widest text-muted uppercase">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Code</th>
+                      <th className="px-3 py-2 font-medium">Service</th>
+                      <th className="px-3 py-2 text-right font-medium">Per unit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SERVICES.filter((service) => {
+                      const needle = codeQuery.trim().toLowerCase();
+                      if (needle.length < 2) return false;
+                      return service.code.toLowerCase().includes(needle) || service.name.toLowerCase().includes(needle);
+                    })
+                      .slice(0, 8)
+                      .map((service) => (
+                        <tr key={service.code} className="border-t border-line">
+                          <td className="px-3 py-2 font-medium text-ink tabular-nums">{service.code}</td>
+                          <td className="px-3 py-2 text-ink">{service.name}</td>
+                          <td className="px-3 py-2 text-right text-ink tabular-nums">{service.separate ? money(service.unitDollars) : "No separate fee"}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-sm text-muted">
+                {codeQuery.trim().length < 2
+                  ? "Type two letters or a code. Bundled and not-valid codes show as no separate fee."
+                  : "Showing up to 8 matches. Wound care, labs, and office visits are on the table, not in this clock."}{" "}
+                <Link to="/filter" className="font-medium text-teal">
+                  Open the full table.
+                </Link>
+              </p>
+            </div>
           </div>
 
           <article className="overflow-hidden rounded-2xl border border-line bg-paper-2">
@@ -393,7 +373,9 @@ export function DeskPage() {
                         </div>
                         <div>
                           <dt className="text-xs font-medium tracking-widest text-muted uppercase">Allowed</dt>
-                          <dd className="mt-1 font-medium text-ink tabular-nums">{money(line.allowed)}</dd>
+                          <dd className="mt-1 font-medium text-ink tabular-nums">
+                            {serviceOf(line.code)?.separate === false ? "No separate fee" : money(line.allowed)}
+                          </dd>
                         </div>
                       </dl>
                     </li>
@@ -406,17 +388,17 @@ export function DeskPage() {
                 {lane.brief ? (
                   <dl className="grid gap-3 rounded-xl border border-line bg-paper p-4">
                     <div>
-                      <dt className="text-xs font-medium tracking-widest text-teal uppercase">Kai brief</dt>
+                      <dt className="text-xs font-medium tracking-widest text-teal uppercase">Brief</dt>
                       <dd className="mt-1 text-sm text-muted">
                         {lane.ship ? "Proof passed this row." : "Proof has not passed a ship."} Not sent anywhere.
                       </dd>
                     </div>
                     {(
                       [
-                        ["Wedge", lane.brief.wedge],
+                        ["Scope", lane.brief.wedge],
                         ["Proof path", lane.brief.proofPath],
                         ["Measured delta", lane.brief.measuredDelta],
-                        ["Intel", lane.brief.intel],
+                        ["Public note", lane.brief.intel],
                         ["Decision", lane.brief.decision],
                       ] as const
                     ).map(([label, value]) => (
@@ -473,9 +455,9 @@ export function DeskPage() {
                 </button>
                 {sent ? (
                   <p className="text-sm text-muted">
-                    Draft claim is on the{" "}
+                    Draft is on the claim. Next, add the organization and the submitter if they are empty.{" "}
                     <Link to="/billing" className="font-medium text-teal">
-                      billing worksheet
+                      Open the claim
                     </Link>
                     . Not sent anywhere.
                   </p>
