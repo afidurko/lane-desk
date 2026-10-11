@@ -13,6 +13,17 @@ export type IssueReply = {
 
 const WORKABLE: { test: RegExp; reply: IssueReply }[] = [
   {
+    test: /automat|routine|safe fix|what should i do|next step|just do it/i,
+    reply: {
+      kind: "workable",
+      title: "Run the safe fixes",
+      body: "On the claim, Run the safe fixes sets every charge that has a loaded amount to that amount, and sets place of service 41 when every line is an ambulance code. It does not pick a therapy modifier, a diagnosis, or a claim number, and it does not send the claim.",
+      href: "/billing",
+      hrefLabel: "Open the claim",
+      suggestions: ["The amount does not match", "Add a diagnosis code"],
+    },
+  },
+  {
     test: /modifier|gp\b|go\b|gn\b|discipline/i,
     reply: {
       kind: "workable",

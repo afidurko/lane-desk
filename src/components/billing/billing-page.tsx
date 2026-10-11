@@ -10,6 +10,7 @@ import { readSubmitter, writeSubmitter, type Submitter } from "@/lib/billing/sub
 import { readBilling, writeBilling } from "@/lib/billing/store";
 import { InvoiceIntake } from "@/components/billing/invoice-intake";
 import { money } from "@/lib/desk/clock";
+import { safeFixes } from "@/lib/help/routines";
 import { NY, quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
 
 const emptyBooks: Books = { physician: null, ambulance: null, lab: null, dme: null };
@@ -237,6 +238,13 @@ export function BillingPage() {
     URL.revokeObjectURL(url);
   }
 
+  function runFixes() {
+    if (!claim || claim.status !== "draft") return;
+    const result = safeFixes(claim, books);
+    setClaims((current) => current.map((item) => (item.id === claim.id ? result.claim : item)));
+    setMessage(result.notes.join(" "));
+  }
+
   function download() {
     if (!claim || !client) {
       setMessage("Add the organization before the CSV can be downloaded.");
@@ -296,6 +304,11 @@ export function BillingPage() {
         <p className="mt-4 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink">
           <span className="font-medium">{gap.title}.</span> {gap.detail} Pricing from the {books.physician?.year ?? fileYear} files.
         </p>
+        {claim && claim.status === "draft" ? (
+          <button type="button" onClick={runFixes} className="mt-3 h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
+            Run the safe fixes
+          </button>
+        ) : null}
         <dl className="mt-8 grid grid-cols-2 gap-4">
           <div className="rounded-2xl border border-line bg-paper-2 p-5">
             <dt className="text-xs font-medium tracking-widest text-muted uppercase">Draft</dt>

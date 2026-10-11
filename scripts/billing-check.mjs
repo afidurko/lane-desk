@@ -3,6 +3,7 @@ import { buildPacket, nextGap, packetJson } from "../src/lib/billing/packet.ts";
 import { submitterReady } from "../src/lib/billing/submitter.ts";
 import { checkLine, claimAlerts } from "../src/lib/billing/verify.ts";
 import { claimGuards } from "../src/lib/billing/guard.ts";
+import { safeFixes } from "../src/lib/help/routines.ts";
 
 const books = { physician: null, ambulance: null, lab: null, dme: null };
 const failures = [];
@@ -65,6 +66,11 @@ check("next is the download", nextGap(claim, client, submitter, 0).title === "Do
 
 const clear = checkLine(claim.lines[0], books);
 check("unloaded code is high", clear.level === "high");
+const amb = safeFixes({ ...claim, pos: "11", lines: [{ ...claim.lines[0], code: "A0428", modifier: "", chargeCents: 100 }] }, books);
+check("ambulance place is set by the routine", amb.claim.pos === "41" && amb.claim.lines[0].chargeCents === 100);
+const left = safeFixes(bare, books);
+check("a blank modifier is not guessed", left.claim.lines[0].modifier === "" && left.claim.pos === "12");
+check("a ready claim is not rewritten", safeFixes({ ...claim, status: "ready" }, books).changed === 0);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);

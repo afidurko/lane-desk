@@ -12,7 +12,7 @@ type Turn = {
   suggestions?: string[];
 };
 
-const STARTERS = ["The amount does not match", "Import a CSV", "Can this be submitted?"];
+const STARTERS = ["Run the safe fixes", "The amount does not match", "Can this be submitted?"];
 
 export function HelpChat() {
   const [open, setOpen] = useState(false);
