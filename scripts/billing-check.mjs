@@ -2,6 +2,7 @@ import { quoteCode } from "../src/lib/billing/billing.ts";
 import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
+import { rankBrief } from "../src/lib/team/rank.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
 import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
@@ -95,6 +96,9 @@ check("a person is not enrolled until every gate is met", canEnroll(openPerson) 
 check("the month does not invent a Cattaraugus payment", monthLine(openPerson, 2026, null).medicare === null && monthLine({ ...openPerson, age55: true, loc: "met" }, 2026, 400000).missing.some((item) => item.includes("No Medicare")));
 check("a Social Security number is refused", blockedText("123-45-6789") !== null);
 check("the meeting names every required seat", missingSeats([...SEATS]).length === 0);
+const ranked = rankBrief(["A meeting is missing the driver.", "Participant 1 is not enrolled. 55 or older is not marked.", "Participant 1: No Medicare county rate is loaded."]);
+check("Rank puts enrollment ahead of the meeting", ranked.status === "pass" && ranked.order[0].includes("not enrolled") && ranked.chain[0] === "Screen" && ranked.chain.includes("Rank"));
+check("Rank stops a request to submit", rankBrief([], "submit the claim to CMS").status === "stop");
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));

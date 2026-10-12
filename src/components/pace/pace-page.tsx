@@ -4,6 +4,7 @@ import { Shell } from "@/components/landing/shell";
 import { money } from "@/lib/desk/clock";
 import { canEnroll, gateGaps, missingSeats, monthLine, SEATS, type Person } from "@/lib/pace/gates";
 import { COUNTIES, PART_D_BID, RATE_SOURCE, medicareCents } from "@/lib/pace/rates";
+import { rankBrief } from "@/lib/team/rank";
 import { addPerson, emptyBook, readPace, setCenter, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
 
 const TABS = ["Month", "People", "Meeting", "Day", "Rides", "Review"] as const;
@@ -33,7 +34,7 @@ export function PacePage() {
         <p className="text-xs font-medium tracking-widest text-teal uppercase">PACE · Cattaraugus</p>
         <h1 className="mt-3 font-display text-4xl leading-tight text-ink">The month, not the line.</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
-          A plan is paid a monthly amount for each enrolled person. A vendor bill is checked on the invoice. Nothing here is sent to CMS.
+          A plan is paid a monthly amount for each enrolled person. Rank orders what is still open. A vendor bill is checked on the invoice. Nothing here is sent to CMS.
         </p>
         <div className="mt-5 flex gap-2 overflow-x-auto">
           {TABS.map((name) => (
@@ -317,18 +318,22 @@ function Review({ book, lines }: { book: PaceBook; lines: { person: Person; line
     ...lines.flatMap(({ person, line }) => line.missing.map((item) => `${person.label}: ${item}`)),
     ...book.meetings.slice(0, 1).flatMap((meeting) => missingSeats(meeting.present).map((seat) => `${meeting.date} meeting is missing ${seat}.`)),
   ];
+  const brief = rankBrief(problems, book.center);
   return (
     <section className="mt-6">
-      <p className="text-sm leading-relaxed text-muted">A person reviews this. The encounter file is the invoice check. This page does not submit enrollment, capitation, or encounter data.</p>
-      <Link to="/" className="mt-3 inline-flex h-11 items-center text-sm font-medium text-teal">Check a vendor bill</Link>
-      {problems.length === 0 ? <p className="mt-4 text-sm text-teal">Nothing is open on the people you have marked.</p> : (
-        <ul className="mt-4 space-y-2 text-sm text-deep">{problems.map((item) => <li key={item}>{item}</li>)}</ul>
+      <p className="text-xs font-medium tracking-widest text-teal uppercase">{brief.seat}</p>
+      <p className="mt-2 text-sm leading-relaxed text-ink">{brief.detail}</p>
+      <p className="mt-1 text-sm text-muted">{brief.chain.join(" → ")}</p>
+      {brief.status === "stop" ? <p className="mt-3 text-sm font-medium text-deep">{brief.detail}</p> : null}
+      {brief.order.length === 0 && brief.status === "pass" ? <p className="mt-4 text-sm text-teal">Nothing is open on the people you have marked.</p> : (
+        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-deep">{brief.order.map((item) => <li key={item}>{item}</li>)}</ol>
       )}
+      <Link to="/" className="mt-4 inline-flex h-11 items-center text-sm font-medium text-teal">Check a vendor bill</Link>
       <button
         type="button"
-        className="mt-4 h-12 rounded-full border border-line px-4 text-sm font-medium text-ink"
+        className="mt-4 flex h-12 items-center rounded-full border border-line px-4 text-sm font-medium text-ink"
         onClick={() => {
-          const blob = new Blob([JSON.stringify({ sent: false, note: "Review only. Not submitted.", book }, null, 2)], { type: "application/json" });
+          const blob = new Blob([JSON.stringify({ sent: false, brief, book }, null, 2)], { type: "application/json" });
           const link = document.createElement("a");
           link.href = URL.createObjectURL(blob);
           link.download = "pace-review.json";
