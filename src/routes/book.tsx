@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { BookPage } from "@/components/book/book-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/book")({
-  component: internalOnly(BookPage, "Code book"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/book/book-page").then((m) => ({ default: m.BookPage })))
+    : closedScreen("Code book"),
   head: () => ({
     meta: [
       { title: "Lane — Codes" },

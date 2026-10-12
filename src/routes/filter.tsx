@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { FilterPage } from "@/components/filter/filter-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/filter")({
-  component: internalOnly(FilterPage, "Filter codes"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/filter/filter-page").then((m) => ({ default: m.FilterPage })))
+    : closedScreen("Filter codes"),
   head: () => ({
     meta: [
       { title: "Lane — Filter" },

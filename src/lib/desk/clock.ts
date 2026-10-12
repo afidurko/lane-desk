@@ -1,3 +1,4 @@
+import { KEEP_TYPED_NY_AMOUNTS } from "@/lib/config/mode";
 import { screen } from "@/lib/security/mesh";
 import { offBook, SCHEDULE, SERVICES, serviceOf } from "@/lib/desk/schedule";
 
@@ -9,7 +10,8 @@ Gait and balance. No new pain reported.
 Plan: continue therapeutic exercise next session.`;
 
 export const CODE = "97110";
-export const UNIT_DOLLARS = 28.27;
+/** Typed Rest of NY 2026 figure for 97110. Zero in a public build. */
+export const UNIT_DOLLARS = KEEP_TYPED_NY_AMOUNTS ? 28.27 : 0;
 
 const UNIT_WORD: Record<string, number> = {
   zero: 0,

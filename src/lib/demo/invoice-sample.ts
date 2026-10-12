@@ -1,15 +1,11 @@
-import type { National } from "@/lib/pricing/national";
-
 /**
- * A synthetic sample invoice built from the loaded 2026 national file.
+ * A synthetic sample invoice built from the loaded fee file for the current mode.
  * Line 1 is billed at exactly the file amount. Line 2 is deliberately billed 10 percent over,
  * so the demo has one mismatch to show. No amount is typed in here.
  */
-export function sampleInvoice(national: National): { text: string; note: string } {
-  const year = String(national.year);
-  const pick = (code: string) => national.rows.get(code)?.a[year];
-  const first = pick("97110");
-  const second = pick("97140");
+export function sampleInvoice(centsOf: (code: string) => number | undefined, year: number): { text: string; note: string } {
+  const first = centsOf("97110");
+  const second = centsOf("97140");
   if (typeof first !== "number" || typeof second !== "number") {
     throw new Error("The sample codes are not priced on the loaded file.");
   }

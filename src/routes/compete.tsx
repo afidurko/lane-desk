@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { CompetePage } from "@/components/compete/compete-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/compete")({
-  component: internalOnly(CompetePage, "Leave-behind"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/compete/compete-page").then((m) => ({ default: m.CompetePage })))
+    : closedScreen("Leave-behind"),
   head: () => ({
     meta: [
       { title: "Lane — Leave-behind" },

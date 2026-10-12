@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { WhyPage } from "@/components/landing/why-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/why")({
-  component: internalOnly(WhyPage, "Why"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/landing/why-page").then((m) => ({ default: m.WhyPage })))
+    : closedScreen("Why"),
   head: () => ({
     meta: [
       { title: "Lane — Why" },

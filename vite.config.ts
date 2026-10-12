@@ -157,6 +157,8 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },
+  // Fixed at build time so a public build cannot reach internal-only code or figures. See src/lib/config/mode.ts.
+  define: { __DEMO_MODE__: JSON.stringify(process.env.VITE_DEMO_MODE?.trim().toLowerCase() === "internal" ? "internal" : "public") },
   plugins: [
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.

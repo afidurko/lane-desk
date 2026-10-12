@@ -4,6 +4,7 @@
  * Runs at desktop and phone width. Fails on: a console error, a failed request, a page wider than the screen,
  * a missing disclaimer, a forbidden file request in public mode, or a broken step in the demo path.
  */
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:8080";
@@ -22,7 +23,9 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   const page = await context.newPage();
   const requests = [];
   const errors = [];
-  page.on("console", (message) => message.type() === "error" && !/fonts\.g|ERR_(NAME|INTERNET|CONNECTION)/.test(message.text()) && errors.push(message.text()));
+  page.on("console", (message) => message.type() === "error" && !/fonts\.g|ERR_(NAME|INTERNET|CONNECTION)|status of 404/.test(message.text()) && errors.push(message.text()));
+  // A 404 is expected only for a year or period shard that has no rows for a code. Anything else is an error.
+  page.on("response", (response) => response.status() === 404 && !/\/(years|once)\//.test(response.url()) && errors.push(`404 ${response.url()}`));
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("request", (request) => requests.push(new URL(request.url()).pathname));
   const t = (name, ok, detail) => check(`[${label}] ${name}`, ok, detail);
@@ -115,6 +118,40 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   const pr = await page.locator("main").innerText();
   t("pricing says list shape, not a quote", /List shape only\. Not a quote/.test(pr));
   t("pricing has no card button without env", !/Pay by card/.test(pr));
+
+  // Internal build: Rest of NY by default, NYC localities selectable, every number from the loaded files.
+  if (internal) {
+    const shard = JSON.parse(readFileSync("public/years/physician/9.json", "utf8"));
+    const ronyCents = shard["97110"].a["2026"];
+    const pfs = JSON.parse(readFileSync("public/pfs-2026.json", "utf8"));
+    const row = pfs.rows.find((r) => r.c === "97110" && r.m === "");
+    const manhattan = pfs.localities.find((l) => l.state === "NY" && l.number === "01");
+    const manCents = Math.round(Math.round((row.w * manhattan.work + row.pn * manhattan.pe + row.mp * manhattan.mp) * Number(pfs.conversion.nonQp) * 100 + 1e-9));
+    await page.goto(base + "/desk", { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Price this note" }).click();
+    await page.getByText("Medicare reference price, not a payment").first().waitFor();
+    let text = await page.locator("main").innerText();
+    t("internal desk prices 97110 at the Rest of NY file amount", text.includes(`$${(ronyCents / 100).toFixed(2)}`) && /Rest Of New York, MAC 13282, locality 99/i.test(text), `${ronyCents}`);
+    const options = await page.getByLabel("New York locality (internal)").locator("option").allInnerTexts();
+    t("locality list is the five New York localities and nothing else", options.length === 5 && options.every((o) => /\(13\d{3}\/\d\d\)/.test(o)), options.join(" | "));
+    await page.getByLabel("New York locality (internal)").selectOption("13202/01");
+    await page.getByRole("button", { name: "Price this note" }).click();
+    await page.getByText("Manhattan, MAC 13202").waitFor();
+    text = await page.locator("main").innerText();
+    t("Manhattan prices 97110 from the same file", text.includes(`$${(manCents / 100).toFixed(2)}`), `${manCents}`);
+    await page.goto(base + "/code", { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "97110", exact: true }).click();
+    await page.getByText("Years and amounts").waitFor();
+    text = await page.locator("main").innerText();
+    t("internal code page shows every year", /2020/.test(text) && /2026/.test(text) && text.includes(`$${(ronyCents / 100).toFixed(2)}`));
+    for (const path of ["/billing", "/book", "/ny", "/ops"]) {
+      await page.goto(base + path, { waitUntil: "networkidle" });
+      t(`${path} opens in internal`, !(await page.getByText("is not part of this demo").isVisible().catch(() => false)));
+    }
+    await page.goto(base + "/book", { waitUntil: "networkidle" });
+    const book = await page.locator("select option").allInnerTexts();
+    t("code book lists New York localities only", book.filter((o) => /^\d{5} /.test(o)).every((o) => / NY /.test(o)), `${book.filter((o) => /^\d{5} /.test(o)).length} localities`);
+  }
 
   // Public mode must not fetch the held-back files.
   if (!internal) {

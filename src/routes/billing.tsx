@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { BillingPage } from "@/components/billing/billing-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/billing")({
-  component: internalOnly(BillingPage, "Claim worksheet"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/billing/billing-page").then((m) => ({ default: m.BillingPage })))
+    : closedScreen("Claim worksheet"),
   head: () => ({
     meta: [
       { title: "Lane — Billing" },

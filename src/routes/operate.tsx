@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { OperatePage } from "@/components/operate/operate-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/operate")({
-  component: internalOnly(OperatePage, "Rules"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/operate/operate-page").then((m) => ({ default: m.OperatePage })))
+    : closedScreen("Rules"),
   head: () => ({
     meta: [
       { title: "Lane — Rules" },

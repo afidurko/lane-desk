@@ -65,7 +65,7 @@ check("minutes become units", runLane(SAMPLES[2].note, null, null, fromFile(rate
 check("identifier sample is refused", review(SAMPLES[3].note, fromFile(rates)).gate === "phi" || runLane(SAMPLES[3].note, null, null, fromFile(rates)).lines.length === 0);
 
 // Sample invoice: derived from the file.
-const inv = sampleInvoice(national);
+const inv = sampleInvoice((code) => national.rows.get(code)?.a["2026"] ?? undefined, 2026);
 const invLines = inv.text.split("\n");
 check("sample invoice line 1 is the file amount", invLines[1].endsWith(`,${(national.rows.get("97110").a["2026"] / 100).toFixed(2)}`));
 check("sample invoice line 2 is deliberately over", Number(invLines[2].split(",")[2]) > national.rows.get("97140").a["2026"] / 100);

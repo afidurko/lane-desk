@@ -18,10 +18,21 @@ export function resolveMode(raw: string | undefined | null): DemoMode {
     : "public";
 }
 
-const fromEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_DEMO_MODE;
+/** Set by vite.config.ts at build time. Undefined when this file runs under plain node (checks and scripts). */
+declare const __DEMO_MODE__: string | undefined;
 
-export const DEMO_MODE: DemoMode = resolveMode(fromEnv);
-export const IS_INTERNAL = DEMO_MODE === "internal";
+const fromNode = typeof process !== "undefined" ? process.env.VITE_DEMO_MODE : undefined;
+
+// Written as one conditional on the build-time constant so the bundler can drop the branch a public build never takes.
+export const IS_INTERNAL: boolean =
+  typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : resolveMode(fromNode) === "internal";
+export const DEMO_MODE: DemoMode = IS_INTERNAL ? "internal" : "public";
+
+/**
+ * Rest of New York dollar amounts typed into the source (the therapy table) are only kept in an internal build.
+ * Under plain node (checks) they are kept, because the checks test them.
+ */
+export const KEEP_TYPED_NY_AMOUNTS: boolean = typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : true;
 
 /** The one sentence that sits next to every price. Do not reword it. */
 export const REFERENCE_NOTE = "Medicare reference price, not a payment";

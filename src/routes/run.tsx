@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { internalOnly } from "@/components/gate";
-import { RunPage } from "@/components/landing/run-page";
+import { closedScreen, lazyScreen } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/run")({
-  component: internalOnly(RunPage, "Sample file"),
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/landing/run-page").then((m) => ({ default: m.RunPage })))
+    : closedScreen("Sample file"),
   head: () => ({
     meta: [
       { title: "Lane — Sample file" },

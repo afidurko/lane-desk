@@ -7,7 +7,6 @@ import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, type CheckLine } from "@/lib/lookup/check";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { sampleInvoice } from "@/lib/demo/invoice-sample";
-import { loadNational } from "@/lib/pricing/national";
 import { screen } from "@/lib/security/mesh";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 
@@ -68,8 +67,11 @@ export function InvoiceCheck() {
     setBusy(true);
     setDown(false);
     try {
-      const national = await loadNational();
-      const sample = sampleInvoice(national);
+      const year = PUBLIC_SCOPE.year;
+      const [a, b] = await Promise.all([findAcross("97110"), findAcross("97140")]);
+      const centsOf = (hits: typeof a) => hits.find((hit) => hit.family === "physician")?.row.a[String(year)] ?? undefined;
+      const lookup: Record<string, number | undefined> = { "97110": centsOf(a), "97140": centsOf(b) };
+      const sample = sampleInvoice((code) => lookup[code], year);
       setText(sample.text);
       setSampleNote(sample.note);
       setRows(null);
