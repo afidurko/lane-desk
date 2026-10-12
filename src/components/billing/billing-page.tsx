@@ -291,10 +291,10 @@ export function BillingPage() {
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760 · claims</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Three steps to a packet.
+          Ready for a person to review.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          Organization, then the service, then one fix if something fails. Ready stays blocked when the year, the fee, the therapy modifier, the place of service, or the filing date is wrong. This desk does not decide coverage and it does not send the claim.
+          The lines from the invoice sit here. This page does not send a claim.
         </p>
         <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
           <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
@@ -315,7 +315,7 @@ export function BillingPage() {
             <dd className="mt-1 font-display text-4xl text-ink tabular-nums">{board.draft}</dd>
           </div>
           <div className="rounded-2xl border border-line bg-paper-2 p-5">
-            <dt className="text-xs font-medium tracking-widest text-muted uppercase">Ready to hand off</dt>
+            <dt className="text-xs font-medium tracking-widest text-muted uppercase">Ready for review</dt>
             <dd className="mt-1 font-display text-4xl text-ink tabular-nums">{board.ready}</dd>
           </div>
         </dl>
@@ -556,14 +556,14 @@ export function BillingPage() {
                 <button type="button" onClick={() => setStatus("draft")} className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">Return to draft</button>
               )}
               <button type="button" onClick={download} className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">Download CSV</button>
-              <button type="button" onClick={downloadPacket} className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">Download 837P packet</button>
+              <button type="button" onClick={downloadPacket} className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">Download the review file. It is not sent.</button>
             </div>
             {(() => {
               const packet = buildPacket(claim, client, submitter, books, today);
               const shown = alerts;
               return (
                 <section className="mt-6 rounded-2xl border border-line bg-paper p-4">
-                  <p className="text-xs font-medium tracking-widest text-teal uppercase">{packet.ready ? "Ready to hand off" : "Not complete"}</p>
+                  <p className="text-xs font-medium tracking-widest text-teal uppercase">{packet.ready ? "Ready for review" : "Not complete"}</p>
                   <h2 className="mt-2 font-display text-2xl text-ink">{packet.form} · {packet.receiver}</h2>
                   <p className="mt-2 text-sm text-muted">{packet.locality}. {packet.next}</p>
                   {alerts.length > 0 ? (

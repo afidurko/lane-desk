@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
+import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 
 export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
@@ -51,6 +52,26 @@ export async function findAcross(code: string) {
   if (tried > 0 && failed === tried) throw new Error("The year files did not load.");
   return hits;
 }
+
+const onceCache = new Map<string, Record<string, OnceRow[]>>();
+
+export function loadOnce(prefix: string) {
+  const hit = onceCache.get(prefix);
+  if (hit) return Promise.resolve(hit);
+  return fetch(`/once/${prefix}.json`).then(async (response) => {
+    if (response.status === 404) {
+      const empty: Record<string, OnceRow[]> = {};
+      onceCache.set(prefix, empty);
+      return empty;
+    }
+    if (!response.ok) throw new Error("missing");
+    const data = (await response.json()) as Record<string, OnceRow[]>;
+    onceCache.set(prefix, data);
+    return data;
+  });
+}
+
+export { pickOnce };
 
 export function YearList({ family, code, quiet = false }: { family: Family; code: string; quiet?: boolean }) {
   const [row, setRow] = useState<Row | null>(null);

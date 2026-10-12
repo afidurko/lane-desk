@@ -1,5 +1,6 @@
 import { quoteCode } from "../src/lib/billing/billing.ts";
 import { describeCode } from "../src/lib/lookup/describe.ts";
+import { pickOnce } from "../src/lib/lookup/once.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
 import { buildPacket, nextGap, packetJson } from "../src/lib/billing/packet.ts";
@@ -80,6 +81,10 @@ check("an invoice keeps the code, year, and amount", pasted.length === 2 && past
 check("words that are not a code are ignored", pasted.every((line) => line.code === "97110" || line.code === "A0428"));
 const told = describeCode("Physician", { n: "Therapeutic exercises", s: "A", a: { "2020": 3047, "2026": 2827 } });
 check("a code description names the file wording and both years", told.includes("Therapeutic exercises") && told.includes("$28.27") && told.includes("$30.47") && told.includes("down"));
+const sheet = readInvoiceLines("CPT,DOS,Charge\n97110,2026-03-01,30.00");
+check("a spreadsheet header is not a line", sheet.length === 1 && sheet[0].code === "97110" && sheet[0].billedCents === 3000 && sheet[0].year === 2026);
+check("a 2026 line can use a file from that year", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2026)?.c === 13823);
+check("a 2024 line does not use a 2026-only file", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2024) === null);
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));

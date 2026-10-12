@@ -37,6 +37,7 @@ export function addToOpenClaim(input: {
   note: string;
   year: number;
   claimNote?: string;
+  dos?: string;
 }): { createdClaim: boolean } {
   const book = readBilling();
   if (book.clients.length === 0) {
@@ -50,7 +51,7 @@ export function addToOpenClaim(input: {
     claim = {
       id: crypto.randomUUID(),
       clientId: book.clients[0].id,
-      dos: `${yearText}-07-01`,
+      dos: input.dos && /^\d{4}-\d{2}-\d{2}$/.test(input.dos) ? input.dos : `${yearText}-07-01`,
       pos: ambulance ? "41" : "11",
       diagnosis: "",
       number: "",

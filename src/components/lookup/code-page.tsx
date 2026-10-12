@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/landing/shell";
-import { findAcross, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
+import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { describeCode } from "@/lib/lookup/describe";
+import { addToOpenClaim } from "@/lib/billing/store";
+import { type OnceRow } from "@/lib/lookup/once";
+import { money } from "@/lib/desk/clock";
+import { Link } from "@tanstack/react-router";
 
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
 
 export function CodePage() {
   const [text, setText] = useState("");
   const [hits, setHits] = useState<{ family: Family; label: string; row: Row }[]>([]);
+  const [once, setOnce] = useState<OnceRow[]>([]);
+  const [note, setNote] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad" | "down">("idle");
 
   useEffect(() => {
@@ -19,25 +25,30 @@ export function CodePage() {
     const clean = text.trim().toUpperCase();
     if (!clean) {
       setHits([]);
+      setOnce([]);
       setState("idle");
       return;
     }
     if (!CODE.test(clean)) {
       setHits([]);
+      setOnce([]);
       setState("bad");
       return;
     }
     let cancel = false;
     setState("loading");
-    findAcross(clean)
-      .then((found) => {
+    Promise.all([findAcross(clean), loadOnce(clean[0])])
+      .then(([found, shard]) => {
         if (cancel) return;
+        const extra = shard[clean] ?? [];
         setHits(found);
-        setState(found.length > 0 ? "ready" : "miss");
+        setOnce(extra);
+        setState(found.length > 0 || extra.length > 0 ? "ready" : "miss");
       })
       .catch(() => {
         if (cancel) return;
         setHits([]);
+        setOnce([]);
         setState("down");
       });
     return () => {
@@ -77,8 +88,79 @@ export function CodePage() {
             <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
             <h2 className="mt-4 text-sm font-medium text-ink">Years and amounts</h2>
             <YearPrices row={hit.row} />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => {
+                const cents = hit.row.a[String(year)];
+                if (typeof cents !== "number") return null;
+                return (
+                  <button
+                    key={year}
+                    type="button"
+                    className="h-11 rounded-full border border-line px-3 text-sm text-ink"
+                    onClick={() => {
+                      addToOpenClaim({
+                        code: text.trim().toUpperCase(),
+                        modifier: "",
+                        units: 1,
+                        chargeCents: cents,
+                        allowedCents: cents,
+                        schedule: `${hit.label}, ${year}`,
+                        note: hit.row.n || text.trim().toUpperCase(),
+                        year,
+                      });
+                      setNote(`${year} ${money(cents / 100)} is on the claim. Nothing is sent.`);
+                    }}
+                  >
+                    Use {year}
+                  </button>
+                );
+              })}
+            </div>
           </article>
         ))}
+        {once.length > 0 ? (
+          <section className="mt-8">
+            <h2 className="text-sm font-medium text-ink">This period only</h2>
+            <ul className="mt-3 space-y-3">
+              {once.map((row) => (
+                <li key={`${row.s}-${row.t}`} className="rounded-2xl border border-line px-4 py-3">
+                  <p className="text-xs font-medium tracking-widest text-teal uppercase">{row.s}</p>
+                  <p className="mt-1 text-sm text-muted">{row.n}</p>
+                  <p className="mt-1 text-base font-medium text-ink tabular-nums">{money(row.c / 100)}</p>
+                  <p className="text-xs text-muted">{row.t}</p>
+                  <button
+                    type="button"
+                    className="mt-2 h-11 rounded-full border border-line px-3 text-sm text-ink"
+                    onClick={() => {
+                      const year = Number(row.t.match(/20\d{2}/)?.[0] ?? "2026");
+                      addToOpenClaim({
+                        code: text.trim().toUpperCase(),
+                        modifier: "",
+                        units: 1,
+                        chargeCents: row.c,
+                        allowedCents: row.c,
+                        schedule: `${row.s}, ${row.t}`,
+                        note: row.n,
+                        year: year >= 2020 && year <= 2026 ? year : 2026,
+                      });
+                      setNote(`${row.s} ${money(row.c / 100)} is on the claim. Nothing is sent.`);
+                    }}
+                  >
+                    Use this amount
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        {note ? (
+          <p className="mt-4 text-sm text-ink" role="status">
+            {note}{" "}
+            <Link to="/billing" className="font-medium text-teal">
+              Open the claim.
+            </Link>
+          </p>
+        ) : null}
       </main>
     </Shell>
   );

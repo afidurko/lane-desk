@@ -4,23 +4,15 @@ import { Menu, X } from "lucide-react";
 import { HelpChat } from "@/components/help/help-chat";
 
 export const NAV = [
-  { href: "/", label: "Look up" },
+  { href: "/", label: "Invoice" },
   { href: "/code", label: "Code" },
-  { href: "/filter", label: "Table" },
-  { href: "/ny", label: "New York" },
   { href: "/billing", label: "Claim" },
-  { href: "/book", label: "Codes" },
-  { href: "/desk", label: "Desk" },
   { href: "/ops", label: "Files" },
-  { href: "/why", label: "Why" },
-  { href: "/operate", label: "Rules" },
-  { href: "/pricing", label: "Pricing" },
 ] as const;
 
 const PRIMARY = [
   { href: "/", label: "Invoice" },
   { href: "/code", label: "Code" },
-  { href: "/ny", label: "New York" },
   { href: "/billing", label: "Claim" },
 ] as const;
 
@@ -140,7 +132,7 @@ export function Shell({ children }: { children: ReactNode }) {
               Lane
             </p>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-              Type a code. See the amount for each year. The claim is the last step.
+              Paste a line. See the year’s amount. Nothing is sent.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Footer">

@@ -1,18 +1,20 @@
 import { useState, type FormEvent } from "react";
 import { money } from "@/lib/desk/clock";
+import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, type CheckLine } from "@/lib/lookup/check";
-import { findAcross, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
+import { pickOnce, type OnceRow } from "@/lib/lookup/once";
+import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
+import { Link } from "@tanstack/react-router";
 
 type Hit = { family: Family; label: string; row: Row };
-type Checked = CheckLine & { hits: Hit[] };
-
-const ORDER = ["Physician", "Ambulance", "Lab", "Equipment", "Not on a file"];
+type Checked = CheckLine & { hits: Hit[]; once: OnceRow | null; rest: OnceRow[] };
 
 export function InvoiceCheck() {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<Checked[] | null>(null);
   const [down, setDown] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [placed, setPlaced] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
 
   async function run(event?: FormEvent) {
@@ -23,7 +25,11 @@ export function InvoiceCheck() {
     try {
       const checked: Checked[] = [];
       for (const line of parsed) {
-        checked.push({ ...line, hits: await findAcross(line.code) });
+        const hits = await findAcross(line.code);
+        const shard = await loadOnce(line.code[0]);
+        const list = shard[line.code] ?? [];
+        const once = pickOnce(list, line.year);
+        checked.push({ ...line, hits, once, rest: list.filter((row) => row !== once) });
       }
       setRows(checked);
     } catch {
@@ -34,49 +40,93 @@ export function InvoiceCheck() {
     }
   }
 
+  function place() {
+    if (!rows) return;
+    let added = 0;
+    let skipped = 0;
+    for (const line of rows) {
+      if (!line.year) {
+        skipped += 1;
+        continue;
+      }
+      const file = amountOf(line);
+      const name = line.hits[0]?.row.n || line.once?.n || line.code;
+      addToOpenClaim({
+        code: line.code,
+        modifier: line.modifier,
+        units: 1,
+        chargeCents: line.billedCents,
+        allowedCents: file?.cents ?? null,
+        schedule: file ? `${file.label}, ${line.year}` : "Not on a loaded file",
+        note: name,
+        year: line.year,
+        dos: line.date,
+      });
+      added += 1;
+    }
+    setPlaced(skipped > 0 ? `${added} lines are on the claim. ${skipped} had no year and stayed here.` : `${added} lines are on the claim.`);
+  }
+
   const groups = new Map<string, Checked[]>();
   for (const row of rows ?? []) {
-    const label = best(row)?.label ?? "Not on a file";
+    const label = amountOf(row)?.label ?? "Not on a file";
     const list = groups.get(label) ?? [];
     list.push(row);
     groups.set(label, list);
   }
+  const labels = [...groups.keys()].sort((a, b) => Number(a === "Not on a file") - Number(b === "Not on a file"));
 
   return (
     <form onSubmit={run}>
-      <label className="block text-sm font-medium text-ink" htmlFor="invoice-lines">
-        Invoice lines
+      <label className="inline-flex h-12 cursor-pointer items-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
+        Choose the spreadsheet
+        <input
+          type="file"
+          accept=".csv,.txt,text/csv,text/plain"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            file.text().then(setText);
+          }}
+        />
+      </label>
+      <label className="mt-4 block text-sm font-medium text-ink" htmlFor="invoice-lines">
+        Or paste lines
         <textarea
           id="invoice-lines"
           value={text}
           onChange={(event) => setText(event.target.value)}
           rows={5}
-          placeholder={"97110 2026-03-01 28.27\nA0428 2025-06-12 277.09"}
+          placeholder={"CPT,DOS,Charge\n97110,2026-03-01,30.00\n90371,2026-08-01,138.23"}
           className="mt-1.5 w-full rounded-2xl border border-line bg-paper-2 px-4 py-3 text-base text-ink"
         />
       </label>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button type="submit" className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink" disabled={busy}>
+        <button type="submit" className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink" disabled={busy}>
           {busy ? "Checking" : "Check the invoice"}
         </button>
-        <label className="text-sm font-medium text-teal">
-          Or choose a file
-          <input
-            type="file"
-            accept=".csv,.txt,text/plain"
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              file.text().then(setText);
-            }}
-          />
-        </label>
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted">One line, one code, a date, and the amount. Extra words are ignored.</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">A spreadsheet needs a code, a date, and an amount. Extra columns are ignored.</p>
       {down ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The invoice is still here. Check it again.</p> : null}
       {rows && rows.length === 0 ? <p className="mt-4 text-sm font-medium text-deep">No code was on those lines.</p> : null}
-      {ORDER.filter((label) => groups.has(label)).map((label) => {
+      {rows && rows.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={place} className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
+            Put these lines on the claim
+          </button>
+          {placed ? (
+            <p className="text-sm text-ink" role="status">
+              {placed}{" "}
+              <Link to="/billing" className="font-medium text-teal">
+                Open the claim.
+              </Link>{" "}
+              Nothing is sent.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {labels.map((label) => {
         const lines = groups.get(label) ?? [];
         const off = lines.filter((line) => verdict(line) !== "match").length;
         return (
@@ -89,7 +139,6 @@ export function InvoiceCheck() {
               {lines.map((line, index) => {
                 const key = `${line.code}-${index}`;
                 const chosen = best(line);
-                const fileCents = line.year ? chosen?.row.a[String(line.year)] : undefined;
                 const word = verdict(line);
                 return (
                   <li key={key} className="rounded-2xl border border-line px-4 py-3">
@@ -98,8 +147,9 @@ export function InvoiceCheck() {
                         <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? `-${line.modifier}` : ""}</p>
                         <p className="text-sm text-muted">{line.date || "No date"} · billed {line.billedCents === null ? "nothing" : money(line.billedCents / 100)}</p>
                       </div>
-                      <p className={word === "match" ? "text-sm font-medium text-teal" : "text-sm font-medium text-deep"}>{labelFor(line, fileCents)}</p>
+                      <p className={word === "match" ? "text-right text-sm font-medium text-teal" : "text-right text-sm font-medium text-deep"}>{labelFor(line)}</p>
                     </div>
+                    {line.rest.length > 0 ? <p className="mt-2 text-xs text-muted">Also on {line.rest.map((row) => `${row.s} ${money(row.c / 100)}`).join("; ")}.</p> : null}
                     {chosen ? (
                       <button type="button" onClick={() => setOpen(open === key ? null : key)} className="mt-2 text-sm text-teal">
                         {open === key ? "Hide the years" : "Show every year"}
@@ -124,19 +174,27 @@ function best(line: Checked) {
   return line.hits.find((hit) => Object.values(hit.row.a).some((value) => typeof value === "number")) ?? line.hits[0];
 }
 
-function verdict(line: Checked) {
+function amountOf(line: Checked) {
   const chosen = best(line);
-  const fileCents = line.year ? chosen?.row.a[String(line.year)] : undefined;
-  if (!chosen || typeof fileCents !== "number" || line.billedCents === null) return "off";
-  return Math.abs(line.billedCents - fileCents) <= 1 ? "match" : "off";
+  const yearCents = line.year && chosen ? chosen.row.a[String(line.year)] : undefined;
+  if (typeof yearCents === "number") return { cents: yearCents, label: chosen.label };
+  if (line.once) return { cents: line.once.c, label: line.once.s };
+  return null;
 }
 
-function labelFor(line: Checked, fileCents: number | null | undefined) {
-  if (!best(line)) return "Not on a file";
+function verdict(line: Checked) {
+  const file = amountOf(line);
+  if (!file || line.billedCents === null) return "off";
+  return Math.abs(line.billedCents - file.cents) <= 1 ? "match" : "off";
+}
+
+function labelFor(line: Checked) {
+  const file = amountOf(line);
   if (!line.year) return "No year on the line";
-  if (typeof fileCents !== "number") return `${line.year} has no amount`;
-  if (line.billedCents === null) return `${line.year} file ${money(fileCents / 100)}`;
-  const gap = line.billedCents - fileCents;
-  if (Math.abs(gap) <= 1) return `Matches ${line.year}`;
-  return `Off ${money(Math.abs(gap) / 100)} · file ${money(fileCents / 100)}`;
+  if (!file) return "Not on a loaded file";
+  const period = line.once && file.label === line.once.s ? ` · ${line.once.t}` : "";
+  if (line.billedCents === null) return `${line.year} file ${money(file.cents / 100)}${period}`;
+  const gap = line.billedCents - file.cents;
+  if (Math.abs(gap) <= 1) return `Matches ${line.year}${period}`;
+  return `Off ${money(Math.abs(gap) / 100)} · file ${money(file.cents / 100)}`;
 }

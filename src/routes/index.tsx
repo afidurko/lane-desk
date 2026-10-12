@@ -5,7 +5,7 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
   head: () => ({
     meta: [
-      { title: "Lane — Look up a code by year" },
+      { title: "Lane — Paste a Part B line" },
       {
         name: "description",
         content:
