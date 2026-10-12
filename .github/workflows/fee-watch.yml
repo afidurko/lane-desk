@@ -1,10 +1,10 @@
-# Checks that the loaded Rest of New York files are still in the repository.
+# Reads the loaded Rest of New York files once a day.
 # It does not download a new fee schedule and it does not submit a claim.
 name: Fee file watch
 
 on:
   schedule:
-    - cron: "0 12 * * 1"
+    - cron: "0 12 * * *"
   workflow_dispatch:
 
 permissions:

@@ -5,6 +5,7 @@ import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/compo
 import { describeCode } from "@/lib/lookup/describe";
 import { loadMppr } from "@/lib/pricing/books";
 import type { MpprInfo } from "@/lib/pricing/national";
+import { previousUse, pricedYears } from "@/lib/lookup/reason";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { type OnceRow } from "@/lib/lookup/once";
 import { money } from "@/lib/desk/clock";
@@ -117,6 +118,7 @@ export function CodePage() {
           <h2 className="mt-4 text-sm font-medium text-ink">{IS_INTERNAL ? "Years and amounts" : "Reference price, 2026"}</h2>
           <YearPrices row={hit.row} />
           <ReferenceNote />
+          {IS_INTERNAL ? <PriorNote row={hit.row} /> : null}
           {IS_INTERNAL ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => {
@@ -185,4 +187,12 @@ export function CodePage() {
       ) : null}
     </Page>
   );
+}
+
+function PriorNote({ row }: { row: { a: Record<string, number | null> } }) {
+  const years = pricedYears(row.a);
+  if (years.length < 2) return null;
+  const note = previousUse(years, years[0].year, null, years[0].cents);
+  if (!note) return null;
+  return <p className="mt-3 text-sm leading-relaxed text-muted">{note}</p>;
 }

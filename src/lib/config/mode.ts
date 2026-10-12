@@ -78,4 +78,5 @@ export const INTERNAL_ONLY = [
   /^team-findings\.json$/,
   /^file-status\.json$/,
   /^proof-internal\.json$/,
+  /^history\//, // Rest of New York year-over-year changes, includes lab
 ];

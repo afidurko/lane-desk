@@ -9,6 +9,7 @@ import { MPPR_EXPLAIN, MPPR_LABEL } from "@/lib/pricing/mppr";
 import type { MpprInfo } from "@/lib/pricing/national";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, type CheckLine } from "@/lib/lookup/check";
+import { pricedYears, reasonLine } from "@/lib/lookup/reason";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { sampleInvoice } from "@/lib/demo/invoice-sample";
 import { screen } from "@/lib/security/mesh";
@@ -312,6 +313,11 @@ export function InvoiceCheck() {
                           Also on {line.rest.map((row) => `${row.s} ${money(row.c / 100)}`).join("; ")}.
                         </p>
                       ) : null}
+                      <ol className="mt-2 space-y-1 text-sm text-muted">
+                        {facts(line).steps.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ol>
                       {IS_INTERNAL && chosen ? (
                         <button
                           type="button"
@@ -391,12 +397,27 @@ function amountOf(line: Checked) {
   return base;
 }
 
-function verdict(line: Checked) {
-  if (outOfScope(line)) return "off";
-  if (noOffice(line)) return "none";
+function facts(line: Checked) {
+  if (outOfScope(line)) {
+    return { verdict: "off" as const, steps: [`The public demo checks ${PUBLIC_SCOPE.year} dates only, so this line is not priced.`] };
+  }
+  if (noOffice(line)) {
+    return { verdict: "none" as const, steps: [`${line.code} has no non-facility amount on the ${line.year} file. ${NOT_OFFICE}.`] };
+  }
+  const chosen = best(line);
   const file = amountOf(line);
-  if (!file || line.billedCents === null) return "off";
-  return Math.abs(line.billedCents - file.cents) <= 1 ? "match" : "off";
+  const onThisYear = Boolean(line.year && chosen && typeof chosen.row.a[String(line.year)] === "number");
+  return reasonLine({
+    code: line.code,
+    year: line.year,
+    billedCents: line.billedCents,
+    file: file ? { cents: file.cents, label: file.label, period: line.once && file.label === line.once.s ? line.once.t : undefined } : null,
+    priors: IS_INTERNAL && onThisYear && chosen ? pricedYears(chosen.row.a) : [],
+  });
+}
+
+function verdict(line: Checked) {
+  return facts(line).verdict;
 }
 
 function outOfScope(line: Checked) {

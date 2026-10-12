@@ -17,6 +17,7 @@ import { Route as CodeRouteImport } from './routes/code'
 import { Route as CompeteRouteImport } from './routes/compete'
 import { Route as DeskRouteImport } from './routes/desk'
 import { Route as FilterRouteImport } from './routes/filter'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as InvoiceRouteImport } from './routes/invoice'
 import { Route as NyRouteImport } from './routes/ny'
 import { Route as OperateRouteImport } from './routes/operate'
@@ -70,6 +71,11 @@ const DeskRoute = DeskRouteImport.update({
 const FilterRoute = FilterRouteImport.update({
   id: '/filter',
   path: '/filter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvoiceRoute = InvoiceRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
   '/filter': typeof FilterRoute
+  '/history': typeof HistoryRoute
   '/invoice': typeof InvoiceRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
   '/filter': typeof FilterRoute
+  '/history': typeof HistoryRoute
   '/invoice': typeof InvoiceRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
   '/filter': typeof FilterRoute
+  '/history': typeof HistoryRoute
   '/invoice': typeof InvoiceRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/compete'
     | '/desk'
     | '/filter'
+    | '/history'
     | '/invoice'
     | '/ny'
     | '/operate'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/compete'
     | '/desk'
     | '/filter'
+    | '/history'
     | '/invoice'
     | '/ny'
     | '/operate'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/compete'
     | '/desk'
     | '/filter'
+    | '/history'
     | '/invoice'
     | '/ny'
     | '/operate'
@@ -300,6 +312,7 @@ export interface RootRouteChildren {
   CompeteRoute: typeof CompeteRoute
   DeskRoute: typeof DeskRoute
   FilterRoute: typeof FilterRoute
+  HistoryRoute: typeof HistoryRoute
   InvoiceRoute: typeof InvoiceRoute
   NyRoute: typeof NyRoute
   OperateRoute: typeof OperateRoute
@@ -372,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/filter'
       fullPath: '/filter'
       preLoaderRoute: typeof FilterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invoice': {
@@ -484,6 +504,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompeteRoute: CompeteRoute,
   DeskRoute: DeskRoute,
   FilterRoute: FilterRoute,
+  HistoryRoute: HistoryRoute,
   InvoiceRoute: InvoiceRoute,
   NyRoute: NyRoute,
   OperateRoute: OperateRoute,

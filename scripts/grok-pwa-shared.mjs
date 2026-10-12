@@ -265,12 +265,6 @@ export function ogCardPublicPath(cwd = process.cwd()) {
   return "";
 }
 
-function detectCustomOgCard(cwd = process.cwd(), site = {}) {
-  if (ogCardPublicPath(cwd)) return true;
-  // Vercel runtime has no public/: trust a bake that already saw the file.
-  return siteHasCustomCard(site) || Boolean(String(site.image ?? "").trim());
-}
-
 /** Snapshot for Vite/Nitro to bake into the server bundle (Vercel has no workspace FS). */
 export function snapshotOgIdentity(cwd = process.cwd()) {
   const site = { ...readOgSite(cwd) };
@@ -329,14 +323,12 @@ export function siteHasCustomCard(site = {}) {
  * Otherwise empty — caller emits the og.grok.me placeholder.
  */
 export function resolveOgCardAsset(site = {}, cwd = process.cwd()) {
-  return ogCardPublicPath(cwd) || (detectCustomOgCard(cwd, site) ? String(site.image ?? "").trim() || "/og.jpg" : "");
-}
-
-/** Stamp `card=custom` when public/og.jpg or public/og.png is on disk. */
-function applyCustomCardFromFs(site, cwd) {
   const disk = ogCardPublicPath(cwd);
-  if (!disk) return site;
-  return { ...site, card: "custom", image: disk };
+  if (disk) return disk;
+  if (siteHasCustomCard(site) || String(site.image ?? "").trim()) {
+    return String(site.image ?? "").trim() || "/og.jpg";
+  }
+  return "";
 }
 
 export function grokOgHeadTags({
@@ -415,14 +407,9 @@ function insertBeforeHeadClose(html, snippet) {
 
 export function normalizeHeadContext(ctx = {}) {
   const cwd = ctx.cwd ?? process.cwd();
-  // Middleware passes a baked `site`. Still consult the workspace so a
-  // public/og.jpg generated after that snapshot (or missed by a wrong cwd)
-  // wins over the og.grok.me placeholder. Vercel has no public/ to read, so
-  // a correct bake is unchanged.
-  const site = applyCustomCardFromFs(
-    ctx.site !== undefined ? ctx.site : snapshotOgIdentity(cwd).site,
-    cwd,
-  );
+  // A caller that passes `site` owns that card. Do not replace it with this
+  // workspace's public/og.jpg. The snapshot path still sees the file on disk.
+  const site = ctx.site !== undefined ? { ...ctx.site } : snapshotOgIdentity(cwd).site;
   const appName = resolveOgTitle(site, ctx.appName ?? DEFAULT_APP_NAME, ctx.host ?? "");
   return {
     appName,

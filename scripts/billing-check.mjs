@@ -1,8 +1,11 @@
 import { quoteCode } from "../src/lib/billing/billing.ts";
+import { readFileSync } from "node:fs";
 import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
+import { dailyBridge } from "../src/lib/team/bridge.ts";
 import { rankBrief } from "../src/lib/team/rank.ts";
+import { previousUse, reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
 import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
@@ -99,7 +102,36 @@ check("the meeting names every required seat", missingSeats([...SEATS]).length =
 const ranked = rankBrief(["A meeting is missing the driver.", "Participant 1 is not enrolled. 55 or older is not marked.", "Participant 1: No Medicare county rate is loaded."]);
 check("Rank puts enrollment ahead of the meeting", ranked.status === "pass" && ranked.order[0].includes("not enrolled") && ranked.chain[0] === "Screen" && ranked.chain.includes("Rank"));
 check("Rank stops a request to submit", rankBrief([], "submit the claim to CMS").status === "stop");
+const bridged = dailyBridge(
+  [
+    { name: "Physician fee schedule", status: "current", detail: "" },
+    { name: "Personal care", status: "gap", detail: "" },
+  ],
+  "status only",
+);
+check("the daily check puts a gap ahead of a current file and does not fill it", bridged.status === "pass" && bridged.order[0].name === "Personal care" && bridged.order[0].action.includes("not filled") && bridged.chain.includes("Rank"));
+check("the daily check stops a request to submit", dailyBridge([], "submit the claim to CMS").status === "stop");
+const off = reasonLine({ code: "97110", year: 2026, billedCents: 3000, file: { cents: 2827, label: "Physician" } });
+check("a higher invoice is off because it is over the file", off.verdict === "off" && off.steps.some((step) => step.includes("over")) && off.steps[0].includes("97110"));
+const same = reasonLine({ code: "97110", year: 2026, billedCents: 2827, file: { cents: 2827, label: "Physician" } });
+check("the same amount matches because the gap is one cent or less", same.verdict === "match" && same.steps.at(-1).includes("matches"));
+const olderBill = reasonLine({
+  code: "97110",
+  year: 2026,
+  billedCents: 3047,
+  file: { cents: 2827, label: "Physician" },
+  priors: [{ year: 2026, cents: 2827 }, { year: 2020, cents: 3047 }],
+});
+check("a bill that matches an older year is still off for this year", olderBill.verdict === "off" && olderBill.steps.some((step) => step.includes("2020") && step.includes("not used")));
+check("an unchanged amount is not called a previous use", previousUse([{ year: 2026, cents: 2827 }, { year: 2025, cents: 2827 }], 2026, 2827, 2827) === null);
+const emptyCounty = reasonMonth({ label: "Participant 1", county: "Cattaraugus", enrolled: true, gate: null, medicare: null, medicaid: null, esrd: false });
+check("the month says why Cattaraugus is empty", emptyCounty.some((step) => step.includes("no Medicare")) && emptyCounty.at(-1).includes("skips"));
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
+const history = JSON.parse(readFileSync("public/history/summary.json", "utf8"));
+const physician = history.families.find((row) => row.id === "physician");
+const therapy = JSON.parse(readFileSync("public/history/physician.json", "utf8")).find((row) => row.c === "97110");
+check("history counts the physician codes that changed", physician.changed === 7444 && physician.down === 5845);
+check("97110 history is the 2020 amount down to 2026", therapy.from === 2020 && therapy.to === 2026 && therapy.fc === 3047 && therapy.tc === 2827);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);

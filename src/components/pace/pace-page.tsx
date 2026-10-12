@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Shell } from "@/components/landing/shell";
 import { money } from "@/lib/desk/clock";
 import { canEnroll, gateGaps, missingSeats, monthLine, SEATS, type Person } from "@/lib/pace/gates";
+import { reasonMonth } from "@/lib/lookup/reason";
 import { COUNTIES, PART_D_BID, RATE_SOURCE, medicareCents } from "@/lib/pace/rates";
 import { rankBrief } from "@/lib/team/rank";
 import { addPerson, emptyBook, readPace, setCenter, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
@@ -129,6 +130,17 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
             <p className="font-medium text-ink">{person.label} · {person.county}</p>
             <p className="text-muted">Medicare {line.medicare === null ? "not loaded" : money(line.medicare / 100)} · Medicaid {line.medicaid === null ? "not entered" : money(line.medicaid / 100)}</p>
             {line.missing.map((item) => <p key={item} className="text-deep">{item}</p>)}
+            <ol className="mt-2 space-y-1 text-muted">
+              {reasonMonth({
+                label: person.label,
+                county: person.county,
+                enrolled: true,
+                gate: null,
+                medicare: line.medicare,
+                medicaid: line.medicaid,
+                esrd: person.esrd,
+              }).map((step) => <li key={step}>{step}</li>)}
+            </ol>
           </li>
         ))}
       </ul>

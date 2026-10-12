@@ -23,6 +23,7 @@ export const INTERNAL_NAV: readonly NavItem[] = [
   { href: "/book", label: "Code book" },
   { href: "/filter", label: "Filter codes" },
   { href: "/ny", label: "New York" },
+  { href: "/history", label: "Codes that changed" },
   { href: "/ops", label: "File status" },
   { href: "/team", label: "Team" },
   { href: "/compete", label: "Leave-behind" },
