@@ -41,6 +41,24 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     t(`${path} has at most one primary action`, primaries <= 1, `${primaries}`);
   }
 
+  // Direct load and refresh of every route (the server renders each one; there is no client-only fallback to rely on).
+  for (const path of publicPages) {
+    const first = await page.goto(base + path, { waitUntil: "networkidle" });
+    const again = await page.reload({ waitUntil: "networkidle" });
+    t(`${path} direct load and refresh both return 200 with a heading`, first?.status() === 200 && again?.status() === 200 && (await page.locator("h1").count()) === 1, `${first?.status()} / ${again?.status()}`);
+  }
+  // A path that does not exist is a 404 page, not a blank page and not the home screen.
+  const lost = await context.newPage();
+  const missing = await lost.goto(base + "/no-such-screen", { waitUntil: "networkidle" });
+  t("/no-such-screen is a 404 that says Not Found", missing?.status() === 404 && /Not Found/i.test(await lost.locator("body").innerText()), `${missing?.status()}`);
+  await lost.close();
+  if (!internal) {
+    for (const held of ["/pfs-2020.json", "/pfs-2026.json", "/years/physician/9.json", "/clfs-2026.json", "/afs-2026.json", "/dme-2026.json", "/ny-medicaid.json", "/found-rates.json", "/gap-rates.json"]) {
+      const res = await page.request.get(base + held);
+      t(`public build does not serve ${held}`, res.status() === 404, `${res.status()}`);
+    }
+  }
+
   // No dead links: every on-site link on every public page opens.
   const hrefs = new Set();
   for (const path of publicPages) {

@@ -171,13 +171,9 @@ export default defineConfig(({ command, isPreview }) => ({
     tanstackStart(),
     ...(command === "build" || isPreview
       ? [
-          nitro({
-            preset: "vercel",
-            // Auto-registers server/middleware/* (the PWA install page +
-            // manifest + head-tag middleware). Nitro v3 defaults serverDir to
-            // false, so removing this silently unwires /?install=1 on deploys.
-            serverDir: "./server",
-          }),
+          // Vercel deploy: Nitro writes .vercel/output (static files + one server function that renders every route).
+          // No serverDir: this repo has no server/ folder (no PWA install page or manifest middleware).
+          nitro({ preset: "vercel" }),
         ]
       : []),
     viteReact(),
