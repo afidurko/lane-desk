@@ -85,6 +85,20 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   await page.getByText("Total of these lines").waitFor();
   t("desk two lines get a total", true);
 
+  // Therapy day: Claims Wedge's check values. National $95.69 (public), Rest of NY $93.58 (internal).
+  await page.getByRole("button", { name: "A full therapy day" }).click();
+  await page.getByRole("button", { name: "Price this note" }).click();
+  await page.getByText("Total of these lines").waitFor();
+  const dayText = await page.locator("main").innerText();
+  const dayRows = await page.locator("tbody tr").allInnerTexts();
+  t("therapy day prices 97110 at 3 units, not 6", dayRows.some((r) => /97110\s+.*\b3\b/s.test(r)) && !dayRows.some((r) => /\b6\b/.test(r.replace(/\$[\d.]+/g, ""))), dayRows.join(" / ").replace(/\s+/g, " "));
+  t(`therapy day total is ${internal ? "$93.58" : "$95.69"}`, dayText.includes(internal ? "$93.58" : "$95.69"));
+  t("therapy day says the reduction was applied and shows the split", /Multiple-procedure payment reduction applied/.test(dayText) && /1 full rate, 2 reduced/.test(dayText));
+  await page.getByRole("button", { name: "One service" }).click();
+  await page.getByRole("button", { name: "Price this note" }).click();
+  await page.getByText("Medicare reference price, not a payment").first().waitFor();
+  t("a single unit shows no reduction", !/Multiple-procedure payment reduction applied/.test(await page.locator("main").innerText()));
+
   // Invoice
   await page.goto(base + "/invoice", { waitUntil: "networkidle" });
   t("invoice idle state is explained", await page.getByText("Nothing checked yet").isVisible());
@@ -95,6 +109,12 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   const inv = await page.locator("main").innerText();
   t("invoice finds one match and one miss", /1 of 2 lines do not match/.test(inv) && /Matches the 2026 file/.test(inv) && /Over by/.test(inv));
   t("invoice carries the disclaimer", /Medicare reference price, not a payment/.test(inv));
+  t("invoice labels the therapy reduction on line two", /therapy reduction applied/.test(inv) && /Multiple-procedure payment reduction applied/.test(inv));
+  await page.locator("textarea").fill("Code,Date,Charge\n11004,2026-03-02,100.00");
+  await page.getByRole("button", { name: "Check the invoice" }).click();
+  await page.getByText("not priced in the office setting").first().waitFor();
+  const naInv = await page.locator("main").innerText();
+  t("invoice: a non-facility NA code is not priced and not called a mismatch", /Not priced in the office setting/.test(naInv) && !/do not match/.test(naInv) && !/Over by|Under by/.test(naInv));
   await page.locator("textarea").fill("MRN 12345 97110 2026-03-01 10.00");
   await page.getByRole("button", { name: "Check the invoice" }).click();
   await page.getByRole("alert").filter({ hasText: /^Refused\./ }).waitFor();
@@ -107,6 +127,20 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   const code = await page.locator("main").innerText();
   t("code shows a 2026 price and the disclaimer", /\$\d+\.\d{2}/.test(code) && /Medicare reference price, not a payment/.test(code) && /2026/.test(code));
   if (!internal) t("code shows no other year in public", !/2025|2024|2023|2022|2021|2020/.test(code.replace(/Medicare national, non-facility, 2026/g, "")));
+
+  await page.locator("#one-code").fill("11004");
+  await page.getByText("Not priced in the office setting").first().waitFor();
+  const naCode = await page.locator("main").innerText();
+  const naYears = await page.locator("article ol li").allInnerTexts();
+  t("code 11004 (non-facility NA): the Medicare years list shows no dollar amount, only 'not priced in the office setting'", /Not priced in the office setting/.test(naCode) && naYears.length > 0 && naYears.every((y) => !/\$\d/.test(y) && /Not priced in the office setting/.test(y)), naYears.join(" | ").replace(/\s+/g, " ").slice(0, 120));
+  await page.locator("#one-code").fill("97026");
+  await page.getByText("What it is").first().waitFor();
+  const infra = await page.locator("main").innerText();
+  t("code 97026 is priced", infra.includes(internal ? "$6.36" : "$6.68"), internal ? "Rest of NY $6.36" : "national $6.68");
+
+  // About
+  await page.goto(base + "/about", { waitUntil: "networkidle" });
+  t("about says prices use the year-end release", /Prices use the year-end release/.test(await page.locator("main").innerText()));
 
   // Proof
   await page.goto(base + "/proof", { waitUntil: "networkidle" });
@@ -168,6 +202,17 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.getByText("Years and amounts").waitFor();
     text = await page.locator("main").innerText();
     t("internal code page shows every year", /2020/.test(text) && /2026/.test(text) && text.includes(`$${(ronyCents / 100).toFixed(2)}`));
+    // Claim worksheet: the sample invoice's two therapy lines on one date. 28.27 full + 20.78 reduced (answer key) = $49.05.
+    await page.goto(base + "/invoice", { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Use a synthetic sample invoice" }).click();
+    await page.waitForFunction(() => document.querySelector("textarea")?.value.includes("97110"));
+    await page.getByRole("button", { name: "Check the invoice" }).click();
+    await page.getByText("Put these lines on the claim worksheet (internal)").waitFor();
+    await page.getByRole("button", { name: "Put these lines on the claim worksheet (internal)" }).click();
+    await page.getByText("lines are on the claim worksheet").waitFor();
+    await page.goto(base + "/billing", { waitUntil: "networkidle" });
+    const sheet = await page.locator("main").innerText();
+    t("claim worksheet applies and labels the therapy reduction", /Multiple-procedure payment reduction applied/.test(sheet) && /Selected allowed \$49\.05/.test(sheet), sheet.match(/Selected allowed \$[\d.]+/)?.[0] ?? "no total");
     for (const path of ["/billing", "/book", "/ny", "/ops"]) {
       await page.goto(base + path, { waitUntil: "networkidle" });
       t(`${path} opens in internal`, !(await page.getByText("is not part of this demo").isVisible().catch(() => false)));

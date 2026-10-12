@@ -33,6 +33,15 @@ Gait training, 30 minutes.
 Plan: continue.`,
   },
   {
+    id: "day",
+    label: "A full therapy day",
+    why: "Three units of one service and one of another. Medicare cuts the practice-expense part of every unit after the first.",
+    note: `Participant, adult day health. Synthetic note, not a real person.
+Therapeutic exercise (97110), 45 minutes, 3 units.
+Gait training (97116), 15 minutes, 1 unit.
+Plan: continue.`,
+  },
+  {
     id: "refused",
     label: "A note with an identifier",
     why: "Shows the refusal. Nothing is priced or kept.",

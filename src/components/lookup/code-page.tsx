@@ -3,6 +3,8 @@ import { Empty, FIELD, LINK, Page, ReferenceNote, SECONDARY } from "@/components
 import { IS_INTERNAL } from "@/lib/config/mode";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { describeCode } from "@/lib/lookup/describe";
+import { loadMppr } from "@/lib/pricing/books";
+import type { MpprInfo } from "@/lib/pricing/national";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { type OnceRow } from "@/lib/lookup/once";
 import { money } from "@/lib/desk/clock";
@@ -125,13 +127,16 @@ export function CodePage() {
                     key={year}
                     type="button"
                     className={SECONDARY}
-                    onClick={() => {
+                    onClick={async () => {
+                      // A therapy code carries its reduction values so the worksheet can apply the cut across the claim.
+                      const info = (await loadMppr(year).catch(() => ({}) as Record<string, MpprInfo>))[clean];
                       addToOpenClaim({
                         code: clean,
                         modifier: "",
                         units: 1,
                         chargeCents: cents,
                         allowedCents: cents,
+                        ...(info && info.fullCents === cents ? { mppr: { pe: info.pe, reducedCents: info.reducedCents } } : {}),
                         schedule: `${hit.label}, ${year}`,
                         note: hit.row.n || clean,
                         year,

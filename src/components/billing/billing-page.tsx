@@ -576,8 +576,8 @@ export function BillingPage() {
                   <p className="mt-2 text-sm text-muted">{packet.locality}. {packet.next}</p>
                   {alerts.length > 0 ? (
                     <ul className="mt-3 space-y-2">
-                      {alerts.map((item) => (
-                        <li key={item.line.id} className="rounded-xl border border-deep px-3 py-2 text-sm">
+                      {alerts.map((item, index) => (
+                        <li key={`${item.line.id}-${index}`} className="rounded-xl border border-deep px-3 py-2 text-sm">
                           <p className="font-medium text-deep">High alert · {item.line.code}</p>
                           <p className="mt-1 text-ink">{item.check.reason} Expected {item.check.expectedCode} at {item.check.expectedCents === null ? "no loaded amount" : money(item.check.expectedCents / 100)}.</p>
                           {item.check.expectedCents !== null && claim.status === "draft" && claim.lines.some((line) => line.id === item.line.id) ? (

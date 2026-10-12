@@ -8,7 +8,7 @@ type Year = { year: number; release: string };
 function List({ items }: { items: readonly string[] }) {
   return (
     <ul className="mt-3 space-y-2 text-base leading-relaxed text-ink">
-      {items.map((item) => (
+      {items.filter(Boolean).map((item) => (
         <li key={item} className="flex gap-3">
           <span className="mt-2.5 size-1.5 shrink-0 rounded-full bg-teal" aria-hidden="true" />
           <span>{item}</span>
@@ -90,6 +90,15 @@ export function AboutPage() {
             IS_INTERNAL
               ? "Years loaded: 2020 to 2026. The public demo shows 2026 only."
               : "Year shown in this demo: 2026. The proof page checks every year from 2020 to 2026.",
+            "Prices use the year-end release. For each year, Lane loads the last fee schedule CMS published that year, not the January release. A date of service early in a year can price a little differently from what Medicare used on that date.",
+            IS_INTERNAL
+              ? "Known gap: 2024 dates of service from January 1 to March 8 used an earlier conversion factor. For 97110 in Rest of New York, the January 2024 CMS file gives $28.03 and this build gives $28.49. Other quarters match for the codes checked."
+              : "",
+            IS_INTERNAL
+              ? "Known gap: the 2020 file has no state labels, so New York localities are not offered for 2020. The 2020 Rest of New York amount is read by its contractor and locality number, and it has not been independently checked."
+              : "",
+            "Therapy: when several therapy units are priced for one day, Medicare pays the full rate on the unit with the highest practice-expense value and cuts the practice-expense part by half on every other unit. Lane applies that cut and says so where it does.",
+            "Codes CMS marks as rarely or never done in the office have no office price. Lane shows them as not priced in the office setting.",
             "Names are the short descriptions on the CMS file. Longer code descriptions are not included.",
             IS_INTERNAL
               ? "Clinical laboratory fee schedule data is loaded in this internal build only. It is held back from the public demo until the licensing question is settled."
