@@ -47,10 +47,28 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     const again = await page.reload({ waitUntil: "networkidle" });
     t(`${path} direct load and refresh both return 200 with a heading`, first?.status() === 200 && again?.status() === 200 && (await page.locator("h1").count()) === 1, `${first?.status()} / ${again?.status()}`);
   }
-  // A path that does not exist is a 404 page, not a blank page and not the home screen.
+  // A path that does not exist is a real 404 page: plain message, a way home, the main steps, the same layout, nothing leaked.
   const lost = await context.newPage();
-  const missing = await lost.goto(base + "/no-such-screen", { waitUntil: "networkidle" });
-  t("/no-such-screen is a 404 that says Not Found", missing?.status() === 404 && /Not Found/i.test(await lost.locator("body").innerText()), `${missing?.status()}`);
+  const lostErrors = [];
+  lost.on("console", (message) => message.type() === "error" && !/fonts\.g|ERR_(NAME|INTERNET|CONNECTION)|status of 404/.test(message.text()) && lostErrors.push(message.text()));
+  lost.on("pageerror", (error) => lostErrors.push(String(error)));
+  const missing = await lost.goto(base + "/no-such-screen?probe=secret-value", { waitUntil: "networkidle" });
+  const lostText = await lost.locator("body").innerText();
+  t("404 page: HTTP status is 404", missing?.status() === 404, `${missing?.status()}`);
+  t("404 page: says Not Found and gives a plain-words message", /Not Found/i.test(lostText) && /We couldn't find that page\./.test(lostText));
+  t("404 page: does not repeat the requested path or query", !/no-such-screen|secret-value/.test(lostText));
+  t("404 page: same header, nav and footer wording as other screens", (await lost.locator("header").count()) === 1 && (await lost.locator("footer").count()) === 1 && /Not a payment\. Not an EHR\. De-identified only\./.test(lostText), "");
+  t("404 page: one h1 and one primary action", (await lost.locator("h1").count()) === 1 && (await lost.locator("main a.bg-teal, main button.bg-teal").count()) === 1);
+  const steps = await lost.locator("main nav[aria-label='Main steps'] a").evaluateAll((nodes) => nodes.map((node) => `${node.textContent}=${node.getAttribute("href")}`));
+  t("404 page: links to Try a note, Check an invoice, Request a pilot", steps.join("|") === "Try a note=/desk|Check an invoice=/invoice|Request a pilot=/request", steps.join("|"));
+  const lostWide = await lost.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  t("404 page: no sideways scroll", lostWide <= 1, `overflow ${lostWide}px`);
+  const internalLinks = await lost.locator("a[href='/billing'], a[href='/book'], a[href='/ny'], a[href='/ops']").count();
+  t(internal ? "404 page (internal): internal links are the same as other screens" : "404 page (public): no internal-only link", internal ? true : internalLinks === 0, `${internalLinks}`);
+  t("404 page: no console errors", lostErrors.length === 0, lostErrors.join(" | ").slice(0, 200));
+  await lost.getByRole("link", { name: "Back to the start" }).click();
+  await lost.waitForURL(base + "/");
+  t("404 page: the link home works", new URL(lost.url()).pathname === "/" && (await lost.locator("h1").count()) === 1, lost.url());
   await lost.close();
   if (!internal) {
     for (const held of ["/pfs-2020.json", "/pfs-2026.json", "/years/physician/9.json", "/clfs-2026.json", "/afs-2026.json", "/dme-2026.json", "/ny-medicaid.json", "/found-rates.json", "/gap-rates.json"]) {

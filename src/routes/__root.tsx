@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { NotFoundPage } from "@/components/pages/not-found-page";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Lane";
@@ -31,6 +32,7 @@ export const Route = createRootRoute({
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
     ],
   }),
+  notFoundComponent: NotFoundPage,
   component: () => (
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
