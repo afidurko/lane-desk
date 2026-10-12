@@ -95,7 +95,7 @@ export function AboutPage() {
               ? "Known gap: 2024 dates of service from January 1 to March 8 used an earlier conversion factor, so those dates price slightly higher here than in the January 2024 CMS file. Other quarters match for the codes checked."
               : "",
             IS_INTERNAL
-              ? "Known gap: the 2020 file has no state labels, so New York localities are not offered for 2020. The 2020 Rest of New York amount is read by its contractor and locality number, and it has not been independently checked."
+              ? "2020 New York localities (all five) were loaded from the CMS-Codes-checked history database, and 2020 amounts match it."
               : "",
             "Therapy: when several therapy units are priced for one day, Medicare pays the full rate on the unit with the highest practice-expense value and cuts the practice-expense part by half on every other unit. Lane applies that cut and says so where it does.",
             "Codes CMS marks as rarely or never done in the office have no office price. Lane shows them as not priced in the office setting.",

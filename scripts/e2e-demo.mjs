@@ -202,6 +202,9 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.getByText("Years and amounts").waitFor();
     text = await page.locator("main").innerText();
     t("internal code page shows every year", /2020/.test(text) && /2026/.test(text) && text.includes(`$${(ronyCents / 100).toFixed(2)}`));
+    const years97110 = await page.locator("article ol li").allInnerTexts();
+    const y2020 = years97110.find((y) => /2020/.test(y)) ?? "";
+    t("code 97110: the 2020 Rest of NY amount is $30.47, as in the history database", /\$30\.47/.test(y2020), y2020.replace(/\s+/g, " ").slice(0, 120));
     // Claim worksheet: the sample invoice's two therapy lines on one date. 28.27 full + 20.78 reduced (answer key) = $49.05.
     await page.goto(base + "/invoice", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Use a synthetic sample invoice" }).click();
@@ -213,6 +216,13 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.goto(base + "/billing", { waitUntil: "networkidle" });
     const sheet = await page.locator("main").innerText();
     t("claim worksheet applies and labels the therapy reduction", /Multiple-procedure payment reduction applied/.test(sheet) && /Selected allowed \$49\.05/.test(sheet), sheet.match(/Selected allowed \$[\d.]+/)?.[0] ?? "no total");
+    // 2020 Rest of NY, from the CMS-Codes-checked history database (RVU20D): 97110 = $30.47.
+    await page.goto(base + "/invoice", { waitUntil: "networkidle" });
+    await page.locator("textarea").fill("Code,Date,Charge\n97110,2020-03-02,30.47\n11401,2020-03-02,150.16");
+    await page.getByRole("button", { name: "Check the invoice" }).click();
+    await page.getByText("Matches the 2020 file").first().waitFor();
+    const inv2020 = await page.locator("main").innerText();
+    t("internal invoice: a 2020 line at the database amount matches the 2020 file", /Matches the 2020 file/.test(inv2020), inv2020.match(/(Matches|Over by|Under by)[^\n]*/g)?.join(" | ") ?? "");
     for (const path of ["/billing", "/book", "/ny", "/ops"]) {
       await page.goto(base + path, { waitUntil: "networkidle" });
       t(`${path} opens in internal`, !(await page.getByText("is not part of this demo").isVisible().catch(() => false)));

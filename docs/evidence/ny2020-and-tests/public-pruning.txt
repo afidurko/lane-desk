@@ -1,0 +1,14 @@
+public build output: .vercel/output/static
+__grok
+assets
+favicon.svg
+og.jpg
+pfs-national-2026.json
+proof.json
+x-banner.jpg
+
+files in output: 48
+years/once/clfs/afs/dme/medicaid/pfs-20xx files: 0
+pfs-2020 present: 0
+locality-level data: pfs-national-2026.json keys: family release year conversion source rows (no localities, no GPCI)
+rest-of-NY strings found only as UI labels (locality name) in 4 chunks; no Rest of NY dollar figures

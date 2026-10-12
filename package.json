@@ -16,14 +16,15 @@
     "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
     "check:auth": "node scripts/check-auth-invariant.mjs",
-    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
+    "test": "node --test 'scripts/**/*.test.mjs' && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "prune:public": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/prune-public.mjs",
     "proof": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs",
     "check": "node scripts/build-national.mjs --check && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-regression.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/demo-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs --check",
     "check:key": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/answer-key-compare.mjs",
-    "e2e": "node scripts/e2e-demo.mjs"
+    "e2e": "node scripts/e2e-demo.mjs",
+    "check:ny2020": "node --experimental-sqlite --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-ny-2020.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",

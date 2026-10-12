@@ -1,0 +1,21 @@
+
+> check:ny2020
+> node --experimental-sqlite --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-ny-2020.mjs
+
+(node:1875826) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1875826) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1875826) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+┌─────────┬─────────┬──────────┬──────────┬──────────┬──────────┬──────────┐
+│ (index) │ code    │ 13202/01 │ 13202/02 │ 13202/03 │ 13292/04 │ 13282/99 │
+├─────────┼─────────┼──────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0       │ '97110' │ '35.64'  │ '36.23'  │ '33.36'  │ '36.37'  │ '30.47'  │
+│ 1       │ '97112' │ '40.98'  │ '41.62'  │ '38.34'  │ '41.78'  │ '35.02'  │
+│ 2       │ '97116' │ '35.21'  │ '35.79'  │ '32.96'  │ '35.93'  │ '30.13'  │
+│ 3       │ '97140' │ '32.73'  │ '33.29'  │ '30.66'  │ '33.42'  │ '28.03'  │
+│ 4       │ '97150' │ '21.15'  │ '21.44'  │ '19.86'  │ '21.53'  │ '18.27'  │
+│ 5       │ '97161' │ '99.70'  │ '101.29' │ '93.22'  │ '101.66' │ '85.06'  │
+└─────────┴─────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
+{"localities":5,"cellsCompared":91130,"restOfNyShardCodes":7341,"rest":"13282/99","failCount":0,"failures":[]}
+2020 New York localities are labelled and match the database

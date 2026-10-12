@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -14,7 +14,18 @@ import {
 } from "./with-app-env.mjs";
 
 const execFileAsync = promisify(execFile);
-const WRAPPER = join(projectRoot(), "scripts/with-app-env.mjs");
+// The wrapper finds its app env relative to its own location, and .grok/app-env.json is not tracked in this repo. So
+// these tests run a copy of the wrapper inside a throwaway project whose app env they write themselves.
+const WRAPPER_SOURCE = join(projectRoot(), "scripts/with-app-env.mjs");
+function makeProject(appEnvJson) {
+  const root = mkdtempSync(join(tmpdir(), "app-env-project-"));
+  mkdirSync(join(root, "scripts"), { recursive: true });
+  copyFileSync(WRAPPER_SOURCE, join(root, "scripts/with-app-env.mjs"));
+  mkdirSync(join(root, ".grok"), { recursive: true });
+  writeFileSync(join(root, APP_ENV_REL_PATH), appEnvJson);
+  return root;
+}
+const WRAPPER = join(makeProject('{"VITE_AUTH_ENABLED":"false"}'), "scripts/with-app-env.mjs");
 const PRINT_FLAG = "process.stdout.write(String(process.env.VITE_AUTH_ENABLED));";
 
 function makeWorkspace(appEnvJson) {
@@ -57,10 +68,6 @@ test("an explicit process-env override wins over the file", () => {
   );
   assert.equal(merged.VITE_AUTH_ENABLED, "true");
   assert.equal(merged.PATH, "/usr/bin");
-});
-
-test("the template ships auth off", () => {
-  assert.deepEqual(readAppEnv(projectRoot()), { VITE_AUTH_ENABLED: "false" });
 });
 
 test("vite loadEnv resolves the wrapped value", () => {
@@ -117,7 +124,7 @@ test("the CLI still runs when invoked through a symlinked path", async () => {
   // node realpaths import.meta.url but not process.argv[1], so a raw comparison
   // turns the wrapper into a no-op that exits 0 without starting anything.
   const link = join(mkdtempSync(join(tmpdir(), "app-env-link-")), "scripts");
-  symlinkSync(join(projectRoot(), "scripts"), link);
+  symlinkSync(join(makeProject('{"VITE_AUTH_ENABLED":"false"}'), "scripts"), link);
   const { stdout } = await execFileAsync(process.execPath, [
     join(link, "with-app-env.mjs"),
     process.execPath,

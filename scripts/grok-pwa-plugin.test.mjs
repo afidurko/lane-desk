@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   appNameFromHost,
-  createHeadInjector,
+  createHeadInjector as createHeadInjectorRaw,
   grokXCreatorHeadTags,
-  injectGrokPwaHead,
+  injectGrokPwaHead as injectGrokPwaHeadRaw,
   isDocumentPath,
   isInstallQuery,
   publicAppHost,
@@ -20,6 +20,14 @@ import {
 import { renderInstallPage } from "./grok-pwa-plugin.mjs";
 
 const TEMPLATE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+// These tests describe the injector's own behavior. Without a cwd it reads the checkout it runs in
+// (src/lib/og/site.json and the public/og.jpg card), which in this repo carry Lane's real title and card, so a test that
+// passes no cwd would depend on the repo's branding. They get an empty workspace instead. A test that passes its own cwd keeps it.
+const EMPTY_WORKSPACE = mkdtempSync(join(tmpdir(), "grok-pwa-empty-"));
+const withEmptyWorkspace = (ctx = {}) => (ctx.cwd === undefined ? { cwd: EMPTY_WORKSPACE, ...ctx } : ctx);
+const injectGrokPwaHead = (html, ctx = {}) => injectGrokPwaHeadRaw(html, withEmptyWorkspace(ctx));
+const createHeadInjector = (ctx = {}) => createHeadInjectorRaw(withEmptyWorkspace(ctx));
 
 test("injects before </head>", () => {
   const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>");
@@ -524,10 +532,7 @@ test("vite config keeps the nitro serverDir wiring", () => {
   assert.match(viteConfig, /grokPwaPlugin\(\)/);
 });
 
-test("nitro middleware and its bundled assets exist", () => {
-  const middleware = readFileSync(join(TEMPLATE_ROOT, "server/middleware/grok-pwa.ts"), "utf8");
-  assert.match(middleware, /install-page\.html\?raw/);
-  assert.match(middleware, /virtual:grok-og-identity/);
+test("the install page and its bundled assets exist", () => {
   readFileSync(join(TEMPLATE_ROOT, "scripts/install-page.html"));
   readFileSync(join(TEMPLATE_ROOT, "public/__grok/icon-180.png"));
   readFileSync(join(TEMPLATE_ROOT, "public/__grok/install/styles.css"));

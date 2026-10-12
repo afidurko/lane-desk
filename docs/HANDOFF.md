@@ -14,7 +14,7 @@ npm run preview & BASE_URL=http://127.0.0.1:8081 npm run e2e    # browser walk-t
 ```
 
 ## What was verified (real runs, files in `docs/evidence/`)
-- Lint: 0 errors (9 warnings, all react-refresh/pre-existing style). Typecheck: clean. `npm run check`: 20,097 + 35 + 542 + 60 (new price-regression) + 6 + 58 assertions, 0 failures.
+- Lint: 0 errors (9 warnings, all react-refresh/pre-existing style). Typecheck: clean. `npm run check`: 20,097 + 35 + 542 + 94 (price-regression, includes the 2020 NY checks) + 6 + 58 assertions, 0 failures. `npm run check:key`: 10 samples, 0 differences. `npm run check:ny2020` (needs the sqlite): 91,130 cells, 0 differences. Browser walk-through: 134 public checks and 144 internal checks pass. Evidence: `docs/evidence/ny2020-and-tests/`.
 - Price proof: 55,076 payable codes across 7 years recomputed from component RVUs, 0 differences; a deliberate 1-cent error is caught. Rest of NY year files and the 61-code therapy table also 0 differences.
 - Browser walk-through, public production build: 134 checks pass at 1280px and 375px (flows, refusals, no sideways scroll, no dead links, skip link and focus ring, one primary button per page, no request for any held-back file).
   Internal dev: 140 checks pass, including Rest of NY 97110 = file amount, Manhattan from the same file, exactly five NY localities.
@@ -29,12 +29,12 @@ Their report: single-code prices match CMS (0 mismatches). Four display problems
 Also: the proof recomputes the reduction values and counts NA codes (`proof.json` now has `codesNotOffice`); proof still 55,076 codes, 0 differences. One pre-existing bug fixed because the new e2e hit it: duplicate React key for two alerts on one worksheet line.
 
 ### Limits that remain (also on the About page in plain words)
-- **Prices use the year-end release.** For each year the app loads the last (D) release, not the January release. 2024 dates of service from Jan 1 to Mar 8 used an earlier conversion factor: 97110 Rest of NY is **$28.03** in the CMS January 2024 file, **$28.49** in the app. Other quarters match for the 27 codes Claims Wedge checked. The public About page says this without dollar figures; the internal About page names the 2024 gap.
-- **2020 has no state labels** in the app's file, so no NY locality is offered for 2020 and 2020 NY prices have not been independently checked. Rest of NY for 2020 is read by MAC 13282 / locality 99 (Code screen, invoice checker).
+- **Prices use the year-end release.** For each year the app loads the last (D) release, not the January release. 2024 dates of service from Jan 1 to Mar 8 used an earlier conversion factor: 97110 Rest of NY is **$28.03** in the CMS January 2024 file, **$28.49** in the app. Other quarters match for the 27 codes Claims Wedge checked. The public About page says this without dollar figures; the internal About page names the 2024 gap and says 2020 NY localities came from the sqlite.
+- **2020 New York localities: closed.** The 2020 file already carried the five NY localities with their GPCIs but no state label, so the app never offered them. `scripts/load-ny-2020.mjs` checks all five against the CMS-Codes-checked `pfs_ny_history.sqlite` (RVU20D: MAC, locality, name, work/PE/MP GPCI) and labels exactly those rows `NY` (nothing else in the file changed). 2020 localities were loaded from that sqlite. `scripts/check-ny-2020.mjs` compares 91,130 non-facility and facility cells (all payable codes and modifiers x 5 localities) with the sqlite: 0 differences; the year shard the Code screen and invoice checker read matches the sqlite for all 7,341 Rest of NY codes (NA codes show no office price). Therapy codes 97110/97112/97116/97140/97150/97161 x 5 localities are also fixed in `price-regression`. Internal mode only; the public build is unchanged (national 2026 only).
 - MPPR is by date of service and assumes one patient per invoice/claim. An invoice with several patients on one date would be reduced too much; the invoice screen says how lines are grouped. The typed 61-code table (used only when no file is loaded, and by `lane-check`) has no RVU components, so it cannot apply MPPR; no screen uses it.
 - The public national file now carries work, practice-expense and malpractice RVUs for the 52 therapy-indicator codes (needed for the cut). They are national CMS RVUs, no locality data.
 - `build-flags.mjs` and `build-years.mjs` read CMS files from `/workspace/healthcare-pfs/raw/ny_history`; the output is committed.
-- 18 `npm test` failures are the same pre-existing template ones as the baseline (`.grok/skills`, `/migrations`).
+- `npm test` is green: 191 node tests + lane-check (20,097) + billing-check (35) + sim-check (542) + 55 app-data/auth tests, 0 failures. See "npm test: the 18 failures" below.
 
 ## Needs a decision from Aaron / Shield / Andrea
 1. **The GitHub repo `afidurko/lane-desk` is public (`private: false`) and `main` already contains `public/clfs-*.json`, `public/years/lab/`, and all Rest of NY data.** Pruning only protects a deployed build. If the lab files or RoNY figures must not be public, make the repo private or remove them from history. I did not touch the remote.
@@ -49,10 +49,25 @@ Also: the proof recomputes the reduction values and counts NA codes (`proof.json
 - **Coder accuracy is unmeasured.** It is a phrase-matching rule coder; it ships labeled "rule-based coder, provisional". Its time (microseconds per note) is real but says nothing about a human desk. The manual-desk side is blank by design.
 - **Identifier screen is pattern-based.** It refuses record numbers, birth dates, phones, emails, long digit strings. It cannot recognize a name. The UI says so. Invoice lines carry a date of service, which is identifying when combined with other facts.
 - Internal screens (`/billing /book /filter /ny /ops /team /compete /operate /why /run`) were kept working and closed in public, but I did not re-review their copy for overclaims.
-- `npm test` still has 18 failing platform-template tests (they look for `.grok/skills/og` and `/migrations`, which this repo does not have). Same 18 before and after; not touched. Use `npm run check`.
 - `src/components/desk/desk-scan.tsx` is now unused. The old landing page, signup form, and the client-side access-code gate (`olean-13282`) were deleted as dead code.
 - I looked at screenshots of home, desk, invoice, code, proof, pricing, request on desktop and desk on phone. Phone overflow was tested numerically on every public page, not viewed on every page.
 
 ## To publish
 Review `git log lane-workflow-billing`, then push and open a PR yourself. Nothing was pushed or sent.
 `npm run proof` regenerates `public/proof.json` and `public/proof-internal.json` if any fee file changes. `node scripts/build-national.mjs` regenerates the public physician file (`npm run check` fails if it is stale).
+
+
+## npm test: the 18 failures (all resolved, none were Lane code)
+
+The repo lacks the platform template's `.grok/` folder (gitignored, never committed), `migrations/` and `server/`. 18 template tests looked for them. 6 were dead and deleted, 12 were real tests that depended on the clone's contents and were made hermetic. Before: 197 tests, 179 pass, 18 fail, and the chained lane-check/billing-check/sim-check never ran. After: 191 tests, 191 pass.
+
+Deleted (6 test cases; the rest of each file stays):
+- `scripts/brand-check.test.mjs`: "SKILL.md and AGENTS.md name the marker path and bound this script uses", "the sections that own the brand-task prohibition never affirm a wait", "SKILL.md tells the pass to self-check with the flag this CLI accepts" (plus their helpers). They check wording in `.grok/skills/og/SKILL.md`, a template agent skill this repo does not have. The brand-check script's own tests (26) stay.
+- `scripts/write-atomic.test.mjs`: "every hand-over the og skill prints is one this script accepts". It reads `.grok/skills/og/references`, same absent skill.
+- `scripts/migration-plan.test.mjs`: "the auth schema ships outside the globbed directory". It reads `migrations/auth/0001_auth.sql`; Lane has no database and no `migrations/` folder. The migration-planner logic tests stay.
+- `scripts/with-app-env.test.mjs`: "the template ships auth off". It asserts the content of `.grok/app-env.json`, a gitignored file that is not in this repo. The wrapper's logic tests stay.
+
+Fixed, not deleted (real code under test):
+- `scripts/grok-pwa-plugin.test.mjs` (8 tests): the head injector reads `src/lib/og/site.json` and `public/og.jpg` from the working directory when no cwd is passed, and this repo has Lane's real title and card there, so tests expecting the document title or the placeholder card failed. They now run in an empty temp workspace by default; tests that pass their own cwd or site are unchanged. One more, "nitro middleware and its bundled assets exist", asserted `server/middleware/grok-pwa.ts`, which this repo does not have; it is now "the install page and its bundled assets exist" and keeps the three asset checks. Finding: `vite.config.ts` still points Nitro at `./server`, so a deployed build has no PWA install page or manifest middleware. Lane does not use it; restore the template's `server/middleware/` if it is wanted.
+- `scripts/with-app-env.test.mjs` (2 tests: wrapped command applies the app env, and via a symlinked path) and `scripts/check-auth-invariant.test.mjs` (1 test: build side resolves the app-env): they read the untracked `.grok/app-env.json`. They now write their own in a temp project, and the wrapper test runs a copy of the wrapper there. Nothing asserted was loosened.
+- `package.json` `test`: lane-check, billing-check and sim-check now run with `VITE_DEMO_MODE=internal`, the same as `npm run check`. billing-check is an internal-mode check (it expects the internal Rest of NY amounts) and had never run under `npm test` because the earlier failures stopped the chain; run in public mode it failed one assertion, which was the mode, not a bug.

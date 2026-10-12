@@ -124,5 +124,20 @@ same("intake: second therapy line on the same date is expected at the reduced am
 same("intake: NA code is not priced and raises the no-office-price alert", parseInvoice("Entity: Clinic\n11004 Debridement 2026-07-01 100.00", books, "2026-07-01").lines.map((l) => [l.allowedCents, l.alert?.reason.startsWith("Not priced in the office setting")]), [[null, true]]);
 same("worksheet quote: NA code has no allowed amount and says why", [quoteCode(books, "11004", "").allowedCents, quoteCode(books, "11004", "").note.startsWith("Not priced in the office setting")], [null, true]);
 
+
+// ---- 2020 New York localities (loaded from the CMS-Codes-checked history database, RVU20D) ----
+// Expected values read from /workspace/healthcare-pfs/index/pfs_ny_history.sqlite, pfs_ny, period 2020D, non-facility.
+const SQLITE_2020 = {"97110": {"13202/01": 35.64, "13202/02": 36.23, "13202/03": 33.36, "13292/04": 36.37, "13282/99": 30.47}, "97112": {"13202/01": 40.98, "13202/02": 41.62, "13202/03": 38.34, "13292/04": 41.78, "13282/99": 35.02}, "97116": {"13202/01": 35.21, "13202/02": 35.79, "13202/03": 32.96, "13292/04": 35.93, "13282/99": 30.13}, "97140": {"13202/01": 32.73, "13202/02": 33.29, "13202/03": 30.66, "13292/04": 33.42, "13282/99": 28.03}, "97150": {"13202/01": 21.15, "13202/02": 21.44, "13202/03": 19.86, "13292/04": 21.53, "13282/99": 18.27}, "97161": {"13202/01": 99.7, "13202/02": 101.29, "13202/03": 93.22, "13292/04": 101.66, "13282/99": 85.06}};
+const f2020 = read("public/pfs-2020.json");
+same("2020: five New York localities are offered", f2020.localities.filter((l) => l.state === "NY").map((l) => `${l.mac}/${l.number}`).sort(), ["13202/01", "13202/02", "13202/03", "13282/99", "13292/04"]);
+for (const [code, byLoc] of Object.entries(SQLITE_2020)) {
+  for (const [key, dollars] of Object.entries(byLoc)) {
+    same(`2020 ${key} ${code} matches the database ($${dollars.toFixed(2)})`, localityPrices(f2020, key).rates[code], dollars);
+  }
+}
+same("2020 Rest of NY 97110 on the Code screen's year shard is $30.47", JSON.parse(rf("public/years/physician/9.json", "utf8"))["97110"].a["2020"], 3047);
+same("2020 Rest of NY therapy reduction table exists (97110 full 30.47)", [localityPrices(f2020, "13282/99").mppr["97110"].fullCents, localityPrices(f2020, "13282/99").mppr["97110"].reducedCents < 3047], [3047, true]);
+same("2020 NA code 11004 is not priced in the office setting", [localityPrices(f2020, "13282/99").rates["11004"], localityPrices(f2020, "13282/99").notOffice.has("11004")], [undefined, true]);
+
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);
