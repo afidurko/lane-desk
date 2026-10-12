@@ -61,5 +61,68 @@ same("a bundled code (97010) is still $0 from the file", [allowedOf(1, "97010", 
 same("97545 (status R, no amount) is still $0", [allowedOf(1, "97545", NAT), allowedOf(1, "97545", NY)], [0, 0]);
 same("every typed therapy amount equals the file's Rest of NY amount", THERAPY.filter((t) => t.separate && Math.abs(t.unitDollars - (ny.rates[t.code] ?? 0)) > 0.0001).map((t) => t.code), []);
 
+// ---- 3. Codes CMS marks non-facility NA get no office price ----
+const PAYABLE = new Set(["A", "R", "T"]);
+const full26 = read("public/pfs-2026.json");
+const naCodes = full26.rows.filter((r) => r.m === "" && PAYABLE.has(r.s) && r.nn).map((r) => r.c);
+same("4,043 payable codes are non-facility NA in the 2026 file", naCodes.length, 4043);
+same("the public national file flags the same 4,043 codes", [...national.rows.values()].filter((r) => r.nn).length, 4043);
+same("public build prices none of them", naCodes.filter((c) => NAT[c] !== undefined), []);
+same("Rest of NY prices none of them either", naCodes.filter((c) => NY[c] !== undefined), []);
+same("they are on the not-office list in both settings", naCodes.every((c) => notOfficeOf(national).has(c) && ny.notOffice.has(c)), true);
+same("public build prices 3,702 codes (7,745 minus 4,043)", Object.keys(ratesOf(national)).length, 3702);
+same("11004 has no national office price", [national.rows.get("11004").a["2026"], national.rows.get("11004").nn], [null, true]);
+same("99221 has no national office price", national.rows.get("99221").a["2026"], null);
+same("27447 has no national office price", national.rows.get("27447").a["2026"], null);
+same("99214 is still priced (office visit)", national.rows.get("99214").a["2026"], 13561);
+const THERAPY_CODES = THERAPY.map((t) => t.code);
+same("none of the 61 therapy codes is non-facility NA", THERAPY_CODES.filter((c) => naCodes.includes(c)), []);
+same("61 therapy codes", THERAPY_CODES.length, 61);
+const na = run("Procedure 11004 was done.", NAT);
+same("desk: an NA code in a note is a line with no office price, not a dollar amount", na.lines.map((l) => [l.code, l.allowed, l.notOffice === true]), [["11004", 0, true]]);
+same("desk: Rest of NY says the same", run("Procedure 11004 was done.", NY).lines.map((l) => [l.code, l.allowed, l.notOffice === true]), [["11004", 0, true]]);
+same("desk: NA line is left out of the total", total(run("Procedure 11004 was done.\nTherapeutic exercise, 15 minutes.", NAT).lines), 29.06);
+import { readFileSync as rf } from "node:fs";
+const shard1 = JSON.parse(rf("public/years/physician/1.json", "utf8"));
+same("year shard: 11004 has no amount and is flagged for every year", [shard1["11004"].a["2026"], shard1["11004"].o.includes(2026), shard1["11004"].o.length], [null, true, 7]);
+same("year shard: 11401 is priced and not flagged", [typeof shard1["11401"].a["2026"], shard1["11401"].o], ["number", undefined]);
+import { describeCode } from "../src/lib/lookup/describe.ts";
+same("code description says not priced in the office setting", describeCode("Physician", { n: "Dbrdmt skin xtrnl gent&per", a: { 2026: null }, s: "A", o: [2026] }).includes("not priced in the office setting"), true);
+
+// ---- 1b. Invoice checker: therapy lines on one date are one day ----
+import { pricedForDay } from "../src/lib/lookup/mppr-lines.ts";
+const table = () => national.mppr;
+const c = (code) => national.rows.get(code).a["2026"];
+const day = pricedForDay([{ code: "97110", date: "2026-03-02", year: 2026, fileCents: c("97110") }, { code: "97140", date: "2026-03-02", year: 2026, fileCents: c("97140") }], table);
+same("invoice: 97110 + 97140 same date: 97110 is full, 97140 reduced", day.map((d) => [d.expectedCents, d.reduced]), [[2906, false], [2121, true]]);
+same("invoice: different dates are different days", pricedForDay([{ code: "97110", date: "2026-03-02", year: 2026, fileCents: c("97110") }, { code: "97140", date: "2026-03-03", year: 2026, fileCents: c("97140") }], table).map((d) => d.expectedCents), [2906, 2772]);
+same("invoice: a line with no date is priced alone at the full rate", pricedForDay([{ code: "97110", date: "", year: 2026, fileCents: c("97110") }, { code: "97140", date: "", year: 2026, fileCents: c("97140") }], table).map((d) => d.expectedCents), [2906, 2772]);
+same("invoice: a non-therapy code on the same date is not reduced", pricedForDay([{ code: "99214", date: "2026-03-02", year: 2026, fileCents: c("99214") }, { code: "97110", date: "2026-03-02", year: 2026, fileCents: c("97110") }], table).map((d) => d.expectedCents), [c("99214"), 2906]);
+same("invoice: three therapy lines match the desk's $76.15", pricedForDay(["97110", "97112", "97140"].map((code) => ({ code, date: "d", year: 2026, fileCents: c(code) })), table).reduce((n, d) => n + d.expectedCents, 0), 7615);
+
+// ---- 1c. Claim worksheet (internal, Rest of NY) ----
+import { allowedByLine, claimTotals, quoteCode, withReduction } from "../src/lib/billing/billing.ts";
+import { checkLine } from "../src/lib/billing/verify.ts";
+import { parseInvoice } from "../src/lib/billing/invoice.ts";
+const books = { physician: full26, ambulance: null, lab: null, dme: null };
+const lineOf = (id, code, units, chargeCents) => {
+  const q = quoteCode(books, code, "");
+  return { id, code, modifier: "", units, chargeCents, allowedCents: q.allowedCents, ...(q.mppr ? { mppr: q.mppr } : {}), schedule: q.schedule, note: q.note };
+};
+const claimLines = [lineOf("a", "97110", 3, 2827), lineOf("b", "97116", 1, 2827)];
+same("worksheet: quote carries the reduction values for 97110", quoteCode(books, "97110", "").mppr, { pe: 0.41, reducedCents: 2177 });
+same("worksheet: sample-01 allowed per line (28.27 + 2 x 21.77, and 21.77)", allowedByLine(claimLines), { a: 7181, b: 2177 });
+same("worksheet: sample-01 claim total is $93.58", claimTotals(claimLines).allowedCents, 9358);
+same("worksheet: a line saved without the reduction values is still reduced", claimTotals(withReduction(claimLines.map(({ mppr, ...rest }) => rest), books)).allowedCents, 9358);
+same("worksheet: charging the full rate on all four units is flagged", checkLine(claimLines[0], books, "medicare", null, claimLines).level, "high");
+const expectedA = checkLine(claimLines[0], books, "medicare", null, claimLines).expectedCents;
+same("worksheet: charging the reduced per-unit average clears", checkLine({ ...claimLines[0], chargeCents: expectedA }, books, "medicare", null, claimLines).level, "clear");
+same("worksheet: one 97110 unit alone is not reduced", claimTotals([lineOf("x", "97110", 1, 2827)]).allowedCents, 2827);
+same("worksheet: Medicaid claims are not reduced (4 x 28.27)", claimTotals(withReduction(claimLines, books, "medicaid")).allowedCents, 4 * 2827);
+const inv = parseInvoice("Entity: Clinic\n97110 Therapeutic exercise 2026-07-01 28.27\n97140 Manual therapy 2026-07-01 26.97", books, "2026-07-01");
+same("intake: second therapy line on the same date is expected at the reduced amount", inv.lines.map((l) => [l.allowedCents, l.mppr?.reduced === true, l.alert === null]), [[2827, false, true], [2078, true, false]]);
+same("intake: NA code is not priced and raises the no-office-price alert", parseInvoice("Entity: Clinic\n11004 Debridement 2026-07-01 100.00", books, "2026-07-01").lines.map((l) => [l.allowedCents, l.alert?.reason.startsWith("Not priced in the office setting")]), [[null, true]]);
+same("worksheet quote: NA code has no allowed amount and says why", [quoteCode(books, "11004", "").allowedCents, quoteCode(books, "11004", "").note.startsWith("Not priced in the office setting")], [null, true]);
+
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);

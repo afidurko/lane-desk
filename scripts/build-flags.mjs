@@ -74,9 +74,18 @@ for (const [year, rel] of Object.entries(SOURCES)) {
     delete row.mu;
     delete row.nn;
     delete row.fn;
-    if (src[18].trim() === "5") (row.mu = "5"), (mu += 1);
-    if (src[7].trim() === "NA") (row.nn = 1), (nn += 1);
-    if (src[9].trim() === "NA") (row.fn = 1), (fn += 1);
+    if (src[18].trim() === "5") {
+      row.mu = "5";
+      mu += 1;
+    }
+    if (src[7].trim() === "NA") {
+      row.nn = 1;
+      nn += 1;
+    }
+    if (src[9].trim() === "NA") {
+      row.fn = 1;
+      fn += 1;
+    }
   }
   const text = JSON.stringify(file) + "\n";
   const same = readFileSync(path, "utf8") === text;

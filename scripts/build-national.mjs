@@ -32,7 +32,9 @@ if (process.argv.includes("--check")) {
   let current = "";
   try {
     current = readFileSync("public/pfs-national-2026.json", "utf8");
-  } catch {}
+  } catch {
+    // no file yet: treated as out of date below
+  }
   console.log(current === text ? "pfs-national-2026.json is current" : "pfs-national-2026.json is out of date. Run: node scripts/build-national.mjs");
   process.exit(current === text ? 0 : 1);
 }
