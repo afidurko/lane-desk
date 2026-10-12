@@ -9,6 +9,7 @@ export const NAV = [
   { href: "/code", label: "Code" },
   { href: "/billing", label: "Claim" },
   { href: "/ops", label: "Files" },
+  { href: "/history", label: "History" },
 ] as const;
 
 const PRIMARY = [

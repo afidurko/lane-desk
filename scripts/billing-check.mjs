@@ -1,4 +1,5 @@
 import { quoteCode } from "../src/lib/billing/billing.ts";
+import { readFileSync } from "node:fs";
 import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
@@ -116,6 +117,11 @@ check("an unchanged amount is not called a previous use", previousUse([{ year: 2
 const emptyCounty = reasonMonth({ label: "Participant 1", county: "Cattaraugus", enrolled: true, gate: null, medicare: null, medicaid: null, esrd: false });
 check("the month says why Cattaraugus is empty", emptyCounty.some((step) => step.includes("no Medicare")) && emptyCounty.at(-1).includes("skips"));
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
+const history = JSON.parse(readFileSync("public/history/summary.json", "utf8"));
+const physician = history.families.find((row) => row.id === "physician");
+const therapy = JSON.parse(readFileSync("public/history/physician.json", "utf8")).find((row) => row.c === "97110");
+check("history counts the physician codes that changed", physician.changed === 7444 && physician.down === 5845);
+check("97110 history is the 2020 amount down to 2026", therapy.from === 2020 && therapy.to === 2026 && therapy.fc === 3047 && therapy.tc === 2827);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);
