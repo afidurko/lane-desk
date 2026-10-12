@@ -21,6 +21,7 @@ import { Route as InvoiceRouteImport } from './routes/invoice'
 import { Route as NyRouteImport } from './routes/ny'
 import { Route as OperateRouteImport } from './routes/operate'
 import { Route as OpsRouteImport } from './routes/ops'
+import { Route as PaceRouteImport } from './routes/pace'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProofRouteImport } from './routes/proof'
 import { Route as RequestRouteImport } from './routes/request'
@@ -91,6 +92,11 @@ const OpsRoute = OpsRouteImport.update({
   path: '/ops',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaceRoute = PaceRouteImport.update({
+  id: '/pace',
+  path: '/pace',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
+  '/pace': typeof PaceRoute
   '/pricing': typeof PricingRoute
   '/proof': typeof ProofRoute
   '/request': typeof RequestRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
+  '/pace': typeof PaceRoute
   '/pricing': typeof PricingRoute
   '/proof': typeof ProofRoute
   '/request': typeof RequestRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
+  '/pace': typeof PaceRoute
   '/pricing': typeof PricingRoute
   '/proof': typeof ProofRoute
   '/request': typeof RequestRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/ny'
     | '/operate'
     | '/ops'
+    | '/pace'
     | '/pricing'
     | '/proof'
     | '/request'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/ny'
     | '/operate'
     | '/ops'
+    | '/pace'
     | '/pricing'
     | '/proof'
     | '/request'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/ny'
     | '/operate'
     | '/ops'
+    | '/pace'
     | '/pricing'
     | '/proof'
     | '/request'
@@ -292,6 +304,7 @@ export interface RootRouteChildren {
   NyRoute: typeof NyRoute
   OperateRoute: typeof OperateRoute
   OpsRoute: typeof OpsRoute
+  PaceRoute: typeof PaceRoute
   PricingRoute: typeof PricingRoute
   ProofRoute: typeof ProofRoute
   RequestRoute: typeof RequestRoute
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pace': {
+      id: '/pace'
+      path: '/pace'
+      fullPath: '/pace'
+      preLoaderRoute: typeof PaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -468,6 +488,7 @@ const rootRouteChildren: RootRouteChildren = {
   NyRoute: NyRoute,
   OperateRoute: OperateRoute,
   OpsRoute: OpsRoute,
+  PaceRoute: PaceRoute,
   PricingRoute: PricingRoute,
   ProofRoute: ProofRoute,
   RequestRoute: RequestRoute,

@@ -18,6 +18,7 @@ export const PUBLIC_NAV: readonly NavItem[] = [
 
 /** Internal only. Never linked from a public build. */
 export const INTERNAL_NAV: readonly NavItem[] = [
+  { href: "/pace", label: "PACE month" },
   { href: "/billing", label: "Claim worksheet" },
   { href: "/book", label: "Code book" },
   { href: "/filter", label: "Filter codes" },
