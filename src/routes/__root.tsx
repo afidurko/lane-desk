@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Lane codes a de-identified encounter and prices the allowed amount, timed against the manual desk. The chart stays.",
+          "Lane reads a de-identified therapy note, names the code, and shows the Medicare reference price. Not a payment. Not an EHR. New York only.",
       },
       { name: "theme-color", content: "#2F5D56" },
     ],

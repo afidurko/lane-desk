@@ -1,3 +1,4 @@
+import { nyLocalities, localityName } from "@/lib/config/ny";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { GapRates } from "@/components/book/gap-rates";
@@ -244,10 +245,10 @@ export function BookPage() {
               <label className="text-sm font-medium text-ink sm:col-span-2">
                 Where was the service
                 <select value={locality} onChange={(event) => setLocality(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
-                  <option value="national">National, GPCI 1.000</option>
-                  {physician.localities.map((item) => (
+                  <option value="national">National reference, GPCI 1.000</option>
+                  {nyLocalities(physician.localities).map((item) => (
                     <option key={`${item.mac}-${item.number}`} value={`${item.mac}/${item.number}`}>
-                      {item.mac} {item.state ? `${item.state} ` : ""}{item.number} {item.name}
+                      {item.mac} NY {item.number} {localityName(item)}
                       {item.mac === "13282" && item.number === "99" ? " — Olean, 14760" : ""}
                     </option>
                   ))}

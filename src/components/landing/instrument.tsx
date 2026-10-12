@@ -78,10 +78,10 @@ export function Instrument() {
       <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
         <div>
           <p className="text-xs font-medium tracking-widest text-teal uppercase">Sample note</p>
-          <p className="text-sm text-muted">De-identified. Not a participant.</p>
+          <p className="text-sm text-muted">De-identified. Not a participant. Illustrative animation, not a measurement.</p>
         </div>
         <p className="font-display text-3xl text-ink tabular-nums" aria-live="polite">
-          <span className="sr-only">Script clock </span>
+          <span className="sr-only">Illustrative clock, not a measurement </span>
           {phase === "idle" ? (
             <span className="font-sans text-sm font-medium text-muted">{clockText}</span>
           ) : (
