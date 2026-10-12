@@ -10,6 +10,7 @@ import { indexNational, ratesOf } from "../src/lib/pricing/national.ts";
 import { sampleInvoice } from "../src/lib/demo/invoice-sample.ts";
 import { SAMPLES } from "../src/lib/demo/samples.ts";
 import { fromFile, allowedOf, review } from "../src/lib/desk/clock.ts";
+import { describeCode } from "../src/lib/lookup/describe.ts";
 import { runLane } from "../src/lib/desk/lane.ts";
 import { PLANS, planOf } from "../src/lib/billing/plans.ts";
 import { validateRequest, summaryText, mailtoLink } from "../src/lib/billing/invoice-request.ts";
@@ -63,6 +64,10 @@ check("sample note differs from the Rest of NY amount", lane.lines[0].allowed !=
 check("two services both priced", runLane(SAMPLES[1].note, null, null, fromFile(rates)).lines.length === 2);
 check("minutes become units", runLane(SAMPLES[2].note, null, null, fromFile(rates)).lines[0]?.units === 2);
 check("identifier sample is refused", review(SAMPLES[3].note, fromFile(rates)).gate === "phi" || runLane(SAMPLES[3].note, null, null, fromFile(rates)).lines.length === 0);
+
+// Public wording shows 2026 national only, never an older year or Rest of NY.
+const told = describeCode("Physician", { n: "Therapeutic exercises", s: "A", a: { "2020": 3047, "2026": 2906 } });
+check("public description is national 2026 only", told.includes("national") && told.includes("$29.06") && !told.includes("$30.47") && !/Rest of New York/.test(told));
 
 // Sample invoice: derived from the file.
 const inv = sampleInvoice((code) => national.rows.get(code)?.a["2026"] ?? undefined, 2026);

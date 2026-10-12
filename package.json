@@ -21,7 +21,7 @@
     "format": "prettier --write .",
     "prune:public": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/prune-public.mjs",
     "proof": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs",
-    "check": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/demo-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs --check",
+    "check": "VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/demo-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs --check",
     "e2e": "node scripts/e2e-demo.mjs"
   },
   "dependencies": {
