@@ -1,7 +1,9 @@
 import { quoteCode } from "../src/lib/billing/billing.ts";
 import { describeCode } from "../src/lib/lookup/describe.ts";
-import { pickOnce } from "../src/lib/lookup/once.ts";
+import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
+import { medicareCents } from "../src/lib/pace/rates.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
+import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
 import { buildPacket, nextGap, packetJson } from "../src/lib/billing/packet.ts";
 import { submitterReady } from "../src/lib/billing/submitter.ts";
@@ -85,6 +87,14 @@ const sheet = readInvoiceLines("CPT,DOS,Charge\n97110,2026-03-01,30.00");
 check("a spreadsheet header is not a line", sheet.length === 1 && sheet[0].code === "97110" && sheet[0].billedCents === 3000 && sheet[0].year === 2026);
 check("a 2026 line can use a file from that year", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2026)?.c === 13823);
 check("a 2024 line does not use a 2026-only file", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2024) === null);
+const openPerson = { id: "1", label: "Participant 1", county: "Cattaraugus", medicare: true, medicaid: true, esrd: false, age55: false, inArea: true, voluntary: true, community: true, loc: "open" };
+check("Cattaraugus has no loaded Medicare county rate", medicareCents("Cattaraugus", 2026, false) === null);
+check("Erie uses the loaded grouped rate", medicareCents("Erie", 2026, false) === 139641);
+check("ESRD replaces the county rate", medicareCents("Erie", 2026, true) === 1205155);
+check("a person is not enrolled until every gate is met", canEnroll(openPerson) === false);
+check("the month does not invent a Cattaraugus payment", monthLine(openPerson, 2026, null).medicare === null && monthLine({ ...openPerson, age55: true, loc: "met" }, 2026, 400000).missing.some((item) => item.includes("No Medicare")));
+check("a Social Security number is refused", blockedText("123-45-6789") !== null);
+check("the meeting names every required seat", missingSeats([...SEATS]).length === 0);
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));

@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { HelpChat } from "@/components/help/help-chat";
 
 export const NAV = [
+  { href: "/pace", label: "PACE" },
   { href: "/", label: "Invoice" },
   { href: "/code", label: "Code" },
   { href: "/billing", label: "Claim" },
@@ -11,6 +12,7 @@ export const NAV = [
 ] as const;
 
 const PRIMARY = [
+  { href: "/pace", label: "PACE" },
   { href: "/", label: "Invoice" },
   { href: "/code", label: "Code" },
   { href: "/billing", label: "Claim" },
