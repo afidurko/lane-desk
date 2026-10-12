@@ -92,7 +92,7 @@ export function AboutPage() {
               : "Year shown in this demo: 2026. The proof page checks every year from 2020 to 2026.",
             "Prices use the year-end release. For each year, Lane loads the last fee schedule CMS published that year, not the January release. A date of service early in a year can price a little differently from what Medicare used on that date.",
             IS_INTERNAL
-              ? "Known gap: 2024 dates of service from January 1 to March 8 used an earlier conversion factor. For 97110 in Rest of New York, the January 2024 CMS file gives $28.03 and this build gives $28.49. Other quarters match for the codes checked."
+              ? "Known gap: 2024 dates of service from January 1 to March 8 used an earlier conversion factor, so those dates price slightly higher here than in the January 2024 CMS file. Other quarters match for the codes checked."
               : "",
             IS_INTERNAL
               ? "Known gap: the 2020 file has no state labels, so New York localities are not offered for 2020. The 2020 Rest of New York amount is read by its contractor and locality number, and it has not been independently checked."

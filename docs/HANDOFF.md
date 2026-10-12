@@ -14,11 +14,27 @@ npm run preview & BASE_URL=http://127.0.0.1:8081 npm run e2e    # browser walk-t
 ```
 
 ## What was verified (real runs, files in `docs/evidence/`)
-- Lint: 0 errors (8 pre-existing warnings). Typecheck: clean. `npm run check`: 20,097 + 35 + 542 + 6 + 58 assertions, 0 failures.
+- Lint: 0 errors (9 warnings, all react-refresh/pre-existing style). Typecheck: clean. `npm run check`: 20,097 + 35 + 542 + 60 (new price-regression) + 6 + 58 assertions, 0 failures.
 - Price proof: 55,076 payable codes across 7 years recomputed from component RVUs, 0 differences; a deliberate 1-cent error is caught. Rest of NY year files and the 61-code therapy table also 0 differences.
-- Browser walk-through, public production build: 116 checks pass at 1280px and 375px (flows, refusals, no sideways scroll, no dead links, skip link and focus ring, one primary button per page, no request for any held-back file).
-  Internal dev: 120 checks pass, including Rest of NY 97110 = file amount, Manhattan from the same file, exactly five NY localities.
+- Browser walk-through, public production build: 134 checks pass at 1280px and 375px (flows, refusals, no sideways scroll, no dead links, skip link and focus ring, one primary button per page, no request for any held-back file).
+  Internal dev: 140 checks pass, including Rest of NY 97110 = file amount, Manhattan from the same file, exactly five NY localities.
 - Public build output contains: `pfs-national-2026.json`, `proof.json`, images, app code. No CLFS, no year shards, no NY Medicaid, no locality/GPCI table, none of the typed Rest of NY amounts (searched the built output).
+
+## Claims Wedge price check, 2026-10-12: what changed (commits `6226234`..HEAD, local only)
+Their report: single-code prices match CMS (0 mismatches). Four display problems, fixed in this order. Outputs are in `docs/evidence/price-check-fixes/`.
+1. **Therapy MPPR.** Full rate on the therapy unit with the highest non-facility practice-expense RVU; practice expense x 0.5 on every other therapy unit; each unit rounded to the cent (the answer key's rule). Applied on the **desk**, the **invoice checker** (lines with the same date = one patient's day, one unit each; an undated line is priced alone at the full rate), and the **claim worksheet** (a claim is one date; also the intake parser, the verifier, safe-fixes and the packet). Medicaid claims are not reduced. Every screen says "Multiple-procedure payment reduction applied" when a cut was made. Which codes: CMS MULT PROC indicator 5 (52 codes in 2026), added to the fee files as `mu` by `scripts/build-flags.mjs`. Results: sample-01 national **$95.69** (was $116.24), Rest of NY **$93.58** (was $113.08); 97110+97112+97140 national **$76.15** (was $89.51), Rest of NY $74.40. `npm run check:key` prices all 10 answer-key samples with the app: 0 differences, national and Rest of NY.
+2. **Note reader double count.** A line that names a service and also writes its code was counted twice. `linesOf` now takes one count per line of the note. "Therapeutic exercise (97110), 45 minutes, 3 units" prices 3 units. Two separate lines of one service still add.
+3. **Non-facility NA.** 4,043 payable codes in 2026 (flag `nn` from CMS "NON-FAC NA INDICATOR = NA"; same flag for every year) get **no office price**: the desk, invoice checker, Code screen, worksheet and intake say "Not priced in the office setting" and leave them out of totals. Public national file: 7,745 priced codes became 3,702. None of the 61 therapy codes is affected. Facility NA (`fn`) is loaded but nothing shows facility amounts in public, so it is not used yet.
+4. **97026.** Typed table said `separate: false`, $0. Now separate, $6.36 Rest of NY / $6.68 national. A loaded file now decides what is payable; the typed "not separate" flag only applies to the typed fallback. Found while fixing it: the internal Rest of NY rate map priced bundled (status B) codes such as 97010 from their RVUs; it now pays only statuses A, R, T.
+Also: the proof recomputes the reduction values and counts NA codes (`proof.json` now has `codesNotOffice`); proof still 55,076 codes, 0 differences. One pre-existing bug fixed because the new e2e hit it: duplicate React key for two alerts on one worksheet line.
+
+### Limits that remain (also on the About page in plain words)
+- **Prices use the year-end release.** For each year the app loads the last (D) release, not the January release. 2024 dates of service from Jan 1 to Mar 8 used an earlier conversion factor: 97110 Rest of NY is **$28.03** in the CMS January 2024 file, **$28.49** in the app. Other quarters match for the 27 codes Claims Wedge checked. The public About page says this without dollar figures; the internal About page names the 2024 gap.
+- **2020 has no state labels** in the app's file, so no NY locality is offered for 2020 and 2020 NY prices have not been independently checked. Rest of NY for 2020 is read by MAC 13282 / locality 99 (Code screen, invoice checker).
+- MPPR is by date of service and assumes one patient per invoice/claim. An invoice with several patients on one date would be reduced too much; the invoice screen says how lines are grouped. The typed 61-code table (used only when no file is loaded, and by `lane-check`) has no RVU components, so it cannot apply MPPR; no screen uses it.
+- The public national file now carries work, practice-expense and malpractice RVUs for the 52 therapy-indicator codes (needed for the cut). They are national CMS RVUs, no locality data.
+- `build-flags.mjs` and `build-years.mjs` read CMS files from `/workspace/healthcare-pfs/raw/ny_history`; the output is committed.
+- 18 `npm test` failures are the same pre-existing template ones as the baseline (`.grok/skills`, `/migrations`).
 
 ## Needs a decision from Aaron / Shield / Andrea
 1. **The GitHub repo `afidurko/lane-desk` is public (`private: false`) and `main` already contains `public/clfs-*.json`, `public/years/lab/`, and all Rest of NY data.** Pruning only protects a deployed build. If the lab files or RoNY figures must not be public, make the repo private or remove them from history. I did not touch the remote.

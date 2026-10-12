@@ -66,7 +66,7 @@ check("sample note prices at the national 2026 file amount", lane.lines.length =
 check("sample note differs from the Rest of NY amount", lane.lines[0].allowed !== 28.27);
 check("two services both priced", runLane(SAMPLES[1].note, null, null, fromFile(rates)).lines.length === 2);
 check("minutes become units", runLane(SAMPLES[2].note, null, null, fromFile(rates)).lines[0]?.units === 2);
-check("identifier sample is refused", review(SAMPLES[3].note, fromFile(rates)).gate === "phi" || runLane(SAMPLES[3].note, null, null, fromFile(rates)).lines.length === 0);
+check("identifier sample is refused", review(SAMPLES.find((sample) => sample.id === "refused").note, fromFile(rates)).gate === "phi" || runLane(SAMPLES.find((sample) => sample.id === "refused").note, null, null, fromFile(rates)).lines.length === 0);
 
 // Public wording shows 2026 national only, never an older year or Rest of NY.
 const told = describeCode("Physician", { n: "Therapeutic exercises", s: "A", a: { "2020": 3047, "2026": 2906 } });
