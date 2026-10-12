@@ -1,0 +1,23 @@
+
+> lint
+> eslint .
+
+
+/workspace/lane-desk-work/src/components/landing/shell.tsx
+  10:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  33:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/workspace/lane-desk-work/src/components/lookup/year-lookup.tsx
+  21:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  45:23  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  68:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  85:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/workspace/lane-desk-work/src/lib/auth/use-current-user.ts
+  59:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/rules-of-hooks')
+
+✖ 8 problems (0 errors, 8 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+lint exit 0

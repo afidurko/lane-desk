@@ -1,0 +1,1327 @@
+
+> test
+> node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts
+
+TAP version 13
+# Subtest: non-canvas app with no custom card gets a soft BRAND NOTE (utility exception)
+ok 1 - non-canvas app with no custom card gets a soft BRAND NOTE (utility exception)
+  ---
+  duration_ms: 2.607921
+  ...
+# Subtest: non-canvas app with a compliant card is silent
+ok 2 - non-canvas app with a compliant card is silent
+  ---
+  duration_ms: 1.929433
+  ...
+# Subtest: card file without site.json card=custom warns
+ok 3 - card file without site.json card=custom warns
+  ---
+  duration_ms: 0.940523
+  ...
+# Subtest: card file with missing site.json warns for card=custom
+ok 4 - card file with missing site.json warns for card=custom
+  ---
+  duration_ms: 1.736407
+  ...
+# Subtest: card file with invalid site.json warns for card=custom
+ok 5 - card file with invalid site.json warns for card=custom
+  ---
+  duration_ms: 4.255869
+  ...
+# Subtest: oversized card warns for non-canvas apps too
+ok 6 - oversized card warns for non-canvas apps too
+  ---
+  duration_ms: 2.070916
+  ...
+# Subtest: canvas app with no card warns 'missing' and missing og:type
+ok 7 - canvas app with no card warns 'missing' and missing og:type
+  ---
+  duration_ms: 1.03581
+  ...
+# Subtest: canvas card without type still warns for og:type
+ok 8 - canvas card without type still warns for og:type
+  ---
+  duration_ms: 1.096941
+  ...
+# Subtest: oversized card warns on the scraper budget (jpg and legacy png)
+ok 9 - oversized card warns on the scraper budget (jpg and legacy png)
+  ---
+  duration_ms: 4.934886
+  ...
+# Subtest: compliant game (custom card + site.json type + x-banner) is silent
+ok 10 - compliant game (custom card + site.json type + x-banner) is silent
+  ---
+  duration_ms: 1.511249
+  ...
+# Subtest: __root.tsx og:type no longer satisfies the canvas gate
+ok 11 - __root.tsx og:type no longer satisfies the canvas gate
+  ---
+  duration_ms: 1.236564
+  ...
+# Subtest: oversized x-banner warns on the same scraper budget as og.jpg
+ok 12 - oversized x-banner warns on the same scraper budget as og.jpg
+  ---
+  duration_ms: 1.614243
+  ...
+# Subtest: legacy png + site.json type still needs the X feed card
+ok 13 - legacy png + site.json type still needs the X feed card
+  ---
+  duration_ms: 0.916614
+  ...
+# Subtest: siteDeclaresOgTypeGame reads the site contract
+ok 14 - siteDeclaresOgTypeGame reads the site contract
+  ---
+  duration_ms: 0.110392
+  ...
+# Subtest: a fresh og-pending marker silences the whole gate view
+ok 15 - a fresh og-pending marker silences the whole gate view
+  ---
+  duration_ms: 0.451348
+  ...
+# Subtest: a stale og-pending marker is ignored and the warnings return
+ok 16 - a stale og-pending marker is ignored and the warnings return
+  ---
+  duration_ms: 0.474501
+  ...
+# Subtest: the marker goes stale on the clock, not on the file
+ok 17 - the marker goes stale on the clock, not on the file
+  ---
+  duration_ms: 0.467251
+  ...
+# Subtest: no marker means nothing is in flight
+ok 18 - no marker means nothing is in flight
+  ---
+  duration_ms: 0.307904
+  ...
+# Subtest: parseBrandCheckArgs takes --game, --placeholder-ok and --root, and rejects the rest
+ok 19 - parseBrandCheckArgs takes --game, --placeholder-ok and --root, and rejects the rest
+  ---
+  duration_ms: 0.317812
+  ...
+# Subtest: cli: a game missing its card reports JSON and exits 1
+ok 20 - cli: a game missing its card reports JSON and exits 1
+  ---
+  duration_ms: 38.491211
+  ...
+# Subtest: cli: a compliant game passes
+ok 21 - cli: a compliant game passes
+  ---
+  duration_ms: 36.532002
+  ...
+# Subtest: cli: the task's own marker is reported, not honoured
+ok 22 - cli: the task's own marker is reported, not honoured
+  ---
+  duration_ms: 35.180094
+  ...
+# Subtest: cli: a bad argument fails with JSON on stderr
+ok 23 - cli: a bad argument fails with JSON on stderr
+  ---
+  duration_ms: 54.646687
+  ...
+# Subtest: cli: a non-game with no card fails too — the pass exists to produce one
+ok 24 - cli: a non-game with no card fails too — the pass exists to produce one
+  ---
+  duration_ms: 38.363896
+  ...
+# Subtest: cli: --placeholder-ok is how a plain-utility pass reports no card as expected
+ok 25 - cli: --placeholder-ok is how a plain-utility pass reports no card as expected
+  ---
+  duration_ms: 61.863772
+  ...
+# Subtest: cli: a non-game with a compliant card passes
+ok 26 - cli: a non-game with a compliant card passes
+  ---
+  duration_ms: 30.235799
+  ...
+# Subtest: SKILL.md and AGENTS.md name the marker path and bound this script uses
+not ok 27 - SKILL.md and AGENTS.md name the marker path and bound this script uses
+  ---
+  duration_ms: 0.352505
+  location: '/workspace/lane-desk-work/scripts/brand-check.test.mjs:308:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open '/workspace/lane-desk-work/.grok/skills/og/SKILL.md'"
+  code: 'ENOENT'
+  stack: |-
+    readFileSync (node:fs:441:20)
+    readDoc (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:306:26)
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:312:17)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: the sections that own the brand-task prohibition never affirm a wait
+not ok 28 - the sections that own the brand-task prohibition never affirm a wait
+  ---
+  duration_ms: 0.20768
+  location: '/workspace/lane-desk-work/scripts/brand-check.test.mjs:346:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open '/workspace/lane-desk-work/.grok/skills/og/SKILL.md'"
+  code: 'ENOENT'
+  stack: |-
+    readFileSync (node:fs:441:20)
+    readDoc (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:306:26)
+    prohibitionSection (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:337:15)
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:354:19)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: SKILL.md tells the pass to self-check with the flag this CLI accepts
+not ok 29 - SKILL.md tells the pass to self-check with the flag this CLI accepts
+  ---
+  duration_ms: 0.107308
+  location: '/workspace/lane-desk-work/scripts/brand-check.test.mjs:365:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open '/workspace/lane-desk-work/.grok/skills/og/SKILL.md'"
+  code: 'ENOENT'
+  stack: |-
+    readFileSync (node:fs:441:20)
+    readDoc (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:306:26)
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/brand-check.test.mjs:366:17)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: normalizes whitespace before hashing
+ok 30 - normalizes whitespace before hashing
+  ---
+  duration_ms: 1.843812
+  ...
+# Subtest: nullish and blank body text normalize to the empty string
+ok 31 - nullish and blank body text normalize to the empty string
+  ---
+  duration_ms: 0.287641
+  ...
+# Subtest: body text prefix is normalized and capped
+ok 32 - body text prefix is normalized and capped
+  ---
+  duration_ms: 0.168159
+  ...
+# Subtest: identical runs do not diverge
+ok 33 - identical runs do not diverge
+  ---
+  duration_ms: 0.933001
+  ...
+# Subtest: status change diverges
+ok 34 - status change diverges
+  ---
+  duration_ms: 1.7305
+  ...
+# Subtest: title change diverges
+ok 35 - title change diverges
+  ---
+  duration_ms: 0.129177
+  ...
+# Subtest: title comparison is skipped when either side lacks one
+ok 36 - title comparison is skipped when either side lacks one
+  ---
+  duration_ms: 0.195446
+  ...
+# Subtest: canvas disappearing diverges; canvas appearing does not
+ok 37 - canvas disappearing diverges; canvas appearing does not
+  ---
+  duration_ms: 0.121952
+  ...
+# Subtest: horizontal overflow appearing diverges; clearing does not
+ok 38 - horizontal overflow appearing diverges; clearing does not
+  ---
+  duration_ms: 0.234883
+  ...
+# Subtest: new console errors diverge
+ok 39 - new console errors diverge
+  ---
+  duration_ms: 0.349434
+  ...
+# Subtest: errors already present in the baseline do not re-diverge
+ok 40 - errors already present in the baseline do not re-diverge
+  ---
+  duration_ms: 0.158717
+  ...
+# Subtest: body text collapse diverges
+ok 41 - body text collapse diverges
+  ---
+  duration_ms: 0.081866
+  ...
+# Subtest: body text dropping to zero reports collapse
+ok 42 - body text dropping to zero reports collapse
+  ---
+  duration_ms: 0.062927
+  ...
+# Subtest: zero-length baseline reports growth via the hash branch, not collapse
+ok 43 - zero-length baseline reports growth via the hash branch, not collapse
+  ---
+  duration_ms: 0.123499
+  ...
+# Subtest: hash mismatch with a trivial length delta and same page start is tolerated
+ok 44 - hash mismatch with a trivial length delta and same page start is tolerated
+  ---
+  duration_ms: 0.05583
+  ...
+# Subtest: hash mismatch with a trivial length delta but changed page start diverges
+ok 45 - hash mismatch with a trivial length delta but changed page start diverges
+  ---
+  duration_ms: 0.058959
+  ...
+# Subtest: prefix check is skipped when either side lacks a prefix
+ok 46 - prefix check is skipped when either side lacks a prefix
+  ---
+  duration_ms: 0.092659
+  ...
+# Subtest: length-delta tolerance boundary: 50 tolerated, 51 diverges (500-char baseline)
+ok 47 - length-delta tolerance boundary: 50 tolerated, 51 diverges (500-char baseline)
+  ---
+  duration_ms: 0.059584
+  ...
+# Subtest: length-delta floor dominates small baselines: 20 tolerated, 21 diverges (100-char baseline)
+ok 48 - length-delta floor dominates small baselines: 20 tolerated, 21 diverges (100-char baseline)
+  ---
+  duration_ms: 0.052778
+  ...
+# Subtest: collapse boundary: exactly half is 'changed', one below is 'collapsed'
+ok 49 - collapse boundary: exactly half is 'changed', one below is 'collapsed'
+  ---
+  duration_ms: 0.061781
+  ...
+# Subtest: missing baseline viewport diverges
+ok 50 - missing baseline viewport diverges
+  ---
+  duration_ms: 0.056193
+  ...
+# Subtest: empty or null baseline diverges for every viewport
+ok 51 - empty or null baseline diverges for every viewport
+  ---
+  duration_ms: 0.068794
+  ...
+# Subtest: degenerate current verdict fails closed
+ok 52 - degenerate current verdict fails closed
+  ---
+  duration_ms: 0.213788
+  ...
+# Subtest: multiple signals across viewports all accumulate
+ok 53 - multiple signals across viewports all accumulate
+  ---
+  duration_ms: 0.093579
+  ...
+# Subtest: baselineComparison round-trips a valid baseline
+ok 54 - baselineComparison round-trips a valid baseline
+  ---
+  duration_ms: 0.120667
+  ...
+# Subtest: baselineComparison fails closed on malformed or wrong-shape baselines
+ok 55 - baselineComparison fails closed on malformed or wrong-shape baselines
+  ---
+  duration_ms: 0.290606
+  ...
+# Subtest: parseSmokeArgs defaults
+ok 56 - parseSmokeArgs defaults
+  ---
+  duration_ms: 0.133022
+  ...
+# Subtest: parseSmokeArgs consumes --baseline without shifting positionals
+ok 57 - parseSmokeArgs consumes --baseline without shifting positionals
+  ---
+  duration_ms: 0.056991
+  ...
+# Subtest: parseSmokeArgs rejects a trailing --baseline flag
+ok 58 - parseSmokeArgs rejects a trailing --baseline flag
+  ---
+  duration_ms: 0.044112
+  ...
+# Subtest: parseSmokeArgs supports the --baseline= form
+ok 59 - parseSmokeArgs supports the --baseline= form
+  ---
+  duration_ms: 0.054117
+  ...
+# Subtest: parseSmokeArgs rejects unknown flags instead of treating them as positionals
+ok 60 - parseSmokeArgs rejects unknown flags instead of treating them as positionals
+  ---
+  duration_ms: 0.103465
+  ...
+# Subtest: parseSmokeArgs env fallback and flag precedence
+ok 61 - parseSmokeArgs env fallback and flag precedence
+  ---
+  duration_ms: 0.065021
+  ...
+# Subtest: derivedPaths handles .png, .PNG, and extensionless inputs
+ok 62 - derivedPaths handles .png, .PNG, and extensionless inputs
+  ---
+  duration_ms: 0.131283
+  ...
+# Subtest: exitCodeFor: clean run exits 0
+ok 63 - exitCodeFor: clean run exits 0
+  ---
+  duration_ms: 0.084418
+  ...
+# Subtest: exitCodeFor: errors in any single viewport exit 2
+ok 64 - exitCodeFor: errors in any single viewport exit 2
+  ---
+  duration_ms: 0.050321
+  ...
+# Subtest: exitCodeFor: navigation failure in any viewport exits 1, beating errors
+ok 65 - exitCodeFor: navigation failure in any viewport exits 1, beating errors
+  ---
+  duration_ms: 0.047045
+  ...
+# Subtest: exitCodeFor: 4xx boundary and missing status
+ok 66 - exitCodeFor: 4xx boundary and missing status
+  ---
+  duration_ms: 0.0469
+  ...
+# Subtest: exitCodeFor: no viewport data is a failure
+ok 67 - exitCodeFor: no viewport data is a failure
+  ---
+  duration_ms: 0.038059
+  ...
+# Subtest: browser-smoke wires the guard and verdict helpers
+ok 68 - browser-smoke wires the guard and verdict helpers
+  ---
+  duration_ms: 0.37019
+  ...
+# Subtest: browser-smoke file I/O only touches guarded paths
+ok 69 - browser-smoke file I/O only touches guarded paths
+  ---
+  duration_ms: 0.330778
+  ...
+# Subtest: the flag predicate matches src/lib/auth
+ok 70 - the flag predicate matches src/lib/auth
+  ---
+  duration_ms: 0.762935
+  ...
+# Subtest: reads the value a live dev server resolved
+ok 71 - reads the value a live dev server resolved
+  ---
+  duration_ms: 0.250343
+  ...
+# Subtest: a server started without the flag reads as sign-in on
+ok 72 - a server started without the flag reads as sign-in on
+  ---
+  duration_ms: 0.107268
+  ...
+# Subtest: agreement passes
+ok 73 - agreement passes
+  ---
+  duration_ms: 0.134948
+  ...
+# Subtest: divergence fails in either direction
+ok 74 - divergence fails in either direction
+  ---
+  duration_ms: 0.167347
+  ...
+# Subtest: an unobservable dev server is indeterminate, not agreement
+ok 75 - an unobservable dev server is indeterminate, not agreement
+  ---
+  duration_ms: 0.077123
+  ...
+# Subtest: a dev server that cannot be reached probes as null
+ok 76 - a dev server that cannot be reached probes as null
+  ---
+  duration_ms: 0.272365
+  ...
+# Subtest: a server without the endpoint probes as null, not as agreement
+ok 77 - a server without the endpoint probes as null, not as agreement
+  ---
+  duration_ms: 0.194579
+  ...
+# Subtest: only a divergence warns the smoke verdict
+ok 78 - only a divergence warns the smoke verdict
+  ---
+  duration_ms: 0.744152
+  ...
+# Subtest: the build side resolves the template's shipped app-env
+not ok 79 - the build side resolves the template's shipped app-env
+  ---
+  duration_ms: 1.048965
+  location: '/workspace/lane-desk-work/scripts/check-auth-invariant.test.mjs:93:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/check-auth-invariant.test.mjs:94:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: the CLI reports rather than silently passing when run via a symlink
+ok 80 - the CLI reports rather than silently passing when run via a symlink
+  ---
+  duration_ms: 72.907011
+  ...
+# Subtest: injects before </head>
+ok 81 - injects before </head>
+  ---
+  duration_ms: 4.486
+  ...
+# Subtest: injects the extensions script without a project id
+ok 82 - injects the extensions script without a project id
+  ---
+  duration_ms: 0.593151
+  ...
+# Subtest: injects project id on the script and meta when provided
+ok 83 - injects project id on the script and meta when provided
+  ---
+  duration_ms: 0.349995
+  ...
+# Subtest: does not duplicate grok:app_id
+ok 84 - does not duplicate grok:app_id
+  ---
+  duration_ms: 0.526652
+  ...
+# Subtest: omits x:creator tags without both creator values
+ok 85 - omits x:creator tags without both creator values
+  ---
+  duration_ms: 0.752392
+  ...
+# Subtest: injects x:creator tags when both creator values are set
+ok 86 - injects x:creator tags when both creator values are set
+  ---
+  duration_ms: 0.221621
+  ...
+# Subtest: escapes x:creator values
+ok 87 - escapes x:creator values
+  ---
+  duration_ms: 0.16961
+  ...
+# Subtest: does not duplicate x:creator tags
+ok 88 - does not duplicate x:creator tags
+  ---
+  duration_ms: 0.550869
+  ...
+# Subtest: platform chrome overwrites share-card metas and always sets og:title
+not ok 89 - platform chrome overwrites share-card metas and always sets og:title
+  ---
+  duration_ms: 1.131768
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:105:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:title" content="Hello World"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><title>Hello World</title><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><title>Hello World</title><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:110:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: does not duplicate twitter:card or og:title
+ok 90 - does not duplicate twitter:card or og:title
+  ---
+  duration_ms: 1.088888
+  ...
+# Subtest: a baked site.image is treated as a custom card
+ok 91 - a baked site.image is treated as a custom card
+  ---
+  duration_ms: 0.790843
+  ...
+# Subtest: baked identity does not need a workspace filesystem
+ok 92 - baked identity does not need a workspace filesystem
+  ---
+  duration_ms: 0.583261
+  ...
+# Subtest: a public card file wins over a baked site without card=custom
+ok 93 - a public card file wins over a baked site without card=custom
+  ---
+  duration_ms: 0.710554
+  ...
+# Subtest: public/og.png wins when jpg is absent
+ok 94 - public/og.png wins when jpg is absent
+  ---
+  duration_ms: 0.586018
+  ...
+# Subtest: resolveOgCardAsset: disk file, then bake, then empty (placeholder)
+ok 95 - resolveOgCardAsset: disk file, then bake, then empty (placeholder)
+  ---
+  duration_ms: 0.494084
+  ...
+# Subtest: snapshotOgIdentity stamps card=custom from a public card file
+ok 96 - snapshotOgIdentity stamps card=custom from a public card file
+  ---
+  duration_ms: 0.392309
+  ...
+# Subtest: snapshotOgIdentity stamps banner from public/x-banner.jpg
+ok 97 - snapshotOgIdentity stamps banner from public/x-banner.jpg
+  ---
+  duration_ms: 0.399261
+  ...
+# Subtest: emits x:game:image for a public host when site.banner is set
+ok 98 - emits x:game:image for a public host when site.banner is set
+  ---
+  duration_ms: 0.289531
+  ...
+# Subtest: does not emit x:game:image without a public host or banner
+ok 99 - does not emit x:game:image without a public host or banner
+  ---
+  duration_ms: 1.183039
+  ...
+# Subtest: site title Grok App is a real name, not a sentinel
+ok 100 - site title Grok App is a real name, not a sentinel
+  ---
+  duration_ms: 0.186564
+  ...
+# Subtest: published grok.me slug is still a title fallback
+not ok 101 - published grok.me slug is still a title fallback
+  ---
+  duration_ms: 0.317218
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:246:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:title" content="Wild Race"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><meta property="og:image" content="https://wild-race.grok.me/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="x:game:image" content="https://wild-race.grok.me/x-banner.jpg"><meta property="x:game:image:width" content="1200"><meta property="x:game:image:height" content="264"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><meta property="og:image" content="https://wild-race.grok.me/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="x:game:image" content="https://wild-race.grok.me/x-banner.jpg"><meta property="x:game:image:width" content="1200"><meta property="x:game:image:height" content="264"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:250:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: rejects Vercel system hosts as og:image origins
+ok 102 - rejects Vercel system hosts as og:image origins
+  ---
+  duration_ms: 0.099768
+  ...
+# Subtest: published VITE_PUBLIC_HOSTNAME wins over request Host for og:image
+ok 103 - published VITE_PUBLIC_HOSTNAME wins over request Host for og:image
+  ---
+  duration_ms: 0.200036
+  ...
+# Subtest: vercel Host without a public hostname emits no og:image
+ok 104 - vercel Host without a public hostname emits no og:image
+  ---
+  duration_ms: 0.163962
+  ...
+# Subtest: emits og:image for a public host and prefers a custom card
+not ok 105 - emits og:image for a public host and prefers a custom card
+  ---
+  duration_ms: 0.293575
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:305:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:image" content="https:\/\/og\.grok\.me\/v1\/card\.png\?host=wild-race\.grok\.me&amp;title=Wild%20Race"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Wild Race"><meta property="og:image" content="https://wild-race.grok.me/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Wild Race"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Wild Race"><meta property="og:image" content="https://wild-race.grok.me/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Wild Race"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:311:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: placeholder og:image appends site.color when it is 6-digit hex
+not ok 106 - placeholder og:image appends site.color when it is 6-digit hex
+  ---
+  duration_ms: 0.181391
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:326:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:image" content="https:\/\/og\.grok\.me\/v1\/card\.png\?host=wild-race\.grok\.me&amp;title=Wild%20Race&amp;color=FF4D2E"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Wild Race"><meta property="og:image" content="https://wild-race.grok.me/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Wild Race"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Wild Race"><meta property="og:image" content="https://wild-race.grok.me/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Wild Race"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:331:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: document title entities are not double-escaped on og:title
+not ok 107 - document title entities are not double-escaped on og:title
+  ---
+  duration_ms: 0.26623
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:349:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:title" content="Cats &amp; Dogs"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><title>Cats &amp; Dogs</title><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><title>Cats &amp; Dogs</title><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:353:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: site.json title wins over the host slug
+ok 108 - site.json title wins over the host slug
+  ---
+  duration_ms: 0.108517
+  ...
+# Subtest: injects into documents with no head element
+not ok 109 - injects into documents with no head element
+  ---
+  duration_ms: 0.262764
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:365:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:title" content="Solo"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head><body>hi</body></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head><body>hi</body></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:368:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: streaming injector matches </HEAD> case-insensitively
+not ok 110 - streaming injector matches </HEAD> case-insensitively
+  ---
+  duration_ms: 0.482451
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:372:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /property="og:title" content="x"/. Input:
+    
+    '<html><HEAD><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><title>x</title><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head><body>hello</body></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><HEAD><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><title>x</title><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head><body>hello</body></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:379:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: omits the extensions script when the deployer disables it
+ok 111 - omits the extensions script when the deployer disables it
+  ---
+  duration_ms: 0.544976
+  ...
+# Subtest: keeps the extensions script on commercial when the deployer enables it
+ok 112 - keeps the extensions script on commercial when the deployer enables it
+  ---
+  duration_ms: 0.14651
+  ...
+# Subtest: does not duplicate the extensions script
+ok 113 - does not duplicate the extensions script
+  ---
+  duration_ms: 0.137993
+  ...
+# Subtest: is idempotent
+ok 114 - is idempotent
+  ---
+  duration_ms: 0.105693
+  ...
+# Subtest: uses the app name in the injected title tag
+not ok 115 - uses the app name in the injected title tag
+  ---
+  duration_ms: 0.289472
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:432:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /apple-mobile-web-app-title" content="Wild Race"/. Input:
+    
+    '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<html><head><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="Lane"><link rel="manifest" href="/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="Lane"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#000000"><script src="https://grok.com/grok-app-builder/extensions.js" defer></script></head></html>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:434:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: streaming injector handles </head> split across chunks
+ok 116 - streaming injector handles </head> split across chunks
+  ---
+  duration_ms: 0.413004
+  ...
+# Subtest: streaming injector passes post-head chunks through untouched
+ok 117 - streaming injector passes post-head chunks through untouched
+  ---
+  duration_ms: 0.220485
+  ...
+# Subtest: streaming injector falls back when no </head> is seen
+ok 118 - streaming injector falls back when no </head> is seen
+  ---
+  duration_ms: 0.156295
+  ...
+# Subtest: detects install query
+ok 119 - detects install query
+  ---
+  duration_ms: 0.281911
+  ...
+# Subtest: filters non-document paths
+ok 120 - filters non-document paths
+  ---
+  duration_ms: 0.306497
+  ...
+# Subtest: strips install params from the app link
+ok 121 - strips install params from the app link
+  ---
+  duration_ms: 0.145682
+  ...
+# Subtest: names the install page from host slug
+ok 122 - names the install page from host slug
+  ---
+  duration_ms: 0.120048
+  ...
+# Subtest: rejects hosts that are not plain slugs
+ok 123 - rejects hosts that are not plain slugs
+  ---
+  duration_ms: 0.054866
+  ...
+# Subtest: renders install page markup
+ok 124 - renders install page markup
+  ---
+  duration_ms: 0.303817
+  ...
+# Subtest: escapes host-derived values in the install page
+ok 125 - escapes host-derived values in the install page
+  ---
+  duration_ms: 0.124228
+  ...
+# Subtest: renders the manifest with the per-app name
+ok 126 - renders the manifest with the per-app name
+  ---
+  duration_ms: 0.154222
+  ...
+# Subtest: vite config keeps the nitro serverDir wiring
+ok 127 - vite config keeps the nitro serverDir wiring
+  ---
+  duration_ms: 0.219154
+  ...
+# Subtest: nitro middleware and its bundled assets exist
+not ok 128 - nitro middleware and its bundled assets exist
+  ---
+  duration_ms: 0.155256
+  location: '/workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:527:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open '/workspace/lane-desk-work/server/middleware/grok-pwa.ts'"
+  code: 'ENOENT'
+  stack: |-
+    readFileSync (node:fs:441:20)
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/grok-pwa-plugin.test.mjs:528:22)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: vite plugin bakes og identity as a virtual module
+ok 129 - vite plugin bakes og identity as a virtual module
+  ---
+  duration_ms: 0.111744
+  ...
+# Subtest: _migrations keys on basename, not path
+ok 130 - _migrations keys on basename, not path
+  ---
+  duration_ms: 0.692284
+  ...
+# Subtest: a file already applied from another directory does not re-apply
+ok 131 - a file already applied from another directory does not re-apply
+  ---
+  duration_ms: 0.558048
+  ...
+# Subtest: pending migrations are returned in name order
+ok 132 - pending migrations are returned in name order
+  ---
+  duration_ms: 7.770321
+  ...
+# Subtest: non-.sql entries are dropped (readdir also yields the auth/ directory)
+ok 133 - non-.sql entries are dropped (readdir also yields the auth/ directory)
+  ---
+  duration_ms: 0.14856
+  ...
+# Subtest: the auth schema ships outside the globbed directory
+not ok 134 - the auth schema ships outside the globbed directory
+  ---
+  duration_ms: 0.367923
+  location: '/workspace/lane-desk-work/scripts/migration-plan.test.mjs:59:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, scandir '/workspace/lane-desk-work/migrations'"
+  code: 'ENOENT'
+  stack: |-
+    readdirSync (node:fs:1502:26)
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/migration-plan.test.mjs:61:38)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: this workspace's auth schema copy is byte-identical to its source
+ok 135 - this workspace's auth schema copy is byte-identical to its source
+  ---
+  duration_ms: 0.24098
+  ...
+# Subtest: the copy check reads both files and catches an edit
+ok 136 - the copy check reads both files and catches an edit
+  ---
+  duration_ms: 1.349257
+  ...
+# Subtest: parsePreviewArgs accepts the two actions
+ok 137 - parsePreviewArgs accepts the two actions
+  ---
+  duration_ms: 1.377013
+  ...
+# Subtest: parsePreviewArgs rejects missing, unknown and extra arguments
+ok 138 - parsePreviewArgs rejects missing, unknown and extra arguments
+  ---
+  duration_ms: 0.272539
+  ...
+# Subtest: parsePid reads a pidfile and rejects junk
+ok 139 - parsePid reads a pidfile and rejects junk
+  ---
+  duration_ms: 0.140023
+  ...
+# Subtest: parsePgid reads the pgrp field past a comm containing spaces
+ok 140 - parsePgid reads the pgrp field past a comm containing spaces
+  ---
+  duration_ms: 0.182673
+  ...
+# Subtest: parseListenerInodes picks LISTEN sockets on the wanted port only
+ok 141 - parseListenerInodes picks LISTEN sockets on the wanted port only
+  ---
+  duration_ms: 0.304273
+  ...
+# Subtest: parseListenerInodes reads the tcp6 dump the same way
+ok 142 - parseListenerInodes reads the tcp6 dump the same way
+  ---
+  duration_ms: 0.126076
+  ...
+# Subtest: looksLikePreviewProcess matches the npm wrapper and its vite child
+ok 143 - looksLikePreviewProcess matches the npm wrapper and its vite child
+  ---
+  duration_ms: 0.355051
+  ...
+# Subtest: looksLikePreviewProcess spares the sibling scripts and re-used pids
+ok 144 - looksLikePreviewProcess spares the sibling scripts and re-used pids
+  ---
+  duration_ms: 0.148522
+  ...
+# Subtest: previewOwners trusts port owners and dedupes the pidfile pid
+ok 145 - previewOwners trusts port owners and dedupes the pidfile pid
+  ---
+  duration_ms: 0.446097
+  ...
+# Subtest: previewOwners adds a pidfile pid whose command line is still the preview
+ok 146 - previewOwners adds a pidfile pid whose command line is still the preview
+  ---
+  duration_ms: 0.342559
+  ...
+# Subtest: previewOwners drops a stale pidfile pid re-used by another process
+ok 147 - previewOwners drops a stale pidfile pid re-used by another process
+  ---
+  duration_ms: 0.154043
+  ...
+# Subtest: previewOwners drops a pidfile pid that no longer exists
+ok 148 - previewOwners drops a pidfile pid that no longer exists
+  ---
+  duration_ms: 0.120537
+  ...
+# Subtest: previewOwners on a free port with no pidfile signals nothing
+ok 149 - previewOwners on a free port with no pidfile signals nothing
+  ---
+  duration_ms: 0.058968
+  ...
+# Subtest: stopOutcome fails when a pid survives or the port is still held
+ok 150 - stopOutcome fails when a pid survives or the port is still held
+  ---
+  duration_ms: 0.135032
+  ...
+# Subtest: stopOutcome reports a verified free port
+ok 151 - stopOutcome reports a verified free port
+  ---
+  duration_ms: 0.075819
+  ...
+# Subtest: stopOutcome fails on a listener whose owner cannot be attributed
+ok 152 - stopOutcome fails on a listener whose owner cannot be attributed
+  ---
+  duration_ms: 0.063929
+  ...
+# Subtest: terminatePids SIGTERMs live pids and skips dead ones
+ok 153 - terminatePids SIGTERMs live pids and skips dead ones
+  ---
+  duration_ms: 1.524088
+  ...
+# Subtest: terminatePids escalates to SIGKILL when SIGTERM is ignored
+ok 154 - terminatePids escalates to SIGKILL when SIGTERM is ignored
+  ---
+  duration_ms: 0.412682
+  ...
+# Subtest: terminatePids reports a pid that survives SIGKILL as stubborn
+ok 155 - terminatePids reports a pid that survives SIGKILL as stubborn
+  ---
+  duration_ms: 0.368249
+  ...
+# Subtest: terminatePids on a free port signals nothing
+ok 156 - terminatePids on a free port signals nothing
+  ---
+  duration_ms: 0.094245
+  ...
+# (node:1774412) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: preview: a successful sign-out clears the token, then redirects
+ok 157 - preview: a successful sign-out clears the token, then redirects
+  ---
+  duration_ms: 2.592043
+  ...
+# Subtest: preview: a rejected sign-out still clears the token and redirects
+ok 158 - preview: a rejected sign-out still clears the token and redirects
+  ---
+  duration_ms: 0.339953
+  ...
+# Subtest: preview: a sign-out that throws synchronously still clears and redirects
+ok 159 - preview: a sign-out that throws synchronously still clears and redirects
+  ---
+  duration_ms: 0.185309
+  ...
+# Subtest: preview: a sign-out that never settles clears and redirects once the wait expires
+ok 160 - preview: a sign-out that never settles clears and redirects once the wait expires
+  ---
+  duration_ms: 10.096769
+  ...
+# Subtest: preview: no bearer means nothing to invalidate, so no request is made
+ok 161 - preview: no bearer means nothing to invalidate, so no request is made
+  ---
+  duration_ms: 0.307463
+  ...
+# Subtest: preview: a stored bearer is still invalidated server-side
+ok 162 - preview: a stored bearer is still invalidated server-side
+  ---
+  duration_ms: 0.175349
+  ...
+# Subtest: deployed: a confirmed sign-out clears the token, then redirects
+ok 163 - deployed: a confirmed sign-out clears the token, then redirects
+  ---
+  duration_ms: 0.217012
+  ...
+# Subtest: deployed: a sign-out that never settles throws and does NOT redirect
+ok 164 - deployed: a sign-out that never settles throws and does NOT redirect
+  ---
+  duration_ms: 21.984848
+  ...
+# Subtest: deployed: a rejected sign-out throws and does NOT redirect
+ok 165 - deployed: a rejected sign-out throws and does NOT redirect
+  ---
+  duration_ms: 0.599509
+  ...
+# Subtest: deployed: the timeout is distinguishable from a rejection
+ok 166 - deployed: the timeout is distinguishable from a rejection
+  ---
+  duration_ms: 20.520695
+  ...
+# Subtest: settleWithin reports the outcome and never rejects
+ok 167 - settleWithin reports the outcome and never rejects
+  ---
+  duration_ms: 21.777721
+  ...
+# Subtest: settleWithin waits its full window, then gives up rather than hanging
+ok 168 - settleWithin waits its full window, then gives up rather than hanging
+  ---
+  duration_ms: 1.448784
+  ...
+# Subtest: pre-sign-in: the preview clear gives up at the preview bound
+ok 169 - pre-sign-in: the preview clear gives up at the preview bound
+  ---
+  duration_ms: 0.714539
+  ...
+# Subtest: pre-sign-in: a deployed session gets the deployed window, not the preview one
+ok 170 - pre-sign-in: a deployed session gets the deployed window, not the preview one
+  ---
+  duration_ms: 0.509708
+  ...
+# Subtest: pre-sign-in: a failed clear never blocks sign-in
+ok 171 - pre-sign-in: a failed clear never blocks sign-in
+  ---
+  duration_ms: 0.220759
+  ...
+# Subtest: pre-sign-in: the preview skips the request when there is no bearer
+ok 172 - pre-sign-in: the preview skips the request when there is no bearer
+  ---
+  duration_ms: 0.097269
+  ...
+# Subtest: every sign-out bound comes from one rule
+ok 173 - every sign-out bound comes from one rule
+  ---
+  duration_ms: 0.055888
+  ...
+# Subtest: the defaults are bounded, and deployed waits longer than preview
+ok 174 - the defaults are bounded, and deployed waits longer than preview
+  ---
+  duration_ms: 0.251893
+  ...
+# Subtest: keeps VITE_-prefixed string entries
+ok 175 - keeps VITE_-prefixed string entries
+  ---
+  duration_ms: 1.294345
+  ...
+# Subtest: drops non-VITE keys, non-string values and malformed documents
+ok 176 - drops non-VITE keys, non-string values and malformed documents
+  ---
+  duration_ms: 0.200017
+  ...
+# Subtest: a missing app-env.json is a clean no-op
+ok 177 - a missing app-env.json is a clean no-op
+  ---
+  duration_ms: 0.374054
+  ...
+# Subtest: reads the app env from a workspace
+ok 178 - reads the app env from a workspace
+  ---
+  duration_ms: 0.298361
+  ...
+# Subtest: an explicit process-env override wins over the file
+ok 179 - an explicit process-env override wins over the file
+  ---
+  duration_ms: 0.147628
+  ...
+# Subtest: the template ships auth off
+not ok 180 - the template ships auth off
+  ---
+  duration_ms: 1.078056
+  location: '/workspace/lane-desk-work/scripts/with-app-env.test.mjs:62:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + {}
+    - {
+    -   VITE_AUTH_ENABLED: 'false'
+    - }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    VITE_AUTH_ENABLED: 'false'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/with-app-env.test.mjs:63:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: vite loadEnv resolves the wrapped value
+ok 181 - vite loadEnv resolves the wrapped value
+  ---
+  duration_ms: 0.539864
+  ...
+# Subtest: the wrapped command runs with the app env applied
+not ok 182 - the wrapped command runs with the app env applied
+  ---
+  duration_ms: 62.11804
+  location: '/workspace/lane-desk-work/scripts/with-app-env.test.mjs:76:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'undefined'
+    - 'false'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'false'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/with-app-env.test.mjs:83:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: the wrapped command sees an explicit override, not the file value
+ok 183 - the wrapped command sees an explicit override, not the file value
+  ---
+  duration_ms: 76.003108
+  ...
+# Subtest: the wrapper propagates the command's exit code
+ok 184 - the wrapper propagates the command's exit code
+  ---
+  duration_ms: 49.485423
+  ...
+# Subtest: a signal-killed command is never reported as success
+ok 185 - a signal-killed command is never reported as success
+  ---
+  duration_ms: 47.728397
+  ...
+# Subtest: the CLI still runs when invoked through a symlinked path
+not ok 186 - the CLI still runs when invoked through a symlinked path
+  ---
+  duration_ms: 57.431329
+  location: '/workspace/lane-desk-work/scripts/with-app-env.test.mjs:116:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'undefined'
+    - 'false'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'false'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/with-app-env.test.mjs:127:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: parseWriteAtomicArgs needs exactly a staged file and a target
+ok 187 - parseWriteAtomicArgs needs exactly a staged file and a target
+  ---
+  duration_ms: 1.289907
+  ...
+# Subtest: stagingError refuses a temp inside public/ and a no-op move
+ok 188 - stagingError refuses a temp inside public/ and a no-op move
+  ---
+  duration_ms: 0.246134
+  ...
+# Subtest: handOver replaces the target and clears the staged file
+ok 189 - handOver replaces the target and clears the staged file
+  ---
+  duration_ms: 0.736206
+  ...
+# Subtest: handOver creates a missing target directory
+ok 190 - handOver creates a missing target directory
+  ---
+  duration_ms: 0.583639
+  ...
+# Subtest: an interrupted pass leaves the target on its old bytes, temp-free
+ok 191 - an interrupted pass leaves the target on its old bytes, temp-free
+  ---
+  duration_ms: 0.750563
+  ...
+# Subtest: a failed hand-over creates no directory for the target it never wrote
+ok 192 - a failed hand-over creates no directory for the target it never wrote
+  ---
+  duration_ms: 0.352248
+  ...
+# Subtest: a staged file on another filesystem is refused, not copied
+ok 193 - a staged file on another filesystem is refused, not copied
+  ---
+  duration_ms: 0.5476
+  ...
+# Subtest: cli: hands the file over, and refuses a temp staged in public/
+ok 194 - cli: hands the file over, and refuses a temp staged in public/
+  ---
+  duration_ms: 58.123408
+  ...
+# Subtest: cli: relative paths follow the script's root, not the caller's cwd
+ok 195 - cli: relative paths follow the script's root, not the caller's cwd
+  ---
+  duration_ms: 54.817319
+  ...
+# Subtest: every hand-over the og skill prints is one this script accepts
+not ok 196 - every hand-over the og skill prints is one this script accepts
+  ---
+  duration_ms: 0.546809
+  location: '/workspace/lane-desk-work/scripts/write-atomic.test.mjs:167:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, scandir '/workspace/lane-desk-work/.grok/skills/og/references'"
+  code: 'ENOENT'
+  stack: |-
+    readdirSync (node:fs:1502:26)
+    TestContext.<anonymous> (file:///workspace/lane-desk-work/scripts/write-atomic.test.mjs:172:8)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:934:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+    Test.postRun (node:internal/test_runner/test:1045:19)
+    Test.run (node:internal/test_runner/test:973:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+  ...
+# Subtest: cli: a missing staged file fails without touching the target
+ok 197 - cli: a missing staged file fails without touching the target
+  ---
+  duration_ms: 34.629952
+  ...
+1..197
+# tests 197
+# suites 0
+# pass 179
+# fail 18
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 433.562798
+test exit 1

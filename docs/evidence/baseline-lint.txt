@@ -1,0 +1,31 @@
+
+> lint
+> eslint .
+
+
+/workspace/lane-desk-work/src/components/billing/billing-page.tsx
+  563:21  warning  'shown' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                         @typescript-eslint/no-unused-vars
+  576:66  error    React Hook "useFileAmount" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function  react-hooks/rules-of-hooks
+
+/workspace/lane-desk-work/src/components/desk/desk-page.tsx
+  212:9  warning  'humanSeconds' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/workspace/lane-desk-work/src/components/lookup/year-lookup.tsx
+  19:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  36:23  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  58:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  74:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/workspace/lane-desk-work/src/lib/app-data/client.server.ts
+  281:13  error  Empty block statement  no-empty
+
+/workspace/lane-desk-work/src/lib/auth/use-current-user.ts
+  59:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/rules-of-hooks')
+
+/workspace/lane-desk-work/src/lib/security/mesh.ts
+  21:14  error  Unexpected control character(s) in regular expression: \x00, \x08, \x0b, \x0c, \x0e, \x1f  no-control-regex
+
+✖ 10 problems (3 errors, 7 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+lint exit 1
