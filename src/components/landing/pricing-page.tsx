@@ -4,15 +4,15 @@ import { Page, PRIMARY, SECONDARY } from "@/components/ui";
 import { PLANS, PRICING_DISCLAIMER, type PlanId } from "@/lib/billing/plans";
 
 export function PricingPage() {
-  const [card, setCard] = useState(false);
+  const [card, setCard] = useState<readonly PlanId[]>([]);
   const [busy, setBusy] = useState<PlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancel = false;
     fetch("/api/billing/status")
-      .then((response) => (response.ok ? (response.json() as Promise<{ cardPayment?: boolean }>) : null))
-      .then((json) => !cancel && setCard(json?.cardPayment === true))
+      .then((response) => (response.ok ? (response.json() as Promise<{ plans?: PlanId[] }>) : null))
+      .then((json) => !cancel && setCard(Array.isArray(json?.plans) ? json.plans : []))
       .catch(() => undefined);
     return () => {
       cancel = true;
@@ -76,7 +76,7 @@ export function PricingPage() {
               <Link to="/request" search={{ plan: plan.id }} className={`${featured ? PRIMARY : SECONDARY} mt-5`}>
                 {featured ? "Request a pilot invoice" : "Request an invoice"}
               </Link>
-              {card ? (
+              {card.includes(plan.id) ? (
                 <button
                   type="button"
                   onClick={() => payByCard(plan.id)}
