@@ -3,6 +3,10 @@ import { Link } from "@tanstack/react-router";
 import { Empty, FIELD, LINK, PRIMARY, ReferenceNote, SECONDARY } from "@/components/ui";
 import { IS_INTERNAL, PUBLIC_SCOPE } from "@/lib/config/mode";
 import { money } from "@/lib/desk/clock";
+import { pricedForDay } from "@/lib/lookup/mppr-lines";
+import { loadMppr } from "@/lib/pricing/books";
+import { MPPR_EXPLAIN, MPPR_LABEL } from "@/lib/pricing/mppr";
+import type { MpprInfo } from "@/lib/pricing/national";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, type CheckLine } from "@/lib/lookup/check";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
@@ -15,6 +19,12 @@ type Checked = CheckLine & {
   hits: Hit[];
   once: OnceRow | null;
   rest: OnceRow[];
+  /** The file amount for this line after the therapy reduction, when the code is a therapy code. */
+  adjusted: number | null;
+  /** Therapy reduction values for the code on that year's file. */
+  info: MpprInfo | null;
+  /** This line is paid with the practice-expense cut. */
+  reduced: boolean;
 };
 
 export function InvoiceCheck() {
@@ -52,8 +62,24 @@ export function InvoiceCheck() {
           hits,
           once,
           rest: list.filter((row) => row !== once),
+          adjusted: null,
+          info: null,
+          reduced: false,
         });
       }
+      // Therapy lines on the same date of service are one day: the reduction runs across them.
+      const tables = new Map<number, Record<string, MpprInfo>>();
+      for (const year of new Set(checked.flatMap((line) => (line.year ? [line.year] : [])))) tables.set(year, await loadMppr(year));
+      const priced = pricedForDay(
+        checked.map((line) => ({ code: line.code, date: line.date, year: line.year, fileCents: physicianCents(line) })),
+        (year) => tables.get(year) ?? {},
+      );
+      checked.forEach((line, index) => {
+        if (!priced[index].info) return;
+        line.info = priced[index].info;
+        line.adjusted = priced[index].expectedCents;
+        line.reduced = priced[index].reduced;
+      });
       setRows(checked);
     } catch {
       setRows(null);
@@ -68,9 +94,18 @@ export function InvoiceCheck() {
     setDown(false);
     try {
       const year = PUBLIC_SCOPE.year;
-      const [a, b] = await Promise.all([findAcross("97110"), findAcross("97140")]);
+      const [a, b, table] = await Promise.all([findAcross("97110"), findAcross("97140"), loadMppr(year)]);
       const centsOf = (hits: typeof a) => hits.find((hit) => hit.family === "physician")?.row.a[String(year)] ?? undefined;
-      const lookup: Record<string, number | undefined> = { "97110": centsOf(a), "97140": centsOf(b) };
+      const full: Record<string, number | undefined> = { "97110": centsOf(a), "97140": centsOf(b) };
+      // The two sample lines are on one date, so the second is a therapy line paid with the reduction.
+      const day = pricedForDay(
+        ["97110", "97140"].map((code) => ({ code, date: "sample", year, fileCents: full[code] ?? null })),
+        () => table,
+      );
+      const lookup: Record<string, number | undefined> = {
+        "97110": day[0].expectedCents ?? undefined,
+        "97140": day[1].expectedCents ?? undefined,
+      };
       const sample = sampleInvoice((code) => lookup[code], year);
       setText(sample.text);
       setSampleNote(sample.note);
@@ -93,7 +128,7 @@ export function InvoiceCheck() {
         skipped += 1;
         continue;
       }
-      const file = amountOf(line);
+      const file = baseAmount(line);
       const name = line.hits[0]?.row.n || line.once?.n || line.code;
       addToOpenClaim({
         code: line.code,
@@ -101,7 +136,8 @@ export function InvoiceCheck() {
         units: 1,
         chargeCents: line.billedCents,
         allowedCents: file?.cents ?? null,
-        schedule: file ? `${file.label}, ${line.year}` : "Not on a loaded file",
+        mppr: line.info ? { pe: line.info.pe, reducedCents: line.info.reducedCents } : undefined,
+        schedule: noOffice(line) ? "Not priced in the office setting" : file ? `${file.label}, ${line.year}` : "Not on a loaded file",
         note: name,
         year: line.year,
         dos: line.date,
@@ -117,12 +153,15 @@ export function InvoiceCheck() {
 
   const groups = new Map<string, Checked[]>();
   for (const row of rows ?? []) {
-    const label = amountOf(row)?.label ?? "Not on a file";
+    const label = noOffice(row) ? NOT_OFFICE : (amountOf(row)?.label ?? "Not on a file");
     const list = groups.get(label) ?? [];
     list.push(row);
     groups.set(label, list);
   }
   const labels = [...groups.keys()].sort((a, b) => Number(a === "Not on a file") - Number(b === "Not on a file"));
+  const unpriced = (rows ?? []).filter((line) => verdict(line) === "none").length;
+  const mismatched = (rows ?? []).filter((line) => verdict(line) === "off").length;
+  const reducedLines = (rows ?? []).filter((line) => line.reduced).length;
 
   return (
     <form onSubmit={run} aria-busy={busy}>
@@ -211,23 +250,32 @@ export function InvoiceCheck() {
         {rows && rows.length > 0 ? (
           <div className="mt-3">
             <p className="text-sm text-ink">
-              {rows.filter((line) => verdict(line) !== "match").length === 0
+              {mismatched === 0 && unpriced === 0
                 ? `All ${rows.length} ${rows.length === 1 ? "line matches" : "lines match"} the file amount.`
-                : `${rows.filter((line) => verdict(line) !== "match").length} of ${rows.length} lines do not match the file amount.`}
+                : mismatched === 0
+                  ? `Every priced line matches the file amount. ${unpriced} ${unpriced === 1 ? "line is" : "lines are"} not priced in the office setting.`
+                  : `${mismatched} of ${rows.length} lines do not match the file amount.${unpriced > 0 ? ` ${unpriced} ${unpriced === 1 ? "line is" : "lines are"} not priced in the office setting.` : ""}`}
             </p>
+            {reducedLines > 0 ? (
+              <p className="mt-2 rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
+                <strong className="font-medium">{MPPR_LABEL}.</strong> {MPPR_EXPLAIN} Lines with the same date are treated as one
+                patient&apos;s day, one unit each. A line without a date is checked at the full rate.
+              </p>
+            ) : null}
             <ReferenceNote />
           </div>
         ) : null}
         {labels.map((label) => {
           const lines = groups.get(label) ?? [];
-          const off = lines.filter((line) => verdict(line) !== "match").length;
+          const off = lines.filter((line) => verdict(line) === "off").length;
+          const none = lines.filter((line) => verdict(line) === "none").length;
           return (
             <div key={label} className="mt-6">
               <h3 className="font-display text-xl text-ink">
                 {label}
                 <span className="ml-2 text-base text-muted">
                   {lines.length} {lines.length === 1 ? "line" : "lines"}
-                  {off > 0 ? ` · ${off} off` : " · matches"}
+                  {off > 0 ? ` · ${off} off` : none > 0 ? "" : " · matches"}
                 </span>
               </h3>
               <ul className="mt-3 space-y-3">
@@ -249,7 +297,11 @@ export function InvoiceCheck() {
                         </div>
                         <p
                           className={
-                            word === "match" ? "text-right text-sm font-medium text-teal" : "text-right text-sm font-medium text-deep"
+                            word === "match"
+                              ? "text-right text-sm font-medium text-teal"
+                              : word === "none"
+                                ? "text-right text-sm font-medium text-muted"
+                                : "text-right text-sm font-medium text-deep"
                           }
                         >
                           {labelFor(line)}
@@ -302,6 +354,8 @@ export function InvoiceCheck() {
   );
 }
 
+const NOT_OFFICE = "Not priced in the office setting";
+
 function best(line: Checked) {
   const year = line.year ? String(line.year) : "";
   const forYear = line.hits.find((hit) => typeof hit.row.a[year] === "number");
@@ -309,7 +363,20 @@ function best(line: Checked) {
   return line.hits.find((hit) => Object.values(hit.row.a).some((value) => typeof value === "number")) ?? line.hits[0];
 }
 
-function amountOf(line: Checked) {
+/** The physician file amount for the line's year, before the therapy reduction. */
+function physicianCents(line: Checked) {
+  if (!line.year) return null;
+  const cents = line.hits.find((hit) => hit.family === "physician")?.row.a[String(line.year)];
+  return typeof cents === "number" ? cents : null;
+}
+
+/** CMS gives this code no office price for the line's year. It is not priced and not called a mismatch. */
+function noOffice(line: Checked) {
+  return line.year !== null && line.hits.some((hit) => hit.family === "physician" && hit.row.o?.includes(line.year as number));
+}
+
+function baseAmount(line: Checked) {
+  if (noOffice(line)) return null;
   const chosen = best(line);
   const yearCents = line.year && chosen ? chosen.row.a[String(line.year)] : undefined;
   if (typeof yearCents === "number") return { cents: yearCents, label: chosen.label };
@@ -317,8 +384,16 @@ function amountOf(line: Checked) {
   return null;
 }
 
+/** What the line should be: the file amount, cut by the therapy reduction when that applies. */
+function amountOf(line: Checked) {
+  const base = baseAmount(line);
+  if (base && line.adjusted !== null && base.cents === physicianCents(line)) return { cents: line.adjusted, label: base.label };
+  return base;
+}
+
 function verdict(line: Checked) {
   if (outOfScope(line)) return "off";
+  if (noOffice(line)) return "none";
   const file = amountOf(line);
   if (!file || line.billedCents === null) return "off";
   return Math.abs(line.billedCents - file.cents) <= 1 ? "match" : "off";
@@ -332,10 +407,12 @@ function labelFor(line: Checked) {
   const file = amountOf(line);
   if (outOfScope(line)) return `The public demo checks ${PUBLIC_SCOPE.year} dates only`;
   if (!line.year) return "No year on the line";
+  if (noOffice(line)) return NOT_OFFICE;
   if (!file) return "Not on a loaded file";
   const period = line.once && file.label === line.once.s ? ` · ${line.once.t}` : "";
-  if (line.billedCents === null) return `${line.year} file ${money(file.cents / 100)}${period}`;
+  const cut = line.reduced ? ", therapy reduction applied" : "";
+  if (line.billedCents === null) return `${line.year} file ${money(file.cents / 100)}${period}${cut}`;
   const gap = line.billedCents - file.cents;
-  if (Math.abs(gap) <= 1) return `Matches the ${line.year} file`;
-  return `${gap > 0 ? "Over" : "Under"} by ${money(Math.abs(gap) / 100)} · file ${money(file.cents / 100)}`;
+  if (Math.abs(gap) <= 1) return `Matches the ${line.year} file${cut}`;
+  return `${gap > 0 ? "Over" : "Under"} by ${money(Math.abs(gap) / 100)} · file ${money(file.cents / 100)}${cut}`;
 }

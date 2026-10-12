@@ -116,7 +116,7 @@ export function InvoiceIntake({
                     <p className="mt-1 text-xs font-medium tracking-widest text-teal uppercase">{line.category}</p>
                     <p className="mt-1 font-medium text-ink tabular-nums">{line.code}{line.modifier ? ` ${line.modifier}` : ""}</p>
                     <p className="mt-1 text-sm text-ink">{line.service}</p>
-                    <p className="mt-1 text-sm text-muted">{line.date} · claimed {line.amountCents === null ? "not listed" : money(line.amountCents / 100)} · allowed {line.allowedCents === null ? "none on the Olean file" : money(line.allowedCents / 100)}</p>
+                    <p className="mt-1 text-sm text-muted">{line.date} · claimed {line.amountCents === null ? "not listed" : money(line.amountCents / 100)} · allowed {line.allowedCents === null ? (line.service.startsWith("Not priced in the office setting") ? "not priced in the office setting" : "none on the Olean file") : money(line.allowedCents / 100)}{line.mppr?.reduced ? " (therapy multiple-procedure reduction applied)" : ""}</p>
                     {line.alert ? (
                       <div className="mt-2">
                         <p className="text-sm font-medium text-deep">{line.alert.reason}</p>

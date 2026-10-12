@@ -1,4 +1,5 @@
-import { quoteCode, type Books, type Claim, type Line } from "@/lib/billing/billing";
+import { NOT_OFFICE_NOTE, quoteCode, type Books, type Claim, type Line } from "@/lib/billing/billing";
+import { applyMppr } from "@/lib/pricing/mppr";
 
 export type InvoiceLine = {
   id: string;
@@ -9,7 +10,12 @@ export type InvoiceLine = {
   service: string;
   category: string;
   amountCents: number | null;
+  /** What the line should be: the file amount, cut by the therapy reduction when it applies. */
   allowedCents: number | null;
+  /** The file amount at the full rate, per unit. */
+  fullCents?: number | null;
+  /** Set on a Medicare therapy line. reduced: this line is paid with the practice-expense cut. */
+  mppr?: { pe: number; reducedCents: number; reduced: boolean };
   note: string;
   alert: Alert | null;
   dispute: string | null;
@@ -95,6 +101,7 @@ export function parseInvoice(text: string, books: Books, fallbackDate: string): 
     .map((row) => row.trim())
     .filter(Boolean);
   const parsed: InvoiceLine[] = [];
+  const quotes: ReturnType<typeof quoteCode>[] = [];
   let entity = "Unassigned";
 
   for (const row of rows) {
@@ -117,7 +124,8 @@ export function parseInvoice(text: string, books: Books, fallbackDate: string): 
       const modifier = (match[2] ?? "").toUpperCase();
       const quoted = quoteCode(books, code, modifier);
       const amountCents = amount ? Math.round(Number(amount) * 100) : null;
-      const alert = verify(code, quoted.schedule, quoted.allowedCents, amountCents);
+      const alert = verify(code, quoted.schedule, quoted.allowedCents, amountCents, quoted.note);
+      quotes.push(quoted);
       parsed.push({
         id: `inv-${entity}-${code}-${parsed.length}`,
         entity,
@@ -128,11 +136,37 @@ export function parseInvoice(text: string, books: Books, fallbackDate: string): 
         category: categorize(quoted.schedule),
         amountCents,
         allowedCents: quoted.allowedCents,
+        fullCents: quoted.allowedCents,
         note: quoted.schedule,
         alert,
         dispute: null,
       });
     }
+  }
+
+  // Therapy lines for one entity on one date are one patient's day, one unit each. The reduction runs across them.
+  const days = new Map<string, number[]>();
+  parsed.forEach((line, index) => {
+    if (!quotes[index].mppr || quotes[index].allowedCents === null) return;
+    const key = `${line.entity}|${line.date}`;
+    days.set(key, [...(days.get(key) ?? []), index]);
+  });
+  for (const indexes of days.values()) {
+    const results = applyMppr(
+      indexes.map((index) => ({
+        pe: quotes[index].mppr?.pe ?? 0,
+        units: 1,
+        fullCents: quotes[index].allowedCents ?? 0,
+        reducedCents: quotes[index].mppr?.reducedCents ?? 0,
+      })),
+    );
+    indexes.forEach((index, k) => {
+      const line = parsed[index];
+      const reduced = results[k].fullUnits === 0;
+      line.allowedCents = results[k].cents;
+      line.mppr = { pe: quotes[index].mppr?.pe ?? 0, reducedCents: quotes[index].mppr?.reducedCents ?? 0, reduced };
+      line.alert = verify(line.code, quotes[index].schedule, results[k].cents, line.amountCents, quotes[index].note, reduced);
+    });
   }
 
   const entities = [...new Set(parsed.map((line) => line.entity))];
@@ -181,7 +215,8 @@ function toLine(line: InvoiceLine): Line {
     modifier: line.modifier,
     units: 1,
     chargeCents: line.amountCents,
-    allowedCents: line.allowedCents,
+    allowedCents: line.fullCents ?? line.allowedCents,
+    ...(line.mppr ? { mppr: { pe: line.mppr.pe, reducedCents: line.mppr.reducedCents } } : {}),
     schedule: line.note,
     note: `${line.entity}: ${line.service}`,
   };
@@ -193,7 +228,22 @@ function placeFor(lines: Line[]) {
   return "12";
 }
 
-function verify(code: string, schedule: string, allowedCents: number | null, amountCents: number | null): Alert | null {
+function verify(
+  code: string,
+  schedule: string,
+  allowedCents: number | null,
+  amountCents: number | null,
+  quoteNote = "",
+  reduced = false,
+): Alert | null {
+  if (quoteNote === NOT_OFFICE_NOTE) {
+    return {
+      level: "high",
+      reason: `${NOT_OFFICE_NOTE} Payment would wait until the code is confirmed.`,
+      expectedCode: code,
+      expectedCents: null,
+    };
+  }
   if (schedule === "Not loaded" || schedule === "none" || schedule === "Physician file, not priced") {
     return {
       level: "high",
@@ -213,7 +263,9 @@ function verify(code: string, schedule: string, allowedCents: number | null, amo
   if (allowedCents !== null && Math.abs(amountCents - allowedCents) > 1) {
     return {
       level: "high",
-      reason: "The claimed amount does not match the Rest of New York allowed amount.",
+      reason: reduced
+        ? "The claimed amount does not match the Rest of New York allowed amount after the therapy multiple-procedure reduction."
+        : "The claimed amount does not match the Rest of New York allowed amount.",
       expectedCode: code,
       expectedCents: allowedCents,
     };

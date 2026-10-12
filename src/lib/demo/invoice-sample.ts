@@ -1,7 +1,8 @@
 /**
  * A synthetic sample invoice built from the loaded fee file for the current mode.
- * Line 1 is billed at exactly the file amount. Line 2 is deliberately billed 10 percent over,
- * so the demo has one mismatch to show. No amount is typed in here.
+ * Line 1 is billed at exactly the file amount. Line 2 is deliberately billed 10 percent over the file amount, so the demo has one
+ * mismatch to show. The caller passes amounts that already include the therapy reduction (both lines are on one date).
+ * No amount is typed in here.
  */
 export function sampleInvoice(centsOf: (code: string) => number | undefined, year: number): { text: string; note: string } {
   const first = centsOf("97110");
@@ -14,6 +15,6 @@ export function sampleInvoice(centsOf: (code: string) => number | undefined, yea
   const text = ["Code,Date,Charge", `97110,${year}-03-02,${dollars(first)}`, `97140,${year}-03-02,${dollars(over)}`].join("\n");
   return {
     text,
-    note: "Synthetic sample. The first line is billed at the file amount. The second is deliberately billed 10 percent over so you can see a mismatch.",
+    note: "Synthetic sample. The first line is billed at the file amount. The second is a therapy line on the same date, so Medicare's reduction applies to it, and it is deliberately billed 10 percent over that reduced amount so you can see a mismatch.",
   };
 }

@@ -20,7 +20,10 @@ export type LocalityPrices = {
  */
 export function localityPrices(file: PfsFile, localityKey: string): LocalityPrices {
   const ny = nyLocalities(file.localities);
-  const place = ny.find((item) => keyOf(item) === localityKey);
+  // The 2020 file has no state labels, so no locality passes the New York filter. Read the one that was asked for by its
+  // MAC and locality number. Only an exact key is accepted, and only when the state is blank.
+  const place =
+    ny.find((item) => keyOf(item) === localityKey) ?? file.localities.find((item) => !item.state && keyOf(item) === localityKey);
   if (!place) throw new Error("That New York locality is not in the loaded file.");
   const rates: Record<string, number> = {};
   const mppr: Record<string, MpprInfo> = {};

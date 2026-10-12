@@ -1,7 +1,8 @@
 import { AMBULANCE_NAMES, type AmbulanceFile } from "@/lib/book/ambulance";
 import { payableStatus, STATUS_LABEL } from "@/lib/book/filter";
 import { type DmeFile, type LabFile } from "@/lib/book/other";
-import { conversionFor, localityDollars, type PfsFile } from "@/lib/book/price";
+import { conversionFor, localityDollars, reducedDollars, type PfsFile } from "@/lib/book/price";
+import { applyMppr } from "@/lib/pricing/mppr";
 import { contain } from "@/lib/security/patch-net";
 
 export type Client = {
@@ -16,7 +17,10 @@ export type Line = {
   modifier: string;
   units: number;
   chargeCents: number | null;
+  /** Per-unit file amount at the full rate. The therapy reduction is applied across the claim, see allowedByLine. */
   allowedCents: number | null;
+  /** Set on a Medicare therapy line (CMS MULT PROC 5): practice-expense RVU for ranking, and the per-unit reduced amount. */
+  mppr?: { pe: number; reducedCents: number };
   schedule: string;
   note: string;
   otherCents?: number | null;
@@ -111,7 +115,14 @@ export function checkNote(value: string) {
   return { ok: true as const, note: contained.text.trim() };
 }
 
-export function quoteCode(books: Books, code: string, modifier: string): { schedule: string; allowedCents: number | null; note: string } {
+export const NOT_OFFICE_NOTE =
+  "Not priced in the office setting. CMS has no office price for this code because it is rarely or never done in the office.";
+
+export function quoteCode(
+  books: Books,
+  code: string,
+  modifier: string,
+): { schedule: string; allowedCents: number | null; note: string; mppr?: { pe: number; reducedCents: number } } {
   const clean = code.trim().toUpperCase();
   const mod = modifier.trim().toUpperCase();
   if (!CODE.test(clean)) return { schedule: "none", allowedCents: null, note: "The code is not a HCPCS or CPT shape." };
@@ -127,14 +138,20 @@ export function quoteCode(books: Books, code: string, modifier: string): { sched
   }
 
   const physician = books.physician?.rows.find((row) => row.c === clean && row.m === mod);
+  if (physician && payableStatus(physician.s) && physician.nn) {
+    return { schedule: "Physician file, not priced", allowedCents: null, note: NOT_OFFICE_NOTE };
+  }
+
   if (physician && payableStatus(physician.s)) {
     const place = books.physician?.localities.find((item) => item.mac === "13282" && item.number === "99") ?? null;
     const conversion = books.physician ? conversionFor(physician, "nonQp", books.physician) : null;
     const dollars = conversion && books.physician ? localityDollars(physician, "nf", place, conversion) : 0;
+    const reduced = conversion && books.physician && physician.mu ? reducedDollars(physician, place, conversion) : 0;
     return {
       schedule: "Physician, Rest of New York, non-facility, non-QP",
       allowedCents: dollars > 0 ? Math.round(dollars * 100) : null,
       note: physician.d,
+      ...(dollars > 0 && reduced > 0 ? { mppr: { pe: physician.pn, reducedCents: Math.round(reduced * 100) } } : {}),
     };
   }
 
@@ -155,10 +172,63 @@ export function quoteCode(books: Books, code: string, modifier: string): { sched
   return { schedule: "Not loaded", allowedCents: null, note: "This code is not on a loaded file for that year." };
 }
 
-export function lineTotal(line: Line) {
+/**
+ * Medicare lines with their therapy reduction values read fresh from the loaded file, so a line saved before the
+ * reduction existed is still priced right. Other payers are left alone: the reduction is a Medicare rule.
+ */
+export function withReduction(lines: readonly Line[], books: Books, payer: "medicare" | "medicaid" = "medicare"): Line[] {
+  if (payer !== "medicare") return lines.map((line) => (line.mppr ? { ...line, mppr: undefined } : line));
+  return lines.map((line) => {
+    const quoted = quoteCode(books, line.code, line.modifier);
+    if (!quoted.mppr) return line.mppr ? { ...line, mppr: undefined } : line;
+    return { ...line, mppr: quoted.mppr, allowedCents: line.allowedCents ?? quoted.allowedCents };
+  });
+}
+
+/**
+ * What each line is allowed, in cents for all its units, after the therapy multiple-procedure reduction.
+ * A claim is one date of service, so every therapy line on it is one patient's day. Non-therapy lines are units x file amount.
+ */
+export function allowedByLine(lines: readonly Line[]): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  const therapy = lines.filter((line) => line.mppr && line.allowedCents !== null && line.units >= 1);
+  const results = applyMppr(
+    therapy.map((line) => ({
+      pe: line.mppr?.pe ?? 0,
+      units: line.units,
+      fullCents: line.allowedCents ?? 0,
+      reducedCents: line.mppr?.reducedCents ?? 0,
+    })),
+  );
+  for (const line of lines) out[line.id] = line.allowedCents === null ? null : line.allowedCents * line.units;
+  therapy.forEach((line, index) => {
+    out[line.id] = results[index].cents;
+  });
+  return out;
+}
+
+/** True when a line is paid with the practice-expense cut on at least one unit. */
+export function reducedUnitsOf(lines: readonly Line[]): Record<string, number> {
+  const therapy = lines.filter((line) => line.mppr && line.allowedCents !== null && line.units >= 1);
+  const results = applyMppr(
+    therapy.map((line) => ({
+      pe: line.mppr?.pe ?? 0,
+      units: line.units,
+      fullCents: line.allowedCents ?? 0,
+      reducedCents: line.mppr?.reducedCents ?? 0,
+    })),
+  );
+  const out: Record<string, number> = {};
+  therapy.forEach((line, index) => {
+    out[line.id] = results[index].reducedUnits;
+  });
+  return out;
+}
+
+export function lineTotal(line: Line, allowedTotal: number | null = line.allowedCents === null ? null : line.allowedCents * line.units) {
   return {
     charge: line.chargeCents === null ? null : line.chargeCents * line.units,
-    allowed: line.allowedCents === null ? null : line.allowedCents * line.units,
+    allowed: allowedTotal,
   };
 }
 
@@ -167,8 +237,9 @@ export function claimTotals(lines: Line[]) {
   let allowed = 0;
   let chargeKnown = false;
   let allowedKnown = false;
+  const byLine = allowedByLine(lines);
   for (const line of lines) {
-    const total = lineTotal(line);
+    const total = lineTotal(line, byLine[line.id]);
     if (total.charge !== null) {
       charge += total.charge;
       chargeKnown = true;
