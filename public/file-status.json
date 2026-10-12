@@ -1,7 +1,7 @@
 {
   "built": "2026-10-11",
   "place": "Rest of New York, locality 99, MAC 13282, Olean 14760",
-  "note": "Status only. No rate in this file is a price. Dollars stay in the schedule files. The Monday repository job checks that these files are still present. It does not download a new schedule and it does not submit a claim.",
+  "note": "Status only. No rate in this file is a price. Dollars stay in the schedule files. A daily repository job checks that these files are still present. It does not download a new schedule and it does not submit a claim.",
   "files": [
     {
       "id": "pfs",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/landing/shell";
 import { countStatus, isWatchReport, type WatchReport, type WatchStatus } from "@/lib/ops/watch";
+import { dailyBridge } from "@/lib/team/bridge";
 import { regulate, type Duty } from "@/lib/watch/regulate";
 
 function statusClass(status: WatchStatus) {
@@ -89,6 +90,7 @@ export function OpsPage() {
 
             {report.place ? <p className="mt-6 text-sm text-muted">{report.place}</p> : null}
             {report.note ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{report.note}</p> : null}
+            <DailyBridge report={report} />
 
             <ul className="mt-8 space-y-3">
               {report.files.map((file) => (
@@ -115,6 +117,30 @@ export function OpsPage() {
         ) : null}
       </main>
     </Shell>
+  );
+}
+
+function DailyBridge({ report }: { report: WatchReport }) {
+  const brief = dailyBridge(
+    report.files.map((file) => ({ name: file.name, status: file.status, detail: file.detail })),
+    "",
+  );
+  const open = brief.order.filter((row) => row.status !== "current");
+  return (
+    <section className="mt-6 rounded-2xl border border-line px-4 py-4">
+      <p className="text-xs font-medium tracking-widest text-teal uppercase">Daily check</p>
+      <p className="mt-2 text-sm leading-relaxed text-ink">{brief.detail}</p>
+      <p className="mt-1 text-sm text-muted">{brief.chain.join(" → ")}. No outside bot is called.</p>
+      {open.length > 0 ? (
+        <ul className="mt-3 space-y-2 text-sm text-deep">
+          {open.map((row) => (
+            <li key={row.name}>
+              {row.name}. {row.action}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
   );
 }
 

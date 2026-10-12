@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
+import { dailyBridge } from "../src/lib/team/bridge.ts";
 import { rankBrief } from "../src/lib/team/rank.ts";
 import { previousUse, reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
@@ -101,6 +102,15 @@ check("the meeting names every required seat", missingSeats([...SEATS]).length =
 const ranked = rankBrief(["A meeting is missing the driver.", "Participant 1 is not enrolled. 55 or older is not marked.", "Participant 1: No Medicare county rate is loaded."]);
 check("Rank puts enrollment ahead of the meeting", ranked.status === "pass" && ranked.order[0].includes("not enrolled") && ranked.chain[0] === "Screen" && ranked.chain.includes("Rank"));
 check("Rank stops a request to submit", rankBrief([], "submit the claim to CMS").status === "stop");
+const bridged = dailyBridge(
+  [
+    { name: "Physician fee schedule", status: "current", detail: "" },
+    { name: "Personal care", status: "gap", detail: "" },
+  ],
+  "status only",
+);
+check("the daily check puts a gap ahead of a current file and does not fill it", bridged.status === "pass" && bridged.order[0].name === "Personal care" && bridged.order[0].action.includes("not filled") && bridged.chain.includes("Rank"));
+check("the daily check stops a request to submit", dailyBridge([], "submit the claim to CMS").status === "stop");
 const off = reasonLine({ code: "97110", year: 2026, billedCents: 3000, file: { cents: 2827, label: "Physician" } });
 check("a higher invoice is off because it is over the file", off.verdict === "off" && off.steps.some((step) => step.includes("over")) && off.steps[0].includes("97110"));
 const same = reasonLine({ code: "97110", year: 2026, billedCents: 2827, file: { cents: 2827, label: "Physician" } });
