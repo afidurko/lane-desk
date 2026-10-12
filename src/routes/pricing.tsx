@@ -8,8 +8,7 @@ export const Route = createFileRoute("/pricing")({
       { title: "Lane — Pricing" },
       {
         name: "description",
-        content:
-          "List-shaped pricing for a coding and fee-schedule clock. Not a quote and not a savings claim. A real price follows a timed run.",
+        content: "Plan list for a pilot, per-claim, and wrap. List shape only, not a quote and not a savings claim.",
       },
     ],
   }),
