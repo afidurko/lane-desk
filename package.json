@@ -24,7 +24,8 @@
     "check": "node scripts/build-national.mjs --check && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-regression.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/demo-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs --check",
     "check:key": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/answer-key-compare.mjs",
     "e2e": "node scripts/e2e-demo.mjs",
-    "check:ny2020": "node --experimental-sqlite --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-ny-2020.mjs"
+    "check:ny2020": "node --experimental-sqlite --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-ny-2020.mjs",
+    "check:output": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-public-output.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",

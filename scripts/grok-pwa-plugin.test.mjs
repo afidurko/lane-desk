@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -523,13 +523,14 @@ test("renders the manifest with the per-app name", () => {
   assert.equal(manifest.icons[0].src, "/__grok/icon-180.png");
 });
 
-// Tripwires: the deployed-app path only works if Nitro scans server/ — an
-// accidental edit that drops serverDir or the middleware file would otherwise
-// fail silently (published apps would just render the app for ?install=1).
-test("vite config keeps the nitro serverDir wiring", () => {
+// This repo has no server/ folder (no PWA install page or manifest middleware on deploys), so the Nitro setting must not
+// point at one: a serverDir that does not exist is a config that names something absent.
+test("vite config does not point Nitro at a folder that is missing, and keeps the Vercel preset", () => {
   const viteConfig = readFileSync(join(TEMPLATE_ROOT, "vite.config.ts"), "utf8");
-  assert.match(viteConfig, /serverDir:\s*"\.\/server"/);
+  assert.match(viteConfig, /preset:\s*"vercel"/);
   assert.match(viteConfig, /grokPwaPlugin\(\)/);
+  const dir = viteConfig.match(/serverDir:\s*"([^"]+)"/)?.[1];
+  if (dir !== undefined) assert.ok(existsSync(join(TEMPLATE_ROOT, dir)), `serverDir ${dir} does not exist`);
 });
 
 test("the install page and its bundled assets exist", () => {
