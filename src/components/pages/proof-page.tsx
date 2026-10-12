@@ -63,7 +63,7 @@ export function ProofPage() {
   return (
     <Page
       kicker="Proof"
-      title="The prices match the CMS files, year by year"
+      title="Prices checked against the CMS files, year by year"
       lede="This page shows what has been checked and what has not. The claim is about prices, not speed."
     >
       <section aria-labelledby="price-h">

@@ -60,7 +60,9 @@ export function PricingPage() {
             >
               <p className="text-xs font-medium tracking-widest text-teal uppercase">{plan.kicker}</p>
               <h2 className="mt-2 font-display text-2xl text-ink">{plan.name}</h2>
-              <p className="mt-3 font-display text-3xl text-ink">{plan.price}</p>
+              <p className={plan.price.length > 12 ? "mt-3 font-display text-xl text-ink" : "mt-3 font-display text-3xl text-ink"}>
+                {plan.price}
+              </p>
               <p className="text-sm text-muted">{plan.unit}</p>
               <p className="mt-3 text-sm leading-relaxed text-muted">{plan.lede}</p>
               <ul className="mt-4 flex-1 space-y-2 text-sm text-ink">

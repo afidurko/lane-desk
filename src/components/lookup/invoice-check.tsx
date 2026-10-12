@@ -151,7 +151,7 @@ export function InvoiceCheck() {
           role="note"
         >
           <strong className="font-medium">De-identified only.</strong> Only the code, the date, and the amount are read. Delete patient
-          names, member numbers, record numbers, and birth dates before you paste. A line with an obvious identifier is refused.
+          names, member numbers, record numbers, and birth dates before you paste. Obvious identifier patterns are refused, but a name cannot be recognized, so remove it yourself.
         </p>
         {sampleNote ? <p className="mt-2 text-sm text-muted">{sampleNote}</p> : null}
         <div className="mt-4 flex flex-wrap items-center gap-3">

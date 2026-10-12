@@ -87,7 +87,7 @@ export function CodePage() {
             key={code}
             type="button"
             onClick={() => setText(code)}
-            className="h-11 rounded-full border border-muted/60 bg-paper-2 px-4 text-sm font-medium text-ink hover:border-teal"
+            className="h-11 rounded-full border border-muted bg-paper-2 px-4 text-sm font-medium text-ink hover:border-teal"
           >
             {code}
           </button>

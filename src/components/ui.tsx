@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { DEMO_MODE, IS_INTERNAL, REFERENCE_NOTE, scopeLabel } from "@/lib/config/mode";
+import { IS_INTERNAL, REFERENCE_NOTE, scopeLabel } from "@/lib/config/mode";
 import { Shell } from "@/components/landing/shell";
 
 /** One primary look. A screen has exactly one of these. */
@@ -10,7 +10,7 @@ export const PRIMARY =
 export const SECONDARY =
   "inline-flex h-12 items-center justify-center rounded-full border border-muted px-5 text-sm font-medium text-ink transition-colors duration-200 hover:border-teal disabled:cursor-default disabled:opacity-60";
 export const LINK = "text-sm font-medium text-teal underline underline-offset-4 hover:text-deep";
-export const FIELD = "mt-1.5 w-full rounded-2xl border border-muted/60 bg-paper-2 px-4 text-base text-ink placeholder:text-muted/80";
+export const FIELD = "mt-1.5 w-full rounded-2xl border border-muted bg-paper-2 px-4 text-base text-ink placeholder:text-muted";
 
 export function Page({ kicker, title, lede, children }: { kicker: string; title: string; lede?: string; children: ReactNode }) {
   return (
@@ -39,7 +39,8 @@ export function DeidWarning({ id }: { id?: string }) {
   return (
     <p id={id} className="mt-2 rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
       <strong className="font-medium">De-identified only.</strong> No names, dates of birth, member or record numbers, phone numbers, or
-      addresses. A note that looks like it has one is refused and not kept.
+      addresses. The tool refuses obvious identifier patterns (record numbers, birth dates, phone numbers, emails, long digit strings). It
+      cannot recognize a name, so you must de-identify first.
     </p>
   );
 }
@@ -61,13 +62,5 @@ export function InternalOnly({ name }: { name: string }) {
         Back to the start
       </Link>
     </Page>
-  );
-}
-
-export function ModeBadge() {
-  return (
-    <span className="rounded-full border border-line bg-paper-2 px-2.5 py-0.5 text-xs text-muted">
-      {DEMO_MODE === "internal" ? "Internal build" : "Public demo"}
-    </span>
   );
 }

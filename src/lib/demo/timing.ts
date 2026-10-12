@@ -13,8 +13,8 @@ export function timeCoder(note: string, rates?: Record<string, number>, runs = R
 
 /** Seconds, never milliseconds. */
 export function formatSeconds(seconds: number) {
-  if (seconds < 0.0001) return "under 0.0001 seconds";
-  return `${seconds.toFixed(4)} seconds`;
+  if (seconds < 0.000001) return "under 0.000001 seconds";
+  return `${seconds < 0.001 ? seconds.toFixed(6) : seconds.toFixed(4)} seconds`;
 }
 
 /** Verbatim. The label for our side of any timing. */

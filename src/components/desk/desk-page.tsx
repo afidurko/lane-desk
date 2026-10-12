@@ -116,7 +116,7 @@ export function DeskPage() {
               className={
                 sampleId === sample.id
                   ? "h-11 rounded-full border-2 border-teal bg-wash px-4 text-sm font-medium text-ink"
-                  : "h-11 rounded-full border border-muted/60 bg-paper-2 px-4 text-sm text-ink hover:border-teal"
+                  : "h-11 rounded-full border border-muted bg-paper-2 px-4 text-sm text-ink hover:border-teal"
               }
             >
               {sample.label}
@@ -196,16 +196,14 @@ export function DeskPage() {
         {state.kind === "done" ? (
           <div className="mt-3 space-y-6">
             <div className="overflow-x-auto rounded-2xl border border-line bg-paper-2">
-              <table className="w-full min-w-[30rem] text-left text-sm">
+              <table className="w-full text-left text-sm">
                 <caption className="sr-only">Codes found in the note and their Medicare reference price</caption>
                 <thead>
                   <tr className="border-b border-line text-xs tracking-widest text-muted uppercase">
                     <th scope="col" className="px-4 py-3 font-medium">
                       Code
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Service
-                    </th>
+                    <th scope="col" className="hidden px-4 py-3 font-medium sm:table-cell">Service</th>
                     <th scope="col" className="px-4 py-3 font-medium">
                       Units
                     </th>
@@ -219,8 +217,11 @@ export function DeskPage() {
                     const none = line.allowed === 0;
                     return (
                       <tr key={line.code} className="border-b border-line last:border-0">
-                        <td className="px-4 py-3 font-medium text-ink tabular-nums">{line.code}</td>
-                        <td className="px-4 py-3 text-ink">{rateSet?.names.get(line.code) ?? line.name}</td>
+                        <td className="px-4 py-3 font-medium text-ink tabular-nums">
+                          {line.code}
+                          <span className="block text-xs font-normal text-muted sm:hidden">{rateSet?.names.get(line.code) ?? line.name}</span>
+                        </td>
+                        <td className="hidden px-4 py-3 text-ink sm:table-cell">{rateSet?.names.get(line.code) ?? line.name}</td>
                         <td className="px-4 py-3 text-ink tabular-nums">{line.units}</td>
                         <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">
                           {none ? "No separate amount" : money(line.allowed)}

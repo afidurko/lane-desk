@@ -91,7 +91,9 @@ export function AboutPage() {
               ? "Years loaded: 2020 to 2026. The public demo shows 2026 only."
               : "Year shown in this demo: 2026. The proof page checks every year from 2020 to 2026.",
             "Names are the short descriptions on the CMS file. Longer code descriptions are not included.",
-            "Not included: clinical laboratory fee schedule data. It is held back until the licensing question is settled.",
+            IS_INTERNAL
+              ? "Clinical laboratory fee schedule data is loaded in this internal build only. It is held back from the public demo until the licensing question is settled."
+              : "Not included: clinical laboratory fee schedule data. It is held back until the licensing question is settled.",
             "CPT is a registered trademark of the American Medical Association.",
           ]}
         />

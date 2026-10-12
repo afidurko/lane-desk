@@ -41,8 +41,32 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     t(`${path} has at most one primary action`, primaries <= 1, `${primaries}`);
   }
 
-  // Desk
+  // No dead links: every on-site link on every public page opens.
+  const hrefs = new Set();
+  for (const path of publicPages) {
+    await page.goto(base + path, { waitUntil: "networkidle" });
+    for (const href of await page.locator("a[href^='/']").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")))) hrefs.add(href.split("?")[0]);
+  }
+  const dead = [];
+  for (const href of hrefs) {
+    const response = await page.goto(base + href, { waitUntil: "domcontentloaded" });
+    if (!response || response.status() >= 400) dead.push(href);
+  }
+  t(`no dead links (${hrefs.size} distinct on-site links)`, dead.length === 0, dead.join(","));
+
+  // Keyboard: the first Tab lands on the skip link, and a focused control shows an outline.
   await page.goto(base + "/desk", { waitUntil: "networkidle" });
+  await page.keyboard.press("Tab");
+  t("first Tab is the skip link", (await page.evaluate(() => document.activeElement?.textContent ?? "")).includes("Skip to the page"));
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  const outline = await page.evaluate(() => {
+    const style = getComputedStyle(document.activeElement);
+    return `${style.outlineStyle} ${style.outlineWidth}`;
+  });
+  t("a focused control shows an outline", /solid 2px/.test(outline), outline);
+
+  // Desk
   t("desk idle state is explained", await page.getByText("Nothing has run yet").isVisible());
   await page.getByRole("button", { name: "Price this note" }).click();
   await page.getByText("Medicare reference price, not a payment").first().waitFor();
