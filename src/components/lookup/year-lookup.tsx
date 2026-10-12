@@ -14,7 +14,12 @@ export const FAMILIES = [
 ] as const;
 
 export type Family = (typeof FAMILIES)[number]["id"];
-export type Row = { n: string; a: Record<string, number | null>; s?: string };
+export type Row = {
+  n: string;
+  a: Record<string, number | null>;
+  s?: string;
+  /** Years CMS gives no office price (non-facility NA). */ o?: number[];
+};
 
 const cache = new Map<string, Record<string, Row>>();
 
@@ -39,7 +44,9 @@ export function loadShard(family: Family, prefix: string) {
 async function findNational(clean: string) {
   const national = await loadNational();
   const row = national.rows.get(clean);
-  return row ? [{ family: "physician" as Family, label: PUBLIC_SCOPE.label, row: row as Row }] : [];
+  if (!row) return [];
+  const shown: Row = { n: row.n, a: row.a, s: row.s, ...(row.nn ? { o: [national.year] } : {}) };
+  return [{ family: "physician" as Family, label: PUBLIC_SCOPE.label, row: shown }];
 }
 
 export async function findAcross(code: string) {
@@ -155,7 +162,13 @@ export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
               {marked ? " · on the invoice" : ""}
             </span>
             <span className="mt-0.5 block text-base font-medium text-ink tabular-nums">
-              {typeof cents === "number" ? money(cents / 100) : cents === null ? "No amount" : "Not on file"}
+              {typeof cents === "number"
+                ? money(cents / 100)
+                : row.o?.includes(year)
+                  ? "Not priced in the office setting"
+                  : cents === null
+                    ? "No amount"
+                    : "Not on file"}
             </span>
             {changed ? (
               <span className="text-xs text-teal">

@@ -24,6 +24,7 @@ export type Described = {
   n: string;
   a: Record<string, number | null>;
   s?: string;
+  o?: number[];
 };
 
 export function describeCode(schedule: string, row: Described) {
@@ -42,8 +43,10 @@ export function describeCode(schedule: string, row: Described) {
     const cents = row.a[String(year)];
     return typeof cents === "number" ? [{ year, cents }] : [];
   });
-  let change =
-    "The file does not give this code a separate amount in these years.";
+  const noOffice = priced.length === 0 && YEARS.some((year) => row.o?.includes(year));
+  let change = noOffice
+    ? "It is not priced in the office setting. CMS has no office price for it because it is rarely or never done in the office."
+    : "The file does not give this code a separate amount in these years.";
   if (priced.length === 1) {
     change = `In ${priced[0].year} the amount is ${money(priced[0].cents / 100)}.`;
   } else if (priced.length > 1) {

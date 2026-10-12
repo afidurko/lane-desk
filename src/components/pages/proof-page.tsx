@@ -11,7 +11,7 @@ type ProofFile = {
   generated: string;
   years: Year[];
   negativeControlCaught: boolean;
-  totals: { years: number; codesChecked: number; mismatches: number };
+  totals: { years: number; codesChecked: number; mismatches: number; codesNotOffice?: number };
 };
 type Internal = {
   years: { year: number; codesChecked: number; mismatches: number }[];
@@ -87,6 +87,13 @@ export function ProofPage() {
                   : `${proof.totals.mismatches} differed. They are listed in the file.`}
               </strong>
             </p>
+            {proof.totals.codesNotOffice ? (
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                {proof.totals.codesNotOffice.toLocaleString("en-US")} of those checks are codes CMS gives no office price (it marks them rarely
+                or never done in the office). The app shows those as not priced in the office setting, and the check confirms that. The
+                therapy multiple-procedure reduction values were recomputed the same way.
+              </p>
+            ) : null}
             <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-paper-2">
               <table className="w-full min-w-[28rem] text-left text-sm">
                 <caption className="sr-only">Price check by fee schedule year</caption>

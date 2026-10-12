@@ -14,6 +14,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { indexNational } from "../src/lib/pricing/national.ts";
+import { applyMppr } from "../src/lib/pricing/mppr.ts";
 import { THERAPY } from "../src/lib/desk/therapy-codes.ts";
 
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
@@ -31,6 +32,8 @@ for (const year of YEARS) {
   const national = indexNational(file);
   let checked = 0;
   let priced = 0;
+  let notOffice = 0;
+  let mpprCodes = 0;
   const bad = [];
   for (const row of file.rows) {
     if (row.m !== "" || !PAYABLE.has(row.s)) continue;
@@ -38,11 +41,20 @@ for (const year of YEARS) {
     const independent = cents(Math.round((row.w + row.pn + row.mp) * 100 + 1e-9) / 100 * cf);
     const app = national.rows.get(row.c.toUpperCase())?.a[String(year)] ?? null;
     if (app !== null) priced += 1;
-    const expected = independent > 0 ? independent : null;
+    // CMS non-facility NA: no office price. The file copies the facility value into the office column; it is not shown.
+    if (row.nn) notOffice += 1;
+    const expected = independent > 0 && !row.nn ? independent : null;
     if (app !== expected) bad.push(row.c);
+    // Therapy reduction: full unit then half practice expense, from the components, against the app's table.
+    if (row.mu && expected !== null) {
+      mpprCodes += 1;
+      const info = national.mppr[row.c];
+      const reduced = cents((row.w + row.pn * 0.5 + row.mp) * cf); // the halved practice expense is not rounded to two places first
+      if (!info || info.fullCents !== independent || info.reducedCents !== reduced) bad.push(`${row.c} MPPR`);
+    }
   }
   totalMismatch += bad.length;
-  publicYears.push({ year, release: file.release, conversionFactor: file.conversion.nonQp, codesChecked: checked, codesPriced: priced, mismatches: bad.length, firstMismatches: bad.slice(0, 5) });
+  publicYears.push({ year, release: file.release, conversionFactor: file.conversion.nonQp, codesChecked: checked, codesPriced: priced, codesNotOffice: notOffice, therapyReductionCodes: mpprCodes, mismatches: bad.length, firstMismatches: bad.slice(0, 5) });
 
   // Internal: Rest of New York, 13282/99, against the year shard the Code screen reads.
   const place = file.localities.find((item) => item.mac === "13282" && item.number === "99");
@@ -63,7 +75,7 @@ for (const year of YEARS) {
   for (const row of file.rows) {
     if (row.m !== "" || !PAYABLE.has(row.s) || !place) continue;
     const total = row.w * place.work + row.pn * place.pe + row.mp * place.mp;
-    const independent = cents(total * cf);
+    const independent = row.nn ? 0 : cents(total * cf);
     const shown = shardOf(row.c.toUpperCase())[row.c.toUpperCase()]?.a?.[String(year)] ?? null;
     nyChecked += 1;
     if (shown !== (independent > 0 ? independent : null)) nyBad += 1;
@@ -88,12 +100,26 @@ for (const item of THERAPY) {
 }
 totalMismatch += tableBad;
 
+// Therapy reduction against the answer key's rule, one fixed case, in both settings (Rest of NY GPCIs 1.000/0.950/0.703 in 2026).
+const row97110 = f26.rows.find((r) => r.c === "97110" && r.m === "");
+const pair = applyMppr([
+  { pe: row97110.pn, units: 3, fullCents: cents(Math.round(row97110.tn * 100) / 100 * Number(f26.conversion.nonQp)), reducedCents: cents((row97110.w + row97110.pn * 0.5 + row97110.mp) * Number(f26.conversion.nonQp)) },
+]);
+if (pair[0].fullUnits !== 1 || pair[0].reducedUnits !== 2) totalMismatch += 1;
+
 // The file the public build actually ships must price identically to the full 2026 file.
 const slim = read("public/pfs-national-2026.json");
 const slimIndex = indexNational(slim);
 const fullIndex = indexNational(f26);
 let slimBad = slimIndex.rows.size === fullIndex.rows.size ? 0 : 1;
-for (const [code, row] of fullIndex.rows) if (slimIndex.rows.get(code)?.a["2026"] !== row.a["2026"]) slimBad += 1;
+for (const [code, row] of fullIndex.rows) {
+  const got = slimIndex.rows.get(code);
+  if (got?.a["2026"] !== row.a["2026"] || Boolean(got?.nn) !== Boolean(row.nn)) slimBad += 1;
+}
+for (const [code, info] of Object.entries(fullIndex.mppr)) {
+  const got = slimIndex.mppr[code];
+  if (!got || got.fullCents !== info.fullCents || got.reducedCents !== info.reducedCents || got.pe !== info.pe) slimBad += 1;
+}
 totalMismatch += slimBad;
 
 // Negative control: a price nudged by one cent in memory must be caught by the same comparison.
@@ -116,6 +142,7 @@ const publicOut = {
     years: publicYears.length,
     codesChecked: publicYears.reduce((n, y) => n + y.codesChecked, 0),
     mismatches: publicYears.reduce((n, y) => n + y.mismatches, 0),
+    codesNotOffice: publicYears.reduce((n, y) => n + y.codesNotOffice, 0),
   },
 };
 const internalOut = {
