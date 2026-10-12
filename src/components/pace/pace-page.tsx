@@ -4,12 +4,12 @@ import { Shell } from "@/components/landing/shell";
 import { money } from "@/lib/desk/clock";
 import { canEnroll, gateGaps, missingSeats, monthLine, SEATS, type Person } from "@/lib/pace/gates";
 import { COUNTIES, PART_D_BID, RATE_SOURCE, medicareCents } from "@/lib/pace/rates";
-import { addPerson, readPace, setCenter, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
+import { addPerson, emptyBook, readPace, setCenter, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
 
 const TABS = ["Month", "People", "Meeting", "Day", "Rides", "Review"] as const;
 
 export function PacePage() {
-  const [book, setBook] = useState<PaceBook | null>(null);
+  const [book, setBook] = useState<PaceBook>(emptyBook());
   const [tab, setTab] = useState<(typeof TABS)[number]>("Month");
   const [error, setError] = useState<string | null>(null);
   const [county, setCounty] = useState<string>("Cattaraugus");
@@ -22,8 +22,6 @@ export function PacePage() {
     setBook(next);
     writePace(next);
   }
-
-  if (!book) return <Shell><main className="mx-auto max-w-xl px-5 py-10 text-sm text-muted">Loading the month.</main></Shell>;
 
   const enrolled = book.people.filter(canEnroll);
   const lines = enrolled.map((person) => ({ person, line: monthLine(person, book.year, book.medicaid[person.county] ?? null) }));
