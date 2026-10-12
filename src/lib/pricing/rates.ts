@@ -1,8 +1,9 @@
 import { IS_INTERNAL, PUBLIC_SCOPE } from "@/lib/config/mode";
-import { DEFAULT_LOCALITY, keyOf, localityName, nyLocalities } from "@/lib/config/ny";
+import { DEFAULT_LOCALITY, keyOf, localityName } from "@/lib/config/ny";
 import { fromFile } from "@/lib/desk/clock";
-import { conversionFor, localityDollars, type PfsFile, type PfsRow } from "@/lib/book/price";
-import { loadNational, ratesOf, type National } from "@/lib/pricing/national";
+import type { PfsFile } from "@/lib/book/price";
+import { localityPrices } from "@/lib/pricing/locality";
+import { loadNational, notOfficeOf, ratesOf, type MpprInfo, type National } from "@/lib/pricing/national";
 
 export type RateSet = {
   rates: Record<string, number>;
@@ -12,6 +13,10 @@ export type RateSet = {
   scope: string;
   /** New York localities the loaded file carries. Empty in a public build. */
   localities: { key: string; label: string }[];
+  /** Therapy multiple-procedure reduction values, by code. */
+  mppr: Record<string, MpprInfo>;
+  /** Payable codes CMS gives no office price. They are not priced here. */
+  notOffice: ReadonlySet<string>;
 };
 
 /**
@@ -24,25 +29,26 @@ export async function loadRates(localityKey: string = DEFAULT_LOCALITY.key): Pro
   const names = new Map<string, string>();
   for (const [code, row] of national.rows) names.set(code, row.n);
   if (!IS_INTERNAL) {
-    return { rates: fromFile(ratesOf(national)), names, release: national.release, scope: PUBLIC_SCOPE.label, localities: [] };
+    const notOffice = notOfficeOf(national);
+    return {
+      rates: fromFile(ratesOf(national), { mppr: national.mppr, notOffice }),
+      names,
+      release: national.release,
+      scope: PUBLIC_SCOPE.label,
+      localities: [],
+      mppr: national.mppr,
+      notOffice,
+    };
   }
 
   const response = await fetch("/pfs-2026.json");
   if (!response.ok) throw new Error("The 2026 file did not load.");
   const file = (await response.json()) as PfsFile;
-  const ny = nyLocalities(file.localities);
-  const place = ny.find((item) => keyOf(item) === localityKey);
-  if (!place) throw new Error("That New York locality is not in the loaded file.");
-  const rates: Record<string, number> = {};
-  for (const row of file.rows as PfsRow[]) {
-    if (row.m !== "") continue;
-    const conversion = conversionFor(row, "nonQp", file);
-    if (!conversion) continue;
-    const dollars = localityDollars(row, "nf", place, conversion);
-    if (dollars > 0) rates[row.c] = dollars;
-  }
+  const { place, rates, mppr, notOffice, localities: ny } = localityPrices(file, localityKey);
   return {
-    rates: fromFile(rates),
+    rates: fromFile(rates, { mppr, notOffice }),
+    mppr,
+    notOffice,
     names,
     release: national.release,
     scope: `${localityName(place)}, MAC ${place.mac}, locality ${place.number}, non-facility, 2026`,

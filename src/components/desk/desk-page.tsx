@@ -8,6 +8,7 @@ import { runLane, type LaneRun } from "@/lib/desk/lane";
 import { DEFAULT_SAMPLE, SAMPLES } from "@/lib/demo/samples";
 import { formatSeconds, OUR_SIDE_LABEL, timeCoder, type Timing } from "@/lib/demo/timing";
 import { DEFAULT_LOCALITY } from "@/lib/config/ny";
+import { MPPR_EXPLAIN, MPPR_LABEL } from "@/lib/pricing/mppr";
 import { loadRates, type RateSet } from "@/lib/pricing/rates";
 
 const GATE_COPY: Record<Exclude<Gate, "ok">, string> = {
@@ -203,7 +204,9 @@ export function DeskPage() {
                     <th scope="col" className="px-4 py-3 font-medium">
                       Code
                     </th>
-                    <th scope="col" className="hidden px-4 py-3 font-medium sm:table-cell">Service</th>
+                    <th scope="col" className="hidden px-4 py-3 font-medium sm:table-cell">
+                      Service
+                    </th>
                     <th scope="col" className="px-4 py-3 font-medium">
                       Units
                     </th>
@@ -219,12 +222,21 @@ export function DeskPage() {
                       <tr key={line.code} className="border-b border-line last:border-0">
                         <td className="px-4 py-3 font-medium text-ink tabular-nums">
                           {line.code}
-                          <span className="block text-xs font-normal text-muted sm:hidden">{rateSet?.names.get(line.code) ?? line.name}</span>
+                          <span className="block text-xs font-normal text-muted sm:hidden">
+                            {rateSet?.names.get(line.code) ?? line.name}
+                          </span>
                         </td>
                         <td className="hidden px-4 py-3 text-ink sm:table-cell">{rateSet?.names.get(line.code) ?? line.name}</td>
-                        <td className="px-4 py-3 text-ink tabular-nums">{line.units}</td>
+                        <td className="px-4 py-3 text-ink tabular-nums">
+                          {line.units}
+                          {line.mppr && line.mppr.reducedUnits > 0 ? (
+                            <span className="block text-xs font-normal text-muted">
+                              {line.mppr.fullUnits} full rate, {line.mppr.reducedUnits} reduced
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">
-                          {none ? "No separate amount" : money(line.allowed)}
+                          {line.notOffice ? "Not priced in the office setting" : none ? "No separate amount" : money(line.allowed)}
                         </td>
                       </tr>
                     );
@@ -242,6 +254,17 @@ export function DeskPage() {
                 ) : null}
               </table>
             </div>
+            {state.lane.lines.some((line) => line.mppr && line.mppr.reducedUnits > 0) ? (
+              <p className="rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
+                <strong className="font-medium">{MPPR_LABEL}.</strong> {MPPR_EXPLAIN}
+              </p>
+            ) : null}
+            {state.lane.lines.some((line) => line.notOffice) ? (
+              <p className="rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
+                CMS gives some codes no office price because they are rarely or never done in the office. Those lines are not priced and are
+                left out of the total.
+              </p>
+            ) : null}
             <div>
               <ReferenceNote scope={false} />
               <p className="mt-1 text-sm leading-relaxed text-muted">

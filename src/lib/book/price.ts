@@ -10,6 +10,12 @@ export type PfsRow = {
   tn: number;
   tf: number;
   q?: string;
+  /** CMS MULT PROC indicator 5: therapy multiple-procedure payment reduction applies. */
+  mu?: "5";
+  /** CMS non-facility PE indicator NA: rarely or never done in the office, so no office price. */
+  nn?: 1;
+  /** CMS facility PE indicator NA. */
+  fn?: 1;
 };
 
 export type Locality = {
@@ -53,6 +59,19 @@ export function localityDollars(row: PfsRow, setting: "nf" | "fac", locality: Lo
   }
   const practice = setting === "nf" ? row.pn : row.pf;
   const total = row.w * locality.work + practice * locality.pe + row.mp * locality.mp;
+  return Math.round(total * Number(conversion) * 100 + 1e-9) / 100;
+}
+
+/**
+ * Therapy multiple-procedure payment reduction (MPPR). The practice-expense part of every therapy unit after the
+ * first (highest practice-expense) unit is cut by half. Work and malpractice are not cut.
+ * Same rounding as localityDollars.
+ */
+export function reducedDollars(row: PfsRow, locality: Locality | null, conversion: string) {
+  const work = locality?.work ?? 1;
+  const practice = locality?.pe ?? 1;
+  const malpractice = locality?.mp ?? 1;
+  const total = row.w * work + row.pn * 0.5 * practice + row.mp * malpractice;
   return Math.round(total * Number(conversion) * 100 + 1e-9) / 100;
 }
 

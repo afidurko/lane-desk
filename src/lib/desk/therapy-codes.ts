@@ -34,7 +34,7 @@ const TABLE: readonly TherapyCode[] = [
   { code: "97018", name: "Paraffin bath", unitDollars: 0, separate: true, phrases: ["paraffin bath"] },
   { code: "97022", name: "Whirlpool", unitDollars: 0, separate: true, phrases: ["whirlpool therapy"] },
   { code: "97024", name: "Diathermy", unitDollars: 0, separate: true, phrases: ["diathermy", "microwave therapy"] },
-  { code: "97026", name: "Infrared", unitDollars: 0, separate: false, phrases: ["infrared therapy"] },
+  { code: "97026", name: "Infrared", unitDollars: 0, separate: true, phrases: ["infrared therapy"] },
   { code: "97028", name: "Ultraviolet", unitDollars: 0, separate: true, phrases: ["ultraviolet therapy"] },
   { code: "97032", name: "Electrical stimulation, attended", unitDollars: 0, separate: true, phrases: ["attended electrical stimulation", "attended electric stimulation"] },
   { code: "97033", name: "Iontophoresis", unitDollars: 0, separate: true, phrases: ["iontophoresis"] },

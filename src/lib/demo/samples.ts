@@ -18,7 +18,7 @@ Plan: continue therapeutic exercise next session.`,
   {
     id: "two",
     label: "Two services",
-    why: "Two lines, each priced on its own.",
+    why: "Two therapy lines. Medicare cuts the practice-expense part of the second one.",
     note: `Participant, adult day health. Synthetic note, not a real person.
 Therapeutic exercise, 15 minutes.
 Manual therapy, 15 minutes.

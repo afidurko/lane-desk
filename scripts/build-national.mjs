@@ -1,7 +1,8 @@
 /**
  * Builds public/pfs-national-2026.json: the only physician fee file a public build ships.
  * It is a strict subset of public/pfs-2026.json: national totals only. No locality or GPCI table (so no New York
- * locality amount can be rebuilt from it), no component RVUs, and no modifier rows.
+ * locality amount can be rebuilt from it) and no modifier rows. Component RVUs (w, pn, mp) are kept only for the
+ * therapy codes that the multiple-procedure payment reduction applies to. nn marks codes CMS has no office price for.
  * Usage: node scripts/build-national.mjs   (prints the row count; --check exits 1 if the file is out of date)
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -14,7 +15,17 @@ const slim = {
   year: full.year,
   conversion: full.conversion,
   source: full.source,
-  rows: full.rows.filter((row) => row.m === "").map((row) => ({ c: row.c, m: "", d: row.d, s: row.s, tn: row.tn })),
+  rows: full.rows
+    .filter((row) => row.m === "")
+    .map((row) => ({
+      c: row.c,
+      m: "",
+      d: row.d,
+      s: row.s,
+      tn: row.tn,
+      ...(row.nn ? { nn: 1 } : {}),
+      ...(row.mu ? { mu: "5", w: row.w, pn: row.pn, mp: row.mp } : {}),
+    })),
 };
 const text = JSON.stringify(slim) + "\n";
 if (process.argv.includes("--check")) {
