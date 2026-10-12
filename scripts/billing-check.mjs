@@ -3,6 +3,7 @@ import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
 import { rankBrief } from "../src/lib/team/rank.ts";
+import { reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
 import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
@@ -99,6 +100,12 @@ check("the meeting names every required seat", missingSeats([...SEATS]).length =
 const ranked = rankBrief(["A meeting is missing the driver.", "Participant 1 is not enrolled. 55 or older is not marked.", "Participant 1: No Medicare county rate is loaded."]);
 check("Rank puts enrollment ahead of the meeting", ranked.status === "pass" && ranked.order[0].includes("not enrolled") && ranked.chain[0] === "Screen" && ranked.chain.includes("Rank"));
 check("Rank stops a request to submit", rankBrief([], "submit the claim to CMS").status === "stop");
+const off = reasonLine({ code: "97110", year: 2026, billedCents: 3000, file: { cents: 2827, label: "Physician" } });
+check("a higher invoice is off because it is over the file", off.verdict === "off" && off.steps.some((step) => step.includes("over")) && off.steps[0].includes("97110"));
+const same = reasonLine({ code: "97110", year: 2026, billedCents: 2827, file: { cents: 2827, label: "Physician" } });
+check("the same amount matches because the gap is one cent or less", same.verdict === "match" && same.steps.at(-1).includes("matches"));
+const emptyCounty = reasonMonth({ label: "Participant 1", county: "Cattaraugus", enrolled: true, gate: null, medicare: null, medicaid: null, esrd: false });
+check("the month says why Cattaraugus is empty", emptyCounty.some((step) => step.includes("no Medicare")) && emptyCounty.at(-1).includes("skips"));
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));

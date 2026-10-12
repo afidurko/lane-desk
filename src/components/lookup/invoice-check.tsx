@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, type CheckLine } from "@/lib/lookup/check";
+import { reasonLine } from "@/lib/lookup/reason";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { Link } from "@tanstack/react-router";
@@ -139,7 +140,8 @@ export function InvoiceCheck() {
               {lines.map((line, index) => {
                 const key = `${line.code}-${index}`;
                 const chosen = best(line);
-                const word = verdict(line);
+                const reason = facts(line);
+                const word = reason.verdict;
                 return (
                   <li key={key} className="rounded-2xl border border-line px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
@@ -150,6 +152,9 @@ export function InvoiceCheck() {
                       <p className={word === "match" ? "text-right text-sm font-medium text-teal" : "text-right text-sm font-medium text-deep"}>{labelFor(line)}</p>
                     </div>
                     {line.rest.length > 0 ? <p className="mt-2 text-xs text-muted">Also on {line.rest.map((row) => `${row.s} ${money(row.c / 100)}`).join("; ")}.</p> : null}
+                    <ol className="mt-2 space-y-1 text-sm text-muted">
+                      {reason.steps.map((step) => <li key={step}>{step}</li>)}
+                    </ol>
                     {chosen ? (
                       <button type="button" onClick={() => setOpen(open === key ? null : key)} className="mt-2 text-sm text-teal">
                         {open === key ? "Hide the years" : "Show every year"}
@@ -182,10 +187,18 @@ function amountOf(line: Checked) {
   return null;
 }
 
-function verdict(line: Checked) {
+function facts(line: Checked) {
   const file = amountOf(line);
-  if (!file || line.billedCents === null) return "off";
-  return Math.abs(line.billedCents - file.cents) <= 1 ? "match" : "off";
+  return reasonLine({
+    code: line.code,
+    year: line.year,
+    billedCents: line.billedCents,
+    file: file ? { cents: file.cents, label: file.label, period: line.once && file.label === line.once.s ? line.once.t : undefined } : null,
+  });
+}
+
+function verdict(line: Checked) {
+  return facts(line).verdict;
 }
 
 function labelFor(line: Checked) {
