@@ -5,11 +5,11 @@ export const Route = createFileRoute("/desk")({
   component: DeskPage,
   head: () => ({
     meta: [
-      { title: "Lane — Desk" },
+      { title: "Lane — Try a sample note" },
       {
         name: "description",
         content:
-          "Paste a de-identified adult-day note. Lane times it, prices the therapy codes it recognizes, and keeps the row in this browser.",
+          "Try a made-up, de-identified therapy note. See the code, the Medicare reference price, and the measured coder time. Not a payment.",
       },
     ],
   }),

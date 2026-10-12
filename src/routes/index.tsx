@@ -1,15 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LandingPage } from "@/components/landing/page";
+import { HomePage } from "@/components/pages/home-page";
 
 export const Route = createFileRoute("/")({
-  component: LandingPage,
+  component: HomePage,
   head: () => ({
     meta: [
-      { title: "Lane — Paste a Part B line" },
+      { title: "Lane — Medicare reference prices for New York" },
       {
         name: "description",
-        content:
-          "A de-identified encounter goes in. A code and an allowed amount come out, timed against the manual coding and fee-schedule desk. The chart stays.",
+        content: "Check a de-identified therapy note or an invoice against the Medicare fee schedule. A reference price, not a payment.",
       },
     ],
   }),

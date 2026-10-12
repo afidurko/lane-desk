@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { internalOnly } from "@/components/gate";
 import { NyPage } from "@/components/ny/ny-page";
 
 export const Route = createFileRoute("/ny")({
-  component: NyPage,
+  component: internalOnly(NyPage, "New York detail"),
   head: () => ({
     meta: [
       { title: "Lane — New York" },

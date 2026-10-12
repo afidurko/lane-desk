@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { internalOnly } from "@/components/gate";
 import { TeamPage } from "@/components/team/team-page";
 
 export const Route = createFileRoute("/team")({
-  component: TeamPage,
+  component: internalOnly(TeamPage, "Team"),
   head: () => ({
     meta: [
       { title: "Lane — Team" },

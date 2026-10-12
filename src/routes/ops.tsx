@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { internalOnly } from "@/components/gate";
 import { OpsPage } from "@/components/ops/ops-page";
 
 export const Route = createFileRoute("/ops")({
-  component: OpsPage,
+  component: internalOnly(OpsPage, "File status"),
   head: () => ({
     meta: [
       { title: "Lane — Files" },

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
+import { IS_INTERNAL, PUBLIC_SCOPE, visibleYears } from "@/lib/config/mode";
+import { loadNational } from "@/lib/pricing/national";
 
 export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
@@ -33,9 +35,17 @@ export function loadShard(family: Family, prefix: string) {
   });
 }
 
+/** Public mode: one national 2026 physician row, nothing else. */
+async function findNational(clean: string) {
+  const national = await loadNational();
+  const row = national.rows.get(clean);
+  return row ? [{ family: "physician" as Family, label: PUBLIC_SCOPE.label, row: row as Row }] : [];
+}
+
 export async function findAcross(code: string) {
   const clean = code.trim().toUpperCase();
   if (!CODE.test(clean)) return [];
+  if (!IS_INTERNAL) return findNational(clean);
   const hits: { family: Family; label: string; row: Row }[] = [];
   let failed = 0;
   let tried = 0;
@@ -56,6 +66,7 @@ export async function findAcross(code: string) {
 const onceCache = new Map<string, Record<string, OnceRow[]>>();
 
 export function loadOnce(prefix: string) {
+  if (!IS_INTERNAL) return Promise.resolve({} as Record<string, OnceRow[]>);
   const hit = onceCache.get(prefix);
   if (hit) return Promise.resolve(hit);
   return fetch(`/once/${prefix}.json`).then(async (response) => {
@@ -114,7 +125,8 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
   if (state === "bad") return <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p>;
   if (state === "loading") return <p className="text-sm text-muted">Loading every year for {code.trim().toUpperCase()}.</p>;
   if (state === "down") return <p className="text-sm font-medium text-deep">The year file did not load. Try the code again.</p>;
-  if (state === "miss" || !row) return <p className="text-sm font-medium text-deep">That code is not on this schedule for 2020 through 2026.</p>;
+  if (state === "miss" || !row)
+    return <p className="text-sm font-medium text-deep">That code is not on this schedule for 2020 through 2026.</p>;
 
   return (
     <div>
@@ -128,19 +140,27 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
 export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
   return (
     <ol className="mt-3 grid grid-cols-2 gap-2">
-      {YEARS.map((year) => {
+      {visibleYears(YEARS).map((year) => {
         const cents = row.a[String(year)];
         const older = row.a[String(year - 1)];
-        const changed = typeof cents === "number" && typeof older === "number" && cents !== older;
+        const changed = IS_INTERNAL && typeof cents === "number" && typeof older === "number" && cents !== older;
         const marked = mark === year;
         return (
-          <li key={year} className={marked ? "rounded-xl border border-teal bg-paper-2 px-3 py-2" : "rounded-xl border border-line px-3 py-2"}>
-            <span className="block text-xs text-muted">{year}{marked ? " · on the invoice" : ""}</span>
+          <li
+            key={year}
+            className={marked ? "rounded-xl border border-teal bg-paper-2 px-3 py-2" : "rounded-xl border border-line px-3 py-2"}
+          >
+            <span className="block text-xs text-muted">
+              {year}
+              {marked ? " · on the invoice" : ""}
+            </span>
             <span className="mt-0.5 block text-base font-medium text-ink tabular-nums">
               {typeof cents === "number" ? money(cents / 100) : cents === null ? "No amount" : "Not on file"}
             </span>
             {changed ? (
-              <span className="text-xs text-teal">{cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}</span>
+              <span className="text-xs text-teal">
+                {cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}
+              </span>
             ) : null}
           </li>
         );
@@ -203,7 +223,9 @@ export function YearLookup() {
         {state === "idle" ? <p className="text-sm text-muted">Type a code. The schedule is chosen for you.</p> : null}
         {state === "bad" ? <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p> : null}
         {state === "loading" ? <p className="text-sm text-muted">Checking every schedule.</p> : null}
-        {state === "miss" ? <p className="text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
+        {state === "miss" ? (
+          <p className="text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p>
+        ) : null}
         {state === "down" ? <p className="text-sm font-medium text-deep">The year files did not load. Type the code again.</p> : null}
         {hits.map((hit) => (
           <section key={hit.family} className="mt-4">
