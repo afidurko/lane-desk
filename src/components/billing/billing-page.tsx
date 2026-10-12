@@ -213,7 +213,7 @@ export function BillingPage() {
     setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, status } : item)));
   }
 
-  function useFileAmount(lineId: string, cents: number) {
+  function applyFileAmount(lineId: string, cents: number) {
     if (!claim || claim.status === "ready") return;
     setClaims((current) =>
       current.map((item) =>
@@ -560,7 +560,6 @@ export function BillingPage() {
             </div>
             {(() => {
               const packet = buildPacket(claim, client, submitter, books, today);
-              const shown = alerts;
               return (
                 <section className="mt-6 rounded-2xl border border-line bg-paper p-4">
                   <p className="text-xs font-medium tracking-widest text-teal uppercase">{packet.ready ? "Ready for review" : "Not complete"}</p>
@@ -573,7 +572,7 @@ export function BillingPage() {
                           <p className="font-medium text-deep">High alert · {item.line.code}</p>
                           <p className="mt-1 text-ink">{item.check.reason} Expected {item.check.expectedCode} at {item.check.expectedCents === null ? "no loaded amount" : money(item.check.expectedCents / 100)}.</p>
                           {item.check.expectedCents !== null && claim.status === "draft" && claim.lines.some((line) => line.id === item.line.id) ? (
-                            <button type="button" onClick={() => useFileAmount(item.line.id, item.check.expectedCents as number)} className="mt-2 h-10 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">
+                            <button type="button" onClick={() => applyFileAmount(item.line.id, item.check.expectedCents as number)} className="mt-2 h-10 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">
                               Use the file amount
                             </button>
                           ) : null}
