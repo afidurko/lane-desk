@@ -88,6 +88,14 @@ for (const item of THERAPY) {
 }
 totalMismatch += tableBad;
 
+// The file the public build actually ships must price identically to the full 2026 file.
+const slim = read("public/pfs-national-2026.json");
+const slimIndex = indexNational(slim);
+const fullIndex = indexNational(f26);
+let slimBad = slimIndex.rows.size === fullIndex.rows.size ? 0 : 1;
+for (const [code, row] of fullIndex.rows) if (slimIndex.rows.get(code)?.a["2026"] !== row.a["2026"]) slimBad += 1;
+totalMismatch += slimBad;
+
 // Negative control: a price nudged by one cent in memory must be caught by the same comparison.
 const control = structuredClone(f26);
 const target = control.rows.find((r) => r.c === "97110" && r.m === "");
@@ -103,6 +111,7 @@ const publicOut = {
   what: "National Medicare physician fee schedule, non-facility, non-QP. Each price the app shows was recomputed from the file's component RVUs and the file's conversion factor.",
   years: publicYears,
   negativeControlCaught: controlCaught,
+  publicFileMismatches: slimBad,
   totals: {
     years: publicYears.length,
     codesChecked: publicYears.reduce((n, y) => n + y.codesChecked, 0),

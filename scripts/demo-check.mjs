@@ -33,9 +33,9 @@ check("reference sentence is fixed", REFERENCE_NOTE === "Medicare reference pric
 // Held-back files.
 const never = ["clfs-2026.json", "clfs-2020.json", "years/lab/0.json", "years/lab/G.json"];
 check("lab files are never public", never.every((path) => NEVER_PUBLIC.some((rule) => rule.test(path))));
-const internal = ["years/physician/9.json", "years/ambulance/A.json", "once/9.json", "ny-medicaid.json", "ny-more.json", "pfs-2025.json", "afs-2026.json", "dme-2026.json", "proof-internal.json", "gap-rates.json", "found-rates.json"];
+const internal = ["years/physician/9.json", "years/ambulance/A.json", "once/9.json", "ny-medicaid.json", "ny-more.json", "pfs-2025.json", "pfs-2026.json", "afs-2026.json", "dme-2026.json", "proof-internal.json", "gap-rates.json", "found-rates.json"];
 check("Rest of NY and other internal data is held back", internal.every((path) => INTERNAL_ONLY.some((rule) => rule.test(path))));
-const keep = ["pfs-2026.json", "proof.json", "favicon.svg", "og.jpg"];
+const keep = ["pfs-national-2026.json", "proof.json", "favicon.svg", "og.jpg"];
 check("the national 2026 file and proof stay", keep.every((path) => ![...NEVER_PUBLIC, ...INTERNAL_ONLY].some((rule) => rule.test(path))));
 
 // New York only.
@@ -47,6 +47,9 @@ check("NYC localities come from the loaded file", ["13202/01", "13202/02", "1329
 
 // National 2026 prices come from the file.
 const national = indexNational(pfs);
+const slim = JSON.parse(readFileSync("public/pfs-national-2026.json", "utf8"));
+check("public national file has no locality table and no component RVUs", !("localities" in slim) && !("anesthesia" in slim) && Object.keys(slim.rows[0]).sort().join() === "c,d,m,s,tn");
+check("public national file prices identically to the full file", [...indexNational(slim).rows].every(([code, row]) => row.a["2026"] === national.rows.get(code).a["2026"]) && indexNational(slim).rows.size === national.rows.size);
 check("national 97110 is the file total times the factor", national.rows.get("97110").a["2026"] === Math.round(0.87 * 33.4009 * 100));
 check("a bundled code has no national amount", Object.values(national.rows.get("0001F").a)[0] === null);
 check("national keeps no modifier rows", [...national.rows.keys()].every((code) => !code.includes("-")));

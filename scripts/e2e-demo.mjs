@@ -179,7 +179,7 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
 
   // Public mode must not fetch the held-back files.
   if (!internal) {
-    const forbidden = requests.filter((path) => /^\/(clfs-|years\/|once\/|ny-|found-rates|gap-rates|medicare-other|afs-|dme-|pfs-20(1|20|21|22|23|24|25))/.test(path));
+    const forbidden = requests.filter((path) => /^\/(clfs-|years\/|once\/|ny-|found-rates|gap-rates|medicare-other|afs-|dme-|pfs-20\d\d)/.test(path));
     t("public mode never requests held-back files", forbidden.length === 0, forbidden.join(","));
     for (const path of ["/billing", "/ny", "/ops", "/book"]) {
       await page.goto(base + path, { waitUntil: "networkidle" });

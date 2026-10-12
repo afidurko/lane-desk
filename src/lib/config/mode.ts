@@ -67,7 +67,7 @@ export const NEVER_PUBLIC = [
 export const INTERNAL_ONLY = [
   /^afs-\d{4}\.json$/,
   /^dme-\d{4}\.json$/,
-  /^pfs-(2020|2021|2022|2023|2024|2025)\.json$/,
+  /^pfs-20\d\d\.json$/, // every full physician file, with its locality table. The public build keeps pfs-national-2026.json only.
   /^years\//,
   /^once\//,
   /^ny-medicaid\.json$/,

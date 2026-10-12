@@ -1,5 +1,8 @@
 import { dollarsFromTotal, type PfsFile, type PfsRow } from "@/lib/book/price";
 
+/** What the national indexer needs. The public file carries only this; the full file also fits. */
+export type NationalFile = Pick<PfsFile, "release" | "year" | "conversion"> & { rows: Pick<PfsRow, "c" | "m" | "d" | "s" | "tn">[] };
+
 /**
  * National 2026 Medicare physician fee schedule, non-facility, non-QP.
  * Every amount here is the file's own non-facility total times the file's conversion factor.
@@ -22,7 +25,7 @@ export function nationalCents(row: Pick<PfsRow, "s" | "tn">, conversion: string)
   return dollars > 0 ? Math.round(dollars * 100) : null;
 }
 
-export function indexNational(file: PfsFile): National {
+export function indexNational(file: NationalFile): National {
   const conversion = file.conversion.nonQp;
   const rows = new Map<string, NationalRow>();
   for (const row of file.rows) {
@@ -40,10 +43,10 @@ let pending: Promise<National> | null = null;
 
 export function loadNational(): Promise<National> {
   if (!pending) {
-    pending = fetch("/pfs-2026.json")
+    pending = fetch("/pfs-national-2026.json")
       .then(async (response) => {
         if (!response.ok) throw new Error("The 2026 national file did not load.");
-        return indexNational((await response.json()) as PfsFile);
+        return indexNational((await response.json()) as NationalFile);
       })
       .catch((error) => {
         pending = null;

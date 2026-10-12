@@ -67,6 +67,7 @@
     }
   ],
   "negativeControlCaught": true,
+  "publicFileMismatches": 0,
   "totals": {
     "years": 7,
     "codesChecked": 55076,
