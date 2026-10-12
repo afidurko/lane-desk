@@ -1,0 +1,53 @@
+{
+  "generated": "2026-10-12",
+  "what": "Rest of New York, MAC 13282, locality 99. Year files the Code screen reads, and the therapy table used by the note coder.",
+  "years": [
+    {
+      "year": 2020,
+      "locality": "13282/99",
+      "codesChecked": 7341,
+      "mismatches": 0
+    },
+    {
+      "year": 2021,
+      "locality": "13282/99",
+      "codesChecked": 7351,
+      "mismatches": 0
+    },
+    {
+      "year": 2022,
+      "locality": "13282/99",
+      "codesChecked": 7378,
+      "mismatches": 0
+    },
+    {
+      "year": 2023,
+      "locality": "13282/99",
+      "codesChecked": 8077,
+      "mismatches": 0
+    },
+    {
+      "year": 2024,
+      "locality": "13282/99",
+      "codesChecked": 8144,
+      "mismatches": 0
+    },
+    {
+      "year": 2025,
+      "locality": "13282/99",
+      "codesChecked": 8186,
+      "mismatches": 0
+    },
+    {
+      "year": 2026,
+      "locality": "13282/99",
+      "codesChecked": 8599,
+      "mismatches": 0
+    }
+  ],
+  "therapyTable": {
+    "codes": 61,
+    "mismatches": 0,
+    "codes_off": []
+  }
+}

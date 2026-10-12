@@ -1,0 +1,75 @@
+{
+  "generated": "2026-10-12",
+  "what": "National Medicare physician fee schedule, non-facility, non-QP. Each price the app shows was recomputed from the file's component RVUs and the file's conversion factor.",
+  "years": [
+    {
+      "year": 2020,
+      "release": "RVU20D",
+      "conversionFactor": "36.0896",
+      "codesChecked": 7341,
+      "codesPriced": 7222,
+      "mismatches": 0,
+      "firstMismatches": []
+    },
+    {
+      "year": 2021,
+      "release": "RVU21D",
+      "conversionFactor": "34.8931",
+      "codesChecked": 7351,
+      "codesPriced": 7233,
+      "mismatches": 0,
+      "firstMismatches": []
+    },
+    {
+      "year": 2022,
+      "release": "RVU22D",
+      "conversionFactor": "34.6062",
+      "codesChecked": 7378,
+      "codesPriced": 7260,
+      "mismatches": 0,
+      "firstMismatches": []
+    },
+    {
+      "year": 2023,
+      "release": "RVU23D",
+      "conversionFactor": "33.8872",
+      "codesChecked": 8077,
+      "codesPriced": 7267,
+      "mismatches": 0,
+      "firstMismatches": []
+    },
+    {
+      "year": 2024,
+      "release": "RVU24D",
+      "conversionFactor": "33.2875",
+      "codesChecked": 8144,
+      "codesPriced": 7322,
+      "mismatches": 0,
+      "firstMismatches": []
+    },
+    {
+      "year": 2025,
+      "release": "RVU25D",
+      "conversionFactor": "32.3465",
+      "codesChecked": 8186,
+      "codesPriced": 7356,
+      "mismatches": 0,
+      "firstMismatches": []
+    },
+    {
+      "year": 2026,
+      "release": "RVU26D",
+      "conversionFactor": "33.4009",
+      "codesChecked": 8599,
+      "codesPriced": 7745,
+      "mismatches": 0,
+      "firstMismatches": []
+    }
+  ],
+  "negativeControlCaught": true,
+  "totals": {
+    "years": 7,
+    "codesChecked": 55076,
+    "mismatches": 0
+  }
+}
