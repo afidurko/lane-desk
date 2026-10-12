@@ -3,7 +3,7 @@ import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
 import { rankBrief } from "../src/lib/team/rank.ts";
-import { reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
+import { previousUse, reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
 import { readInvoiceLines } from "../src/lib/lookup/check.ts";
 import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
@@ -104,6 +104,15 @@ const off = reasonLine({ code: "97110", year: 2026, billedCents: 3000, file: { c
 check("a higher invoice is off because it is over the file", off.verdict === "off" && off.steps.some((step) => step.includes("over")) && off.steps[0].includes("97110"));
 const same = reasonLine({ code: "97110", year: 2026, billedCents: 2827, file: { cents: 2827, label: "Physician" } });
 check("the same amount matches because the gap is one cent or less", same.verdict === "match" && same.steps.at(-1).includes("matches"));
+const olderBill = reasonLine({
+  code: "97110",
+  year: 2026,
+  billedCents: 3047,
+  file: { cents: 2827, label: "Physician" },
+  priors: [{ year: 2026, cents: 2827 }, { year: 2020, cents: 3047 }],
+});
+check("a bill that matches an older year is still off for this year", olderBill.verdict === "off" && olderBill.steps.some((step) => step.includes("2020") && step.includes("not used")));
+check("an unchanged amount is not called a previous use", previousUse([{ year: 2026, cents: 2827 }, { year: 2025, cents: 2827 }], 2026, 2827, 2827) === null);
 const emptyCounty = reasonMonth({ label: "Participant 1", county: "Cattaraugus", enrolled: true, gate: null, medicare: null, medicaid: null, esrd: false });
 check("the month says why Cattaraugus is empty", emptyCounty.some((step) => step.includes("no Medicare")) && emptyCounty.at(-1).includes("skips"));
 check("medicaid is not compared with Medicare when the state file is missing", checkLine({ ...claim.lines[0], chargeCents: 100 }, books, "medicaid", null).expectedCents === null);

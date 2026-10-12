@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, type CheckLine } from "@/lib/lookup/check";
-import { reasonLine } from "@/lib/lookup/reason";
+import { pricedYears, reasonLine } from "@/lib/lookup/reason";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { Link } from "@tanstack/react-router";
@@ -188,12 +188,15 @@ function amountOf(line: Checked) {
 }
 
 function facts(line: Checked) {
+  const chosen = best(line);
   const file = amountOf(line);
+  const onThisYear = Boolean(line.year && chosen && typeof chosen.row.a[String(line.year)] === "number");
   return reasonLine({
     code: line.code,
     year: line.year,
     billedCents: line.billedCents,
     file: file ? { cents: file.cents, label: file.label, period: line.once && file.label === line.once.s ? line.once.t : undefined } : null,
+    priors: onThisYear && chosen ? pricedYears(chosen.row.a) : [],
   });
 }
 

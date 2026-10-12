@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Shell } from "@/components/landing/shell";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { describeCode } from "@/lib/lookup/describe";
+import { previousUse, pricedYears } from "@/lib/lookup/reason";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { type OnceRow } from "@/lib/lookup/once";
 import { money } from "@/lib/desk/clock";
@@ -88,6 +89,7 @@ export function CodePage() {
             <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
             <h2 className="mt-4 text-sm font-medium text-ink">Years and amounts</h2>
             <YearPrices row={hit.row} />
+            <PriorNote row={hit.row} />
             <div className="mt-3 flex flex-wrap gap-2">
               {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => {
                 const cents = hit.row.a[String(year)];
@@ -164,4 +166,12 @@ export function CodePage() {
       </main>
     </Shell>
   );
+}
+
+function PriorNote({ row }: { row: { a: Record<string, number | null> } }) {
+  const years = pricedYears(row.a);
+  if (years.length < 2) return null;
+  const note = previousUse(years, years[0].year, null, years[0].cents);
+  if (!note) return null;
+  return <p className="mt-3 text-sm leading-relaxed text-muted">{note}</p>;
 }
