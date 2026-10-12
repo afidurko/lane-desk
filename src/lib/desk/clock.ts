@@ -193,10 +193,22 @@ export function spanOf(note: string, code = CODE) {
   return match ? match[0].replace(/\s+/g, " ") : "";
 }
 
+/**
+ * A rate map built straight from a loaded fee file. When a map is marked this way, a code
+ * missing from it prices at zero. It never falls back to the typed-in Rest of New York table.
+ */
+const FROM_FILE = new WeakSet<object>();
+
+export function fromFile(rates: Record<string, number>) {
+  FROM_FILE.add(rates);
+  return rates;
+}
+
 export function allowedOf(units: number, code = CODE, rates?: Record<string, number>) {
   const service = serviceOf(code);
   if (service && !service.separate) return 0;
-  const dollars = rates?.[code] ?? service?.unitDollars ?? UNIT_DOLLARS;
+  const fallback = rates && FROM_FILE.has(rates) ? 0 : (service?.unitDollars ?? UNIT_DOLLARS);
+  const dollars = rates?.[code] ?? fallback;
   return Math.round(units * dollars * 100) / 100;
 }
 

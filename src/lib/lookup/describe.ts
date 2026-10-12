@@ -1,6 +1,9 @@
 import { money } from "@/lib/desk/clock";
+import { IS_INTERNAL, PUBLIC_SCOPE } from "@/lib/config/mode";
 
-const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
+const YEARS = IS_INTERNAL
+  ? [2026, 2025, 2024, 2023, 2022, 2021, 2020]
+  : [PUBLIC_SCOPE.year];
 
 const STATUS: Record<string, string> = {
   A: "Medicare lists it as active.",
@@ -25,8 +28,9 @@ export type Described = {
 
 export function describeCode(schedule: string, row: Described) {
   const name = row.n?.trim() || "This code";
-  const where =
-    schedule === "Physician"
+  const where = !IS_INTERNAL
+    ? "It is on the Medicare physician fee schedule, national amount, non-facility."
+    : schedule === "Physician"
       ? "It is on the physician schedule for Rest of New York, non-facility, locality 99."
       : schedule === "Ambulance"
         ? "It is an ambulance code for Rest of New York, rural."
@@ -38,7 +42,8 @@ export function describeCode(schedule: string, row: Described) {
     const cents = row.a[String(year)];
     return typeof cents === "number" ? [{ year, cents }] : [];
   });
-  let change = "The file does not give this code a separate amount in these years.";
+  let change =
+    "The file does not give this code a separate amount in these years.";
   if (priced.length === 1) {
     change = `In ${priced[0].year} the amount is ${money(priced[0].cents / 100)}.`;
   } else if (priced.length > 1) {
@@ -51,5 +56,13 @@ export function describeCode(schedule: string, row: Described) {
         : `From ${oldest.year} to ${newest.year} it is ${gap > 0 ? "up" : "down"} ${money(Math.abs(gap) / 100)}.`;
     change = `In ${newest.year} the amount is ${money(newest.cents / 100)}. In ${oldest.year} it was ${money(oldest.cents / 100)}. ${moved}`;
   }
-  return [name + ".", where, status, change, "The name is the short description on the fee file."].filter(Boolean).join(" ");
+  return [
+    name + ".",
+    where,
+    status,
+    change,
+    "The name is the short description on the fee file.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
