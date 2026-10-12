@@ -8,7 +8,7 @@ const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
 export function CodePage() {
   const [text, setText] = useState("");
   const [hits, setHits] = useState<{ family: Family; label: string; row: Row }[]>([]);
-  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad">("idle");
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad" | "down">("idle");
 
   useEffect(() => {
     const passed = new URLSearchParams(window.location.search).get("c");
@@ -29,11 +29,17 @@ export function CodePage() {
     }
     let cancel = false;
     setState("loading");
-    findAcross(clean).then((found) => {
-      if (cancel) return;
-      setHits(found);
-      setState(found.length > 0 ? "ready" : "miss");
-    });
+    findAcross(clean)
+      .then((found) => {
+        if (cancel) return;
+        setHits(found);
+        setState(found.length > 0 ? "ready" : "miss");
+      })
+      .catch(() => {
+        if (cancel) return;
+        setHits([]);
+        setState("down");
+      });
     return () => {
       cancel = true;
     };
@@ -60,6 +66,7 @@ export function CodePage() {
         {state === "bad" ? <p className="mt-4 text-sm text-muted">Use a full code, such as 97110 or A0428.</p> : null}
         {state === "loading" ? <p className="mt-4 text-sm text-muted">Loading the file description and every year.</p> : null}
         {state === "miss" ? <p className="mt-4 text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
+        {state === "down" ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The page is still here. Type the code again.</p> : null}
         {hits.map((hit) => (
           <article key={hit.family} className="mt-8">
             <p className="font-display text-4xl text-ink tabular-nums">{text.trim().toUpperCase()}</p>

@@ -20,6 +20,11 @@ export function loadShard(family: Family, prefix: string) {
   const hit = cache.get(key);
   if (hit) return Promise.resolve(hit);
   return fetch(`/years/${family}/${prefix}.json`).then(async (response) => {
+    if (response.status === 404) {
+      const empty: Record<string, Row> = {};
+      cache.set(key, empty);
+      return empty;
+    }
     if (!response.ok) throw new Error("missing");
     const data = (await response.json()) as Record<string, Row>;
     cache.set(key, data);
@@ -31,21 +36,25 @@ export async function findAcross(code: string) {
   const clean = code.trim().toUpperCase();
   if (!CODE.test(clean)) return [];
   const hits: { family: Family; label: string; row: Row }[] = [];
+  let failed = 0;
+  let tried = 0;
   for (const family of FAMILIES) {
+    tried += 1;
     try {
       const shard = await loadShard(family.id, clean[0]);
       const row = shard[clean];
       if (row) hits.push({ family: family.id, label: family.label, row });
     } catch {
-      /* This schedule has no codes with that first character. */
+      failed += 1;
     }
   }
+  if (tried > 0 && failed === tried) throw new Error("The year files did not load.");
   return hits;
 }
 
 export function YearList({ family, code, quiet = false }: { family: Family; code: string; quiet?: boolean }) {
   const [row, setRow] = useState<Row | null>(null);
-  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad">("idle");
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad" | "down">("idle");
 
   useEffect(() => {
     const clean = code.trim().toUpperCase();
@@ -71,7 +80,7 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
       .catch(() => {
         if (!cancel) {
           setRow(null);
-          setState("miss");
+          setState("down");
         }
       });
     return () => {
@@ -83,6 +92,7 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
   if (state === "idle") return <p className="text-sm text-muted">Type a code, such as 97110 or A0428.</p>;
   if (state === "bad") return <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p>;
   if (state === "loading") return <p className="text-sm text-muted">Loading every year for {code.trim().toUpperCase()}.</p>;
+  if (state === "down") return <p className="text-sm font-medium text-deep">The year file did not load. Try the code again.</p>;
   if (state === "miss" || !row) return <p className="text-sm font-medium text-deep">That code is not on this schedule for 2020 through 2026.</p>;
 
   return (
@@ -121,7 +131,7 @@ export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
 export function YearLookup() {
   const [text, setText] = useState("");
   const [hits, setHits] = useState<{ family: Family; label: string; row: Row }[]>([]);
-  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad">("idle");
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad" | "down">("idle");
 
   useEffect(() => {
     const clean = text.trim().toUpperCase();
@@ -144,7 +154,10 @@ export function YearLookup() {
         setState(found.length > 0 ? "ready" : "miss");
       })
       .catch(() => {
-        if (!cancel) setState("miss");
+        if (!cancel) {
+          setHits([]);
+          setState("down");
+        }
       });
     return () => {
       cancel = true;
@@ -170,6 +183,7 @@ export function YearLookup() {
         {state === "bad" ? <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p> : null}
         {state === "loading" ? <p className="text-sm text-muted">Checking every schedule.</p> : null}
         {state === "miss" ? <p className="text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
+        {state === "down" ? <p className="text-sm font-medium text-deep">The year files did not load. Type the code again.</p> : null}
         {hits.map((hit) => (
           <section key={hit.family} className="mt-4">
             <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>

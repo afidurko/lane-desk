@@ -11,6 +11,7 @@ const ORDER = ["Physician", "Ambulance", "Lab", "Equipment", "Not on a file"];
 export function InvoiceCheck() {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<Checked[] | null>(null);
+  const [down, setDown] = useState(false);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -18,12 +19,19 @@ export function InvoiceCheck() {
     event?.preventDefault();
     const parsed = readInvoiceLines(text);
     setBusy(true);
-    const checked: Checked[] = [];
-    for (const line of parsed) {
-      checked.push({ ...line, hits: await findAcross(line.code) });
+    setDown(false);
+    try {
+      const checked: Checked[] = [];
+      for (const line of parsed) {
+        checked.push({ ...line, hits: await findAcross(line.code) });
+      }
+      setRows(checked);
+    } catch {
+      setRows(null);
+      setDown(true);
+    } finally {
+      setBusy(false);
     }
-    setRows(checked);
-    setBusy(false);
   }
 
   const groups = new Map<string, Checked[]>();
@@ -66,6 +74,7 @@ export function InvoiceCheck() {
         </label>
       </div>
       <p className="mt-3 text-sm leading-relaxed text-muted">One line, one code, a date, and the amount. Extra words are ignored.</p>
+      {down ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The invoice is still here. Check it again.</p> : null}
       {rows && rows.length === 0 ? <p className="mt-4 text-sm font-medium text-deep">No code was on those lines.</p> : null}
       {ORDER.filter((label) => groups.has(label)).map((label) => {
         const lines = groups.get(label) ?? [];
