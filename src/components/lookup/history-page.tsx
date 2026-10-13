@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/landing/shell";
+import { Note2024 } from "@/components/lookup/year-lookup";
 import { money } from "@/lib/desk/clock";
+import { shows2024 } from "@/lib/history/physician";
 
 type FamilySummary = {
   id: string;
@@ -87,6 +89,10 @@ export function HistoryPage() {
           Find a code or a name
           <input value={query} onChange={(event) => { setQuery(event.target.value); setShown(30); }} placeholder="97110" className="mt-1.5 h-12 w-full rounded-2xl border border-line bg-paper-2 px-4 text-base" />
         </label>
+        {family === "physician" ? (
+          <p className="mt-3 text-sm leading-relaxed text-muted">Codes Medicare does not pay, and codes not priced in the office setting (CMS non-facility NA), have no office amount, so they are not listed.</p>
+        ) : null}
+        {family === "physician" && filtered.some(shows2024) ? <Note2024 /> : null}
         {state === "loading" ? <p className="mt-4 text-sm text-muted">Loading this schedule.</p> : null}
         {state === "down" ? <p className="mt-4 text-sm text-deep">The history file did not load.</p> : null}
         <ul className="mt-4 space-y-2">
@@ -99,6 +105,7 @@ export function HistoryPage() {
                 </span>
                 <span className="mt-1 block text-sm text-ink">{row.n}</span>
                 <span className="mt-1 block text-sm text-muted">{row.from} {money(row.fc / 100)} → {row.to} {money(row.tc / 100)}</span>
+                {family === "physician" && shows2024(row) ? <span className="mt-1 block text-xs text-muted" data-row-2024>2024 is the year-end 2024 release. See the 2024 note.</span> : null}
               </a>
             </li>
           ))}

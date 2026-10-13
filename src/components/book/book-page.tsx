@@ -14,6 +14,9 @@ import {
   conversionFor,
   localityDollars,
   NOT_OFFICE_LABEL,
+  noDollarAmount,
+  NOT_PAID_LABEL,
+  payableStatus,
   notPricedInOffice,
   sequester,
   sequestrationLabel,
@@ -139,7 +142,7 @@ export function BookPage() {
 
   function priceOf(row: PfsRow) {
     if (!physician) return null;
-    if (setting === "nf" && notPricedInOffice(row)) return null;
+    if (noDollarAmount(row, setting)) return null;
     const mode = physician.conversion.qp ? clinician : "nonQp";
     const conversion = conversionFor(row, mode, physician);
     if (!conversion) return null;
@@ -287,7 +290,7 @@ export function BookPage() {
                         <button type="button" onClick={() => setSelected(row)} className={active ? "w-full bg-paper-2 px-4 py-3 text-left" : "w-full px-4 py-3 text-left hover:bg-paper-2"}>
                           <span className="font-medium text-ink tabular-nums">{row.c}{row.m ? `-${row.m}` : ""}</span>
                           <span className="mt-1 block text-sm text-ink">{shortName(row.d)}</span>
-                          <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {setting === "nf" && notPricedInOffice(row) ? NOT_OFFICE_LABEL : value === null ? "No national amount" : money(value)}</span>
+                          <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {!payableStatus(row.s) ? NOT_PAID_LABEL : setting === "nf" && notPricedInOffice(row) ? NOT_OFFICE_LABEL : value === null ? "No national amount" : money(value)}</span>
                         </button>
                       </li>
                     );
@@ -313,6 +316,8 @@ export function BookPage() {
                   <p className="text-sm leading-relaxed text-muted">
                     {shown?.s === "J"
                       ? `${anesthesiaNote(physician, shown, place)} Payment is base units plus time, times that factor. This book does not invent the time.`
+                      : shown && !payableStatus(shown.s)
+                        ? `${NOT_PAID_LABEL}. ${shown.c} is status ${shown.s}, so there is no separate amount.`
                       : shown && setting === "nf" && notPricedInOffice(shown)
                         ? `${NOT_OFFICE_LABEL}. CMS marks ${shown.c} non-facility NA (rarely or never done in the office), so there is no office price.`
                         : shown

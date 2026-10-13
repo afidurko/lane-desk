@@ -30,9 +30,7 @@ export function isTransport(code: string, name: string) {
   return TRANSPORT.has(code) || TRANSPORT_WORDS.some((word) => text.includes(word));
 }
 
-export function payableStatus(status: string) {
-  return status === "A" || status === "R" || status === "T";
-}
+export { payableStatus } from "@/lib/book/price";
 
 /** What the Filter "Use" step (Add to claim) shows and puts on the claim when CMS gives a code no office price. */
 export const NOT_OFFICE_USE_NOTE =

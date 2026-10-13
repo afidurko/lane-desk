@@ -92,11 +92,12 @@ check("a spreadsheet header is not a line", sheet.length === 1 && sheet[0].code 
 check("a 2026 line can use a file from that year", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2026)?.c === 13823);
 check("a 2024 line does not use a 2026-only file", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2024) === null);
 const openPerson = { id: "1", label: "Participant 1", county: "Cattaraugus", medicare: true, medicaid: true, esrd: false, age55: false, inArea: true, voluntary: true, community: true, loc: "open" };
-check("Cattaraugus has no loaded Medicare county rate", medicareCents("Cattaraugus", 2026, false) === null);
+check("Cattaraugus 2026 PACE rate comes from the PACE ratebook", medicareCents("Cattaraugus", 2026, false) === 126349);
+check("a year not in the PACE files has no rate", medicareCents("Cattaraugus", 2019, false) === null);
 check("Erie uses the loaded grouped rate", medicareCents("Erie", 2026, false) === 139641);
 check("ESRD replaces the county rate", medicareCents("Erie", 2026, true) === 1205155);
 check("a person is not enrolled until every gate is met", canEnroll(openPerson) === false);
-check("the month does not invent a Cattaraugus payment", monthLine(openPerson, 2026, null).medicare === null && monthLine({ ...openPerson, age55: true, loc: "met" }, 2026, 400000).missing.some((item) => item.includes("No Medicare")));
+check("the month does not invent a payment for a year not in the files", monthLine(openPerson, 2019, null).medicare === null && monthLine({ ...openPerson, age55: true, loc: "met" }, 2019, 400000).missing.some((item) => item.includes("No Medicare")));
 check("a Social Security number is refused", blockedText("123-45-6789") !== null);
 check("the meeting names every required seat", missingSeats([...SEATS]).length === 0);
 const ranked = rankBrief(["A meeting is missing the driver.", "Participant 1 is not enrolled. 55 or older is not marked.", "Participant 1: No Medicare county rate is loaded."]);
@@ -130,7 +131,7 @@ check("medicaid is not compared with Medicare when the state file is missing", c
 const history = JSON.parse(readFileSync("public/history/summary.json", "utf8"));
 const physician = history.families.find((row) => row.id === "physician");
 const therapy = JSON.parse(readFileSync("public/history/physician.json", "utf8")).find((row) => row.c === "97110");
-check("history counts the physician codes that changed", physician.changed === 7444 && physician.down === 5845);
+check("history counts the physician codes that changed", physician.changed === 3362 && physician.up === 1500 && physician.down === 1862);
 check("97110 history is the 2020 amount down to 2026", therapy.from === 2020 && therapy.to === 2026 && therapy.fc === 3047 && therapy.tc === 2827);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));

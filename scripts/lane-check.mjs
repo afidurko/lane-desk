@@ -7,7 +7,11 @@ import { dollarsFromTotal, sequester, sequestrationPercent } from "../src/lib/bo
 import { admit, filterRows, rowsOf } from "../src/lib/book/book.ts";
 import { classifyIssue } from "../src/lib/help/issues.ts";
 import { scanPhysician } from "../src/lib/desk/scan.ts";
-import { notPricedInOffice, NOT_OFFICE_LABEL } from "../src/lib/book/price.ts";
+import { notPricedInOffice, NOT_OFFICE_LABEL, NOT_PAID_LABEL, noDollarAmount, payableStatus as pricePayable } from "../src/lib/book/price.ts";
+import { physicianHistory, shows2024 } from "../src/lib/history/physician.ts";
+import { scanNeeds2024Note } from "../src/lib/desk/scan.ts";
+import { BASE_RATE_NOTE, ESRD_2020_USE, NOT_CHECKED, maCountyRate, medicareCents, paceEsrd, paceRate, partD } from "../src/lib/pace/rates.ts";
+import { payableStatus as filterPayable } from "../src/lib/book/filter.ts";
 import { localityPrices } from "../src/lib/pricing/locality.ts";
 import { readFileSync } from "node:fs";
 import { claimLineFor, NOT_OFFICE_USE_NOTE } from "../src/lib/book/filter.ts";
@@ -324,6 +328,42 @@ check("public national file carries no short-name field", publicNational.rows.ev
 check("public national file has no 11004 short name text", !readFileSync("public/pfs-national-2026.json", "utf8").includes("Dbrdmt skin xtrnl gent&per"));
 check("public national index: 11004 has an empty name", indexNational(publicNational).rows.get("11004")?.n === "");
 check("internal 2026 file still has the 11004 short name", pfs2026.rows.some((row) => row.c === "11004" && row.d === "Dbrdmt skin xtrnl gent&per"));
+// Shared no-dollar rule: non-payable status or CMS non-facility NA gets no amount (Filter, Book, desk scan, /history).
+check("shared rule: Filter's payableStatus is the same function", filterPayable === pricePayable);
+check("shared rule: status B, N, I, X get no amount in either setting", ["B", "N", "I", "X", "C", "E", "M", "P"].every((s) => noDollarAmount({ s }, "nf") && noDollarAmount({ s }, "fac")));
+check("shared rule: an A code with NA has no office amount but keeps facility", noDollarAmount({ s: "A", nn: 1 }, "nf") && !noDollarAmount({ s: "A", nn: 1 }, "fac"));
+check("shared rule: NOT_PAID_LABEL wording", NOT_PAID_LABEL === "Medicare does not pay this code separately");
+const national = JSON.parse(readFileSync("public/pfs-national-2026.json", "utf8"));
+const nonPaidNational = national.rows.filter((row) => !pricePayable(row.s) && row.tn > 0);
+check("Book: every non-payable national 2026 code with a CMS total gets no amount (was 152 priced)", nonPaidNational.length >= 152 && nonPaidNational.every((row) => noDollarAmount(row, "nf") && noDollarAmount(row, "fac")));
+check("Book: 22526 (N) and 97010 (B) get no amount", ["22526", "97010"].every((code) => national.rows.filter((row) => row.c === code).every((row) => noDollarAmount(row, "nf"))));
+check("Book NY: 99243 (I) gets no amount on any year file", [2020, 2021, 2022, 2023, 2024, 2025, 2026].every((year) => JSON.parse(readFileSync(`public/pfs-${year}.json`, "utf8")).rows.filter((row) => row.c === "99243").every((row) => noDollarAmount(row, "nf") && noDollarAmount(row, "fac"))));
+const allYears = [2020, 2021, 2022, 2023, 2024, 2025, 2026].map((year) => JSON.parse(readFileSync(`public/pfs-${year}.json`, "utf8")));
+const unpaidScan = [];
+for (let i = 1; i < allYears.length; i += 1) unpaidScan.push(...scanPhysician(allYears[i], allYears[i - 1]).changes);
+check("scan 2021-2026: no non-payable side ever shows an amount", unpaidScan.every((row) => !(row.currentNotPaid && row.current !== null) && !(row.priorNotPaid && row.prior !== null)));
+check("scan: the 8 reported status-change codes show no amount on the unpaid side", ["99358", "99359", "96202", "96203", "74263", "G9037", "G9038", "77417"].every((code) => unpaidScan.filter((row) => row.code === code).some((row) => (row.currentNotPaid && row.current === null) || (row.priorNotPaid && row.prior === null))));
+check("scan: 2024 note shows when a physician scan includes 2024", scanNeeds2024Note([{ schedule: "Physician", year: 2025, priorYear: 2024 }]) && !scanNeeds2024Note([{ schedule: "Physician", year: 2026, priorYear: 2025 }]));
+const shipped = JSON.parse(readFileSync("public/history/physician.json", "utf8"));
+const rebuilt = physicianHistory(allYears);
+check("/history: 3,362 physician rows", shipped.length === 3362 && rebuilt.moves.length === 3362);
+check("/history: shipped rows match a rebuild from the year files (amounts and years)", shipped.every((row, i) => { const m = rebuilt.moves[i]; return m && m.c === row.c && m.from === row.from && m.fc === row.fc && m.to === row.to && m.tc === row.tc && m.d === row.d; }));
+const deskUnpriced = (file, code) => file.rows.some((row) => row.c === code && row.m === "" && noDollarAmount(row, "nf"));
+check("/history: no row has an endpoint the desk leaves unpriced", shipped.every((row) => !deskUnpriced(allYears[row.from - 2020], row.c) && !deskUnpriced(allYears[row.to - 2020], row.c)));
+check("/history: 32445 (no office price) has no office amount", !shipped.some((row) => row.c === "32445"));
+check("/history: without the rule it would be the old 7,444 rows", physicianHistory(allYears, { ignoreNoDollarRule: true }).moves.length === 7444);
+check("/history: rows showing 2024 get the note (43 rows)", shipped.filter(shows2024).length === 43 && shows2024({ from: 2024, to: 2026 }) && !shows2024({ from: 2020, to: 2026 }));
+check("/history page renders the 2024 note", readFileSync("src/components/lookup/history-page.tsx", "utf8").includes("<Note2024 />"));
+// PACE month: every figure comes from the CMS index files via src/lib/pace/official.ts (build-pace-rates.py --check compares with the sqlite files).
+check("PACE: 2026 New York County PACE rate is $1,983.61 from the 2026 PACE ratebook", paceRate("New York", 2026, false)?.cents === 198361 && /CountyRate2026PACE\.csv/.test(paceRate("New York", 2026, false)?.source ?? ""));
+check("PACE: 2026 NY PACE ESRD is $12,051.55 from the PACE file, never the MA $11,414.68", paceEsrd(2026)?.cents === 1205155 && medicareCents("Erie", 2026, true) === 1205155 && !readFileSync("src/lib/pace/official.ts", "utf8").includes("1141468"));
+check("PACE: 2020 ESRD uses the revised $8,651.11 (one switch)", ESRD_2020_USE === "revised" && paceEsrd(2020)?.cents === 865111 && /revised/i.test(paceEsrd(2020)?.source ?? ""));
+check("PACE: Part D 2026 national bid $239.27 and base premium $38.99", partD(2026)?.bid.cents === 23927 && partD(2026)?.premium.cents === 3899);
+check("PACE: Cattaraugus 2026 now sourced ($1,263.49)", paceRate("Cattaraugus", 2026, false)?.cents === 126349);
+check("PACE: MA county rates 2020-2026 sourced, none for 2027", [2020, 2021, 2022, 2023, 2024, 2025, 2026].every((y) => maCountyRate("New York", y)) && maCountyRate("New York", 2027) === null);
+check("PACE: a year not in the files is unpriced, never estimated", paceRate("New York", 2019, false) === null && partD(2019) === null && medicareCents("New York", 2019, false) === null);
+check("PACE: wording for unpriced, base rates and national Part D", NOT_CHECKED === "not yet checked against CMS" && /before CMS adjusts/.test(BASE_RATE_NOTE) && /national averages, not New York rates/.test(readFileSync("src/components/pace/pace-page.tsx", "utf8")));
+check("PACE: screen file has no dollar amounts typed in", !/\b(198361|1205155|23927|3899|865111)\b|\$\d/.test(readFileSync("src/components/pace/pace-page.tsx", "utf8")));
 const vague = classifyIssue("Hello there");
 check("help asks when it is unclear", vague.kind === "ask");
 

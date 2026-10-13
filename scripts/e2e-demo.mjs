@@ -305,6 +305,29 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
       await page.goto(base + path, { waitUntil: "networkidle" });
       t(`${path} opens in internal`, !(await page.getByText("is not part of this demo").isVisible().catch(() => false)) && (await page.locator("h1").count()) >= 1);
     }
+    // /history: codes Medicare does not pay or with no office price get no office amount (3,362 rows), and the 2024 note shows.
+    await page.goto(base + "/history", { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Physician" }).click();
+    await page.getByText("3,362 changed").first().waitFor();
+    t("/history: physician lists 3,362 changed codes", /3,362 changed/.test(await page.locator("main").innerText()));
+    await page.locator("[data-note-2024]").first().waitFor();
+    t("/history: the 2024 year-end note shows", /January 1 through March 8, 2024/.test(await page.locator("[data-note-2024]").first().innerText()));
+    await page.getByPlaceholder("97110").fill("32445");
+    await page.getByText("Nothing in this schedule matches").waitFor();
+    t("/history: 32445 (no office price) shows no office amount", !/371\.59/.test(await page.locator("main").innerText()));
+    // Book: a code Medicare does not pay gets no amount.
+    await page.goto(base + "/book", { waitUntil: "networkidle" });
+    await page.getByPlaceholder("97110 or gait").fill("97010");
+    await page.getByText("Medicare does not pay this code separately").first().waitFor();
+    const unpaidBook = await page.locator("main").innerText();
+    t("Book: 97010 (status B) says Medicare does not pay it and shows no amount", !/Fee schedule\s*\$/.test(unpaidBook) && !/\$7\.75|\$6\.68/.test(unpaidBook));
+    // PACE month: figures come from the CMS files and say so.
+    await page.goto(base + "/pace", { waitUntil: "networkidle" });
+    const paceText = await page.locator("main").innerText();
+    t("PACE: 2026 New York County shows $1,983.61 with its source", /\$1,?983\.61/.test(await page.locator('[data-county="New York"]').innerText()) && /CountyRate2026PACE\.csv/.test(paceText));
+    t("PACE: ESRD is the PACE $12,051.55, not the MA $11,414.68", /\$12,?051\.55/.test(await page.locator("[data-pace-esrd]").innerText()) && !/11,?414\.68/.test(paceText));
+    t("PACE: Part D is labelled national averages with $239.27 and $38.99", /national averages, not New York rates/.test(paceText) && /\$239\.27/.test(paceText) && /\$38\.99/.test(paceText));
+    t("PACE: base county rate note shows", /before CMS adjusts them for each person/.test(paceText));
   }
 
   // Public mode must not fetch the held-back files.

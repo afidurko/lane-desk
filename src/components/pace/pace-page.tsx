@@ -4,11 +4,15 @@ import { Shell } from "@/components/landing/shell";
 import { money } from "@/lib/desk/clock";
 import { canEnroll, gateGaps, missingSeats, monthLine, SEATS, type Person } from "@/lib/pace/gates";
 import { reasonMonth } from "@/lib/lookup/reason";
-import { COUNTIES, PART_D_BID, RATE_SOURCE, medicareCents } from "@/lib/pace/rates";
+import { BASE_RATE_NOTE, COUNTIES, ESRD_2020_NOTE, NOT_CHECKED, RATE_SOURCE, maCountyRate, paceEsrd, paceRate, partD, type Sourced } from "@/lib/pace/rates";
 import { rankBrief } from "@/lib/team/rank";
 import { addPerson, emptyBook, readPace, setCenter, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
 
 const TABS = ["Month", "People", "Meeting", "Day", "Rides", "Review"] as const;
+
+function SourceLine({ figure }: { figure: Sourced | null }) {
+  return figure ? <span className="mt-0.5 block text-xs text-muted" data-source>Source: {figure.source} (year {figure.year})</span> : null;
+}
 
 export function PacePage() {
   const [book, setBook] = useState<PaceBook>(emptyBook());
@@ -70,6 +74,8 @@ export function PacePage() {
 function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines: { person: Person; line: ReturnType<typeof monthLine> }[]; total: number; onBook: (book: PaceBook) => void; onError: (error: string | null) => void }) {
   const [contract, setContract] = useState("");
   const [forCounty, setForCounty] = useState("Cattaraugus");
+  const esrd = paceEsrd(book.year);
+  const partDYear = partD(book.year);
   return (
     <section className="mt-6">
       <label className="block text-sm font-medium text-ink">
@@ -86,23 +92,35 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
         />
       </label>
       <p className="mt-4 text-sm leading-relaxed text-muted">{RATE_SOURCE}</p>
-      <ul className="mt-4 space-y-2">
+      <p className="mt-2 text-sm leading-relaxed text-ink" data-base-rate-note>{BASE_RATE_NOTE}</p>
+      <ul className="mt-4 space-y-2" data-pace-rates>
         {COUNTIES.map((county) => {
-          const cents = medicareCents(county, book.year, false);
+          const pace = paceRate(county, book.year, false);
+          const ma = maCountyRate(county, book.year);
           return (
-            <li key={county} className="flex items-center justify-between gap-3 rounded-2xl border border-line px-4 py-3 text-sm">
-              <span className="text-ink">{county}</span>
-              <span className="font-medium text-ink tabular-nums">{cents === null ? "Not in the loaded ratebook" : money(cents / 100)}</span>
+            <li key={county} className="rounded-2xl border border-line px-4 py-3 text-sm" data-county={county}>
+              <span className="flex items-center justify-between gap-3">
+                <span className="text-ink">{county}, PACE {book.year}</span>
+                <span className="font-medium text-ink tabular-nums" data-pace-cents={pace?.cents ?? ""}>{pace ? money(pace.cents / 100) : `Unpriced, ${NOT_CHECKED}`}</span>
+              </span>
+              <SourceLine figure={pace} />
+              <span className="mt-1 block text-xs text-muted">
+                Regular Medicare Advantage county rate {book.year}, context only, not in the month total: {ma ? money(ma.cents / 100) : `unpriced, ${NOT_CHECKED}`}
+              </span>
+              <SourceLine figure={ma} />
             </li>
           );
         })}
       </ul>
-      <p className="mt-3 text-sm text-muted">
-        ESRD in {book.year} is {medicareCents("", book.year, true) === null ? "not loaded" : money((medicareCents("", book.year, true) ?? 0) / 100)}. It replaces the county amount. It is not added on top.
+      <p className="mt-3 text-sm text-muted" data-pace-esrd>
+        PACE ESRD (kidney dialysis) in {book.year} is {esrd ? money(esrd.cents / 100) : `unpriced, ${NOT_CHECKED}`}. It replaces the county amount. It is not added on top.
       </p>
-      <p className="mt-2 text-sm text-muted">
-        The Part D national average bid for 2026 is {money(PART_D_BID[2026] / 100)}. That is not this plan’s payment, so it is not in the month total.
+      <SourceLine figure={esrd} />
+      {book.year === 2020 && esrd ? <p className="mt-1 text-xs text-muted" data-esrd-2020-note>{ESRD_2020_NOTE}</p> : null}
+      <p className="mt-2 text-sm text-muted" data-part-d>
+        Part D {book.year}, national averages, not New York rates: national average monthly bid {partDYear ? money(partDYear.bid.cents / 100) : `unpriced, ${NOT_CHECKED}`}, base beneficiary premium {partDYear ? money(partDYear.premium.cents / 100) : `unpriced, ${NOT_CHECKED}`}. Not this plan’s payment, so not in the month total.
       </p>
+      <SourceLine figure={partDYear?.bid ?? null} />
       <form
         className="mt-4 flex flex-wrap items-end gap-2"
         onSubmit={(event) => {

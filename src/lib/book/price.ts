@@ -52,6 +52,24 @@ export function notPricedInOffice(row: Pick<PfsRow, "nn" | "s">) {
   return Boolean(row.nn) && (row.s === "A" || row.s === "R" || row.s === "T");
 }
 
+/** The words every screen uses for a code Medicare does not pay separately (status B, I, N, X and the like). */
+export const NOT_PAID_LABEL = "Medicare does not pay this code separately";
+
+/** Medicare pays a separate physician amount only for status A, R or T. B, C, E, I, J, M, N, P, X get no dollar amount. */
+export function payableStatus(status: string) {
+  return status === "A" || status === "R" || status === "T";
+}
+
+/**
+ * The one rule every screen uses before it shows a dollar amount (Filter, Book, desk file scan, /history):
+ * no amount for a code Medicare does not pay (non-payable status), and no office (non-facility) amount for a code
+ * with CMS non-facility NA.
+ */
+export function noDollarAmount(row: Pick<PfsRow, "nn" | "s">, setting: "nf" | "fac" = "nf") {
+  if (!payableStatus(row.s)) return true;
+  return setting === "nf" && notPricedInOffice(row);
+}
+
 export const SEQUESTRATION = {
   percent: 2,
   carc: "253",
