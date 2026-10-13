@@ -73,6 +73,48 @@ export function pricedYears(amounts: Record<string, number | null | undefined>) 
   });
 }
 
+export type MoreYear = { year: number; cents: number; other: number | null; label: string };
+
+/** Posted rows the year grid does not already show. Another year's amount is not a price for this year. */
+export function morePosted(
+  coveredYears: number[],
+  saved: { c: string; cents: number | null; otherCents?: number | null; year: number | null; asOf: string; place?: string }[],
+  once: { t: string; c: number }[],
+  code: string,
+): MoreYear[] {
+  const covered = new Set(coveredYears);
+  const fromSaved = saved.flatMap((row) => {
+    if (row.c !== code || row.cents === null || row.year === null) return [];
+    const other = row.otherCents ?? null;
+    if (covered.has(row.year) && other === null) return [];
+    return [{ year: row.year, cents: row.cents, other, label: [row.place, row.asOf].filter(Boolean).join(", ") }];
+  });
+  const fromOnce = once.flatMap((row) => {
+    const found = row.t.match(/20\d\d/);
+    if (!found) return [];
+    const year = Number(found[0]);
+    if (covered.has(year)) return [];
+    return [{ year, cents: row.c, other: null, label: row.t }];
+  });
+  return [...fromSaved, ...fromOnce].sort((a, b) => b.year - a.year || a.label.localeCompare(b.label));
+}
+export function lastPosted(priors: { year: number; cents: number }[], year: number | null) {
+  const older = priors.filter((row) => (year === null || row.year < year) && Number.isInteger(row.cents) && row.cents > 0);
+  if (older.length === 0) return null;
+  const top = Math.max(...older.map((row) => row.year));
+  const amounts = [...new Set(older.filter((row) => row.year === top).map((row) => row.cents))];
+  if (amounts.length !== 1) return { year: top, cents: null as number | null };
+  return { year: top, cents: amounts[0] };
+}
+
+export function unknownBeside(year: number | null, priors: { year: number; cents: number }[]) {
+  const last = lastPosted(priors, year);
+  const head = year ? `Unknown for ${year}.` : "Unknown.";
+  if (!last) return `${head} No earlier year is posted.`;
+  if (last.cents === null) return `${head} ${last.year} has more than one amount. None was used.`;
+  return `${head} Last posted year is ${last.year}, ${money(last.cents / 100)}. That amount was not used.`;
+}
+
 export function previousUse(
   priors: { year: number; cents: number }[],
   year: number,

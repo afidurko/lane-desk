@@ -26,6 +26,37 @@ const DROP: { reason: Exclude<Threat, "injection" | "phi" | "oversize">; pattern
   { reason: "transmit", team: "Rank", pattern: /\b(fax|upload|transmit|send)\b[\s\S]{0,50}\b(cms|medicare|ehr|portal)\b/i, detail: "Stopped. This system does not transmit a record." },
 ];
 
+const INVOICE_PHI = [/\b\d{3}-\d{2}-\d{4}\b/, /\b(?:mrn|ssn|social security|medical record)\b/i];
+
+/** An invoice may contain an NPI, a claim number, and more than a short note. A social security number or a record number still stops it. */
+export function gateInvoice(input: string): Containment {
+  const actions: PatchAction[] = [];
+  if (input.length > 1_000_000) {
+    actions.push({ team: "Screen", threat: "oversize", action: "Refused the file. It was not cut and kept." });
+    actions.push({ team: "File", threat: "oversize", action: "Closed pricing, storage, and export." });
+    return stopped("oversize", "Stopped. The file is past the size limit. It was not stored.", actions);
+  }
+  if (INVOICE_PHI.some((pattern) => pattern.test(input))) {
+    actions.push({ team: "Screen", threat: "phi", action: "Dropped the file. A record number was not stored." });
+    actions.push({ team: "File", threat: "phi", action: "Closed pricing, storage, and export." });
+    return stopped("phi", "Stopped. The file has a social security number or a record number. It was not stored.", actions);
+  }
+  const hit = DROP.find((rule) => rule.pattern.test(input));
+  if (hit) {
+    actions.push({ team: hit.team, threat: hit.reason, action: "Stopped the request. Nothing was sent." });
+    actions.push({ team: "File", threat: hit.reason, action: "Closed pricing, storage, and export." });
+    return stopped(hit.reason, hit.detail, actions);
+  }
+  return {
+    decision: "clear",
+    reason: "clear",
+    detail: "No record number and no forbidden action. The invoice can be checked.",
+    text: input,
+    kept: true,
+    actions,
+  };
+}
+
 /** Local teams only. A hit is dropped in this browser. Nothing is sent out to find or attack anyone. */
 export function contain(input: string): Containment {
   const screened = screen(input, "note");

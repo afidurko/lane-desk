@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { claimsFromInvoice, entityTotal, parseInvoice, type Invoice } from "@/lib/billing/invoice";
 import type { Books, Claim } from "@/lib/billing/billing";
 import { money } from "@/lib/desk/clock";
+import { prepareInvoice, readImportFile } from "@/lib/lookup/import-text";
+import { rankInvoice } from "@/lib/team/rank";
 
 export function InvoiceIntake({
   books,
@@ -39,11 +41,23 @@ export function InvoiceIntake({
 
   function onFile(file: File | undefined) {
     if (!file) return;
-    if (file.size > 1_000_000) {
-      setMessage("That file is over 1 MB. Export a smaller invoice.");
-      return;
-    }
-    file.text().then(load).catch(() => setMessage("That file could not be read."));
+    readImportFile(file)
+      .then((read) => {
+        if ("error" in read) {
+          setMessage(read.error);
+          return;
+        }
+        const gate = rankInvoice({ look: 0, off: 0, match: 0 }, read.text);
+        if (gate.status === "stop") {
+          setText("");
+          setMessage(gate.detail);
+          return;
+        }
+        const safe = prepareInvoice(read.text);
+        setText(safe);
+        load(safe || read.text);
+      })
+      .catch(() => setMessage("That file could not be read."));
   }
 
   function prepare(invoice: Invoice) {
@@ -74,15 +88,17 @@ export function InvoiceIntake({
     <section className="mt-6 rounded-2xl border border-line p-5">
       <h2 className="font-display text-3xl text-ink">Import an invoice</h2>
       <p className="mt-2 text-sm text-muted">
-        Bring a file from another system, or paste the invoice. A CSV works when it has a code column and an amount column. Optional columns: entity, date, service. The file stays in this browser. It is not sent to a clearinghouse.
+        Bring a spreadsheet, a PDF, a Word document, a web page, a message, or a zip of those. A workbook is read from the code, the date, the units, the provider billed amount, and the amount you want to pay. A photo with no text stored in the file is not read. The file stays in this browser. It is not sent.
       </p>
       <form onSubmit={read} className="mt-4 grid gap-3">
         <label className="text-sm font-medium text-ink">
           Invoice file
           <input
             type="file"
-            accept=".txt,.csv,.tsv,text/plain,text/csv"
-            onChange={(event) => onFile(event.target.files?.[0])}
+            onChange={(event) => {
+              onFile(event.target.files?.[0]);
+              event.target.value = "";
+            }}
             className="mt-1.5 block w-full text-sm text-ink file:mr-3 file:h-11 file:rounded-full file:border-0 file:bg-teal file:px-4 file:text-sm file:font-medium file:text-teal-ink"
           />
         </label>

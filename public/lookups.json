@@ -1,0 +1,120 @@
+{
+  "source": "Looked up outside the fee files already loaded. A dollar is saved only when the posted figure is a whole number of cents. The national FQHC base is not an Olean amount. Another state's rate was not used.",
+  "rows": [
+    {
+      "c": "J2371",
+      "status": "known",
+      "cents": null,
+      "at": "2026-10-13T17:33:00.000Z",
+      "year": 2026,
+      "months": [10, 11, 12],
+      "asOf": "October 1, 2026 through December 31, 2026 Part B payment limit is $0.002 per 20 micrograms.",
+      "related": ["J2372", "J2373"],
+      "note": "Under one cent, so it is not loaded as a dollar. J2372 and J2373 are different products and were not used."
+    },
+    {
+      "c": "J2003",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:33:00.000Z",
+      "year": 2026,
+      "months": [10, 11, 12],
+      "asOf": "The October 2026 Part B file does not publish a payment limit for J2003.",
+      "related": ["J2002"],
+      "note": "J2002 is a different drug. It was not used."
+    },
+    {
+      "c": "G0467",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:34:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "Looked again. The 2026 FQHC national base is $207.72. Rest of New York is still not in the locality table. The national base was not used.",
+      "related": ["G0466", "G0468"],
+      "note": "Manhattan was listed. Olean is not Manhattan."
+    },
+    {
+      "c": "S9122",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:35:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "Looked again. No New York Medicaid dollar for S9122 was posted. A private-payer average was not used.",
+      "related": ["S9123", "S9124"],
+      "note": "New Jersey and Mississippi publish a rate. Those states were not used."
+    },
+    {
+      "c": "T1001",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:35:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "No New York dollar for a 2026 nursing assessment was posted.",
+      "related": ["T1002", "T1003"],
+      "note": "The physician file has no amount. Status I."
+    },
+    {
+      "c": "T1002",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:35:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "No New York dollar for 2026 RN services was posted.",
+      "related": ["T1001", "T1003"]
+    },
+    {
+      "c": "T1003",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:35:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "No New York dollar for 2026 LPN services was posted.",
+      "related": ["T1001", "T1002"]
+    },
+    {
+      "c": "C1757",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:36:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "Looked again. No separate Medicare payment for C1757 was posted. A private-payer average was not used.",
+      "related": ["C1769"]
+    },
+    {
+      "c": "C1769",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:36:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "Looked again. No separate Medicare payment for C1769 was posted.",
+      "related": ["C1757"]
+    },
+    {
+      "c": "R0070",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:36:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "Status C on the physician file for 2020 through 2026. No national amount.",
+      "related": ["R0075"]
+    },
+    {
+      "c": "R0075",
+      "status": "unknown",
+      "cents": null,
+      "at": "2026-10-13T17:36:00.000Z",
+      "year": 2026,
+      "months": null,
+      "asOf": "Status C on the physician file for 2020 through 2026. No national amount.",
+      "related": ["R0070"]
+    }
+  ]
+}

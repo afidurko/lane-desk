@@ -81,7 +81,7 @@ const WORKABLE: { test: RegExp; reply: IssueReply }[] = [
     reply: {
       kind: "workable",
       title: "Import the invoice",
-      body: "Save the organization first. Then import a CSV with a code column and an amount column. One claim opens per entity.",
+      body: "Save the organization first. Then import a spreadsheet, a PDF, a Word document, a web page, a message, or a zip of those. One claim opens per entity. A photo with no text stored in the file is not read.",
       href: "/billing",
       hrefLabel: "Import an invoice",
       suggestions: ["Add the organization", "One claim per entity"],

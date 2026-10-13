@@ -17,6 +17,11 @@ export type CheckLine = {
   payer: "medicare" | "medicaid" | null;
   ambiguous: boolean;
   chargeKnown: boolean;
+  schedule: "none" | "pfs" | "lab" | "dme" | "opps" | "nursing" | "ambulance" | "miles" | "other" | null;
+  lookupCents: number | null;
+  adminCents: number | null;
+  seqRate: number | null;
+  seqPayCents: number | null;
 };
 
 export type PayBucket = "match" | "off" | "look";
@@ -34,8 +39,9 @@ export function payBucket(
   fileCents: number | null,
 ): PayBucket {
   if (!line.year || fileCents === null || line.billedCents === null) return "look";
-  if (line.units === null) return "look";
-  const expected = fileCents * (line.units ?? 1);
+  const units = line.units === undefined ? 1 : line.units;
+  if (units === null || units === 0) return "look";
+  const expected = Math.round(fileCents * units);
   return Math.abs(line.billedCents - expected) <= 1 ? "match" : "off";
 }
 
@@ -51,11 +57,12 @@ export function paymentAlert(input: {
   if (input.block) return { kind: "look" as const, reason: input.block };
   const kind = payBucket(input, input.fileCents);
   if (kind === "match") return { kind, reason: `${input.code} matches the file.` };
+  if (input.units === 0) return { kind: "look" as const, reason: `${input.code} has 0 units, so it is not matched.` };
   if (input.units === null && input.year && input.fileCents !== null && input.billedCents !== null) {
     return { kind: "look" as const, reason: `${input.code} has no units, so it is not matched.` };
   }
   if (kind === "off" && input.fileCents !== null && input.billedCents !== null) {
-    const expected = input.fileCents * (input.units ?? 1);
+    const expected = Math.round(input.fileCents * (input.units ?? 1));
     const gap = input.billedCents - expected;
     const units = input.units ?? 1;
     return {
@@ -97,14 +104,14 @@ export function auditReport(input: {
     if (input.billedCents !== null && charge.kind === "match" && admin.kind !== "match") reasons.push("The charge matches the file.");
     if (input.billedCents === null && admin.kind === "match") reasons.push("No charge was on the report, so the bill itself was not checked.");
     const units = input.units === undefined ? 1 : input.units;
-    const chargeGap = input.billedCents !== null && input.fileCents !== null && units !== null ? input.billedCents - input.fileCents * units : null;
+    const chargeGap = input.billedCents !== null && input.fileCents !== null && units !== null && units !== 0 ? input.billedCents - Math.round(input.fileCents * units) : null;
     const kind = admin.kind === "off" || charge.kind === "off" ? "off" as const : admin.kind === "look" ? "look" as const : input.billedCents !== null && charge.kind !== "match" ? charge.kind : "match" as const;
     const side = admin.kind === "off" ? admin.side : kind === "off" && chargeGap !== null ? (chargeGap > 0 ? "over" as const : "under" as const) : kind === "match" ? "match" as const : "look" as const;
     const gapCents = admin.kind === "off" ? admin.gapCents : kind === "off" ? chargeGap : admin.kind === "match" ? 0 : null;
     return { kind, side, gapCents, reasons };
   }
-  const gap = input.billedCents !== null && input.fileCents !== null && input.units !== null
-    ? input.billedCents - input.fileCents * (input.units ?? 1)
+  const gap = input.billedCents !== null && input.fileCents !== null && typeof input.units === "number" && input.units !== 0
+    ? input.billedCents - Math.round(input.fileCents * input.units)
     : null;
   const side = charge.kind !== "off" || gap === null ? charge.kind : gap > 0 ? "over" as const : "under" as const;
   return { kind: charge.kind, side, gapCents: charge.kind === "off" ? gap : null, reasons: [charge.reason] };
@@ -123,10 +130,10 @@ function administratorAlert(input: {
   if (input.block) return { kind: "look" as const, side: "look" as const, gapCents: null, reason: input.block };
   if (!input.year) return { kind: "look" as const, side: "look" as const, gapCents: null, reason: `${input.code} has no year. It cannot be priced.` };
   if (input.fileCents === null) return { kind: "look" as const, side: "look" as const, gapCents: null, reason: `${input.code} is not on a loaded file for ${input.year}. No amount was guessed.` };
-  if (input.units === null) return { kind: "look" as const, side: "look" as const, gapCents: null, reason: `${input.code} has no units, so the administrator amount is not matched.` };
+  if (input.units === null || input.units === undefined || input.units === 0) return { kind: "look" as const, side: "look" as const, gapCents: null, reason: `${input.code} has no units, so the administrator amount is not matched.` };
   if (input.paidCents === null) return { kind: "look" as const, side: "look" as const, gapCents: null, reason: `${input.code} has no administrator amount.` };
-  const units = input.units ?? 1;
-  const expected = input.fileCents * units;
+  const units = input.units;
+  const expected = Math.round(input.fileCents * units);
   const gap = input.paidCents - expected;
   if (Math.abs(gap) <= 1) {
     return { kind: "match" as const, side: "match" as const, gapCents: 0, reason: `${input.code} matches the file. The administrator ${word} ${money(input.paidCents / 100)}.` };
@@ -140,9 +147,104 @@ function administratorAlert(input: {
   };
 }
 
+/** Their lookup against the file for the schedule they named. The provider charge is not the grade. */
+export function gradeLookup(input: {
+  code: string;
+  year: number | null;
+  units: number | null;
+  lookupCents: number | null;
+  fileCents: number | null;
+  adminCents: number | null;
+  seqRate: number | null;
+  seqPayCents: number | null;
+  block: string | null;
+  note: string | null;
+  otherCents: number | null;
+}) {
+  if (input.block) return { kind: "look" as const, side: "look" as const, gapCents: null, adminUnder: false, bare: true, reasons: [input.block] };
+  if (!input.year) return { kind: "look" as const, side: "look" as const, gapCents: null, adminUnder: false, bare: true, reasons: [`${input.code} has no year. It cannot be priced.`] };
+  const reasons: string[] = [];
+  if (input.note) reasons.push(input.note);
+  const units = input.units && input.units > 0 ? input.units : null;
+  const lineFile = input.fileCents !== null && units !== null ? Math.round(input.fileCents * units) : null;
+  const paid = describeAdmin(input.adminCents, lineFile, input.otherCents, units, input.seqRate);
+  const adminUnder = paid.kind === "under" || paid.kind === "wrong";
+  if (paid.kind === "wrong") {
+    const reasons = [paid.text];
+    if (input.lookupCents !== null && input.fileCents !== null && Math.abs(input.lookupCents - input.fileCents) <= 1) {
+      reasons.push(`${input.code} is ${money(input.fileCents / 100)} on the rural file.`);
+    }
+    pushSeq(reasons, input, lineFile);
+    return { kind: "off" as const, side: "under" as const, gapCents: paid.gap, adminUnder: true, bare: false, reasons };
+  }
+  if (paid.text) reasons.push(paid.text);
+  if (input.fileCents === null) {
+    reasons.unshift(`${input.code} is not on the named schedule for ${input.year}. No amount was guessed.`);
+    return { kind: "look" as const, side: "look" as const, gapCents: null, adminUnder: false, bare: true, reasons };
+  }
+  if (input.lookupCents === null) {
+    reasons.unshift(`${input.code}. Their lookup is blank. The file is ${money(input.fileCents / 100)} per unit.`);
+    pushSeq(reasons, input, lineFile);
+    return { kind: "look" as const, side: "look" as const, gapCents: null, adminUnder, bare: true, reasons };
+  }
+  const gap = input.lookupCents - input.fileCents;
+  if (Math.abs(gap) <= 1) {
+    reasons.unshift(`${input.code} lookup matches the file at ${money(input.fileCents / 100)} per unit.`);
+    pushSeq(reasons, input, lineFile);
+    return { kind: "match" as const, side: "match" as const, gapCents: 0, adminUnder, bare: false, reasons };
+  }
+  const side = gap > 0 ? "over" as const : "under" as const;
+  reasons.unshift(`${input.code}. Their lookup is ${money(input.lookupCents / 100)}. The file is ${money(input.fileCents / 100)} per unit, ${side} by ${money(Math.abs(gap) / 100)}.`);
+  pushSeq(reasons, input, lineFile);
+  return { kind: "off" as const, side, gapCents: gap, adminUnder, bare: false, reasons };
+}
+
+function describeAdmin(admin: number | null, lineFile: number | null, otherCents: number | null, units: number | null, seqRate: number | null) {
+  if (admin === null || lineFile === null || units === null) return { kind: "none" as const, text: "", gap: null };
+  const reduced = Math.round(lineFile * (seqRate ?? 0.98));
+  const payable = seqRate ? reduced : lineFile;
+  const other = otherCents ? Math.round(otherCents * units) : null;
+  if (other !== null && Math.abs(admin - other) <= 1) {
+    return {
+      kind: "wrong" as const,
+      gap: payable - admin,
+      text: `Wrong fee schedule. Their amount is ${money(admin / 100)}, the non-rural amount. The rural amount${seqRate ? ` after ${seqRate}` : ""} is ${money(payable / 100)}.`,
+    };
+  }
+  if (Math.abs(admin - lineFile) <= 1) return { kind: "match" as const, text: `The administrator paid the file, ${money(lineFile / 100)}.`, gap: 0 };
+  if (seqRate && Math.abs(admin - reduced) <= 1) return { kind: "seq" as const, text: `The administrator paid the file after ${seqRate}, ${money(reduced / 100)}.`, gap: 0 };
+  const gap = admin - payable;
+  const side = gap > 0 ? "over" : "under";
+  return { kind: side, gap, text: `Their amount is ${money(admin / 100)}. The file for the line is ${money(payable / 100)}, ${side} by ${money(Math.abs(gap) / 100)}.` };
+}
+
+function pushSeq(reasons: string[], input: { seqRate: number | null; seqPayCents: number | null }, lineFile: number | null) {
+  if (input.seqRate === null || lineFile === null) return;
+  const reduced = Math.round(lineFile * input.seqRate);
+  if (input.seqPayCents === null) {
+    reasons.push(`The sheet applies ${input.seqRate}. The file for the line at that rate is ${money(reduced / 100)}.`);
+    return;
+  }
+  const gap = input.seqPayCents - reduced;
+  reasons.push(Math.abs(gap) <= 1
+    ? `Their amount at ${input.seqRate} matches the file, ${money(reduced / 100)}.`
+    : `Their reduced amount is ${money(input.seqPayCents / 100)}. The file at ${input.seqRate} is ${money(reduced / 100)}.`);
+}
+
+export function sheetSeparator(header: string) {
+  const tab = header.split("\t").length;
+  const semi = header.split(";").length;
+  const comma = header.split(",").length;
+  const best = Math.max(tab, semi, comma);
+  if (best < 2) return "";
+  if (tab === best) return "\t";
+  if (semi === best) return ";";
+  return ",";
+}
+
 function fromSheet(rows: string[]): CheckLine[] | null {
   if (rows.length < 2) return null;
-  const sep = rows[0].includes("\t") ? "\t" : rows[0].includes(",") ? "," : "";
+  const sep = sheetSeparator(rows[0]);
   if (!sep) return null;
   const header = splitCells(rows[0], sep).map((cell) => cell.trim().toLowerCase());
   const codeCol = header.findIndex((cell) => /\b(cpt|hcpcs|procedure|code)\b/.test(cell));
@@ -181,6 +283,7 @@ function fromSheet(rows: string[]): CheckLine[] | null {
       payer: payerIn(payerCell),
       ambiguous: false,
       chargeKnown,
+      ...blankAudit(),
     });
   }
   return lines;
@@ -199,7 +302,18 @@ function fromLines(rows: string[]): CheckLine[] {
     const paidCents = paidLabeled ?? allowedLabeled;
     const paidKind = paidLabeled !== null ? "paid" as const : allowedLabeled !== null ? "allowed" as const : null;
     const amounts = [...row.matchAll(/\$?\s*(\d+\.\d{2})\b/g)].map((item) => item[1]);
-    const labeled = new Set([paidLabeled, allowedLabeled, chargeLabeled].filter((item): item is number => item !== null));
+    const lookupCents = amountAfter(row, "lookup");
+    const adminCents = amountAfter(row, "admin");
+    const seq = seqOf(row);
+    const audit = {
+      schedule: scheduleToken(row),
+      lookupCents,
+      adminCents,
+      seqRate: seq.rate,
+      seqPayCents: seq.pay,
+    };
+    const labeled = new Set([paidLabeled, allowedLabeled, chargeLabeled, lookupCents, adminCents, seq.pay].filter((item): item is number => item !== null));
+    if (seq.rate !== null) labeled.add(Math.round(seq.rate * 100));
     const unlabeled = amounts.map((item) => Math.round(Number(item) * 100)).filter((item) => !labeled.has(item));
     if (paidKind || chargeLabeled !== null) {
       const billedCents = chargeLabeled !== null ? chargeLabeled : unlabeled.length === 1 ? unlabeled[0] : null;
@@ -218,6 +332,7 @@ function fromLines(rows: string[]): CheckLine[] {
         payer: payerIn(row),
         ambiguous,
         chargeKnown: !ambiguous && billedCents !== null,
+        ...audit,
       });
       continue;
     }
@@ -236,6 +351,7 @@ function fromLines(rows: string[]): CheckLine[] {
       payer: payerIn(row),
       ambiguous,
       chargeKnown: true,
+      ...audit,
     });
   }
   return lines;
@@ -295,16 +411,31 @@ function isPlainAmount(cell: string) {
 
 function unitsOf(raw: string) {
   const cleaned = raw.trim();
-  if (!/^\d{1,2}$/.test(cleaned)) return null;
+  if (!/^\d{1,3}(\.\d{1,3})?$/.test(cleaned)) return null;
   const units = Number(cleaned);
-  return units >= 1 ? units : null;
+  return Number.isFinite(units) && units >= 0 && units <= 999 ? units : null;
 }
 
 function unitsIn(text: string) {
-  const named = text.match(/\b(\d{1,2})\s*units?\b/i) ?? text.match(/\bunits?\s*[:x]?\s*(\d{1,2})\b/i) ?? text.match(/\bx\s*(\d{1,2})\b/i);
+  const named = text.match(/\b(\d{1,3}(?:\.\d{1,3})?)\s*units?\b/i) ?? text.match(/\bunits?\s*[:x]?\s*(\d{1,3}(?:\.\d{1,3})?)\b/i);
   if (!named) return null;
   const units = Number(named[1]);
-  return units >= 1 ? units : null;
+  return units >= 0 && units <= 999 ? units : null;
+}
+
+function blankAudit(): Pick<CheckLine, "schedule" | "lookupCents" | "adminCents" | "seqRate" | "seqPayCents"> {
+  return { schedule: null, lookupCents: null, adminCents: null, seqRate: null, seqPayCents: null };
+}
+
+function scheduleToken(row: string): CheckLine["schedule"] {
+  const found = row.match(/\bschedule\s+(none|pfs|lab|dme|opps|nursing|ambulance|miles|other)\b/i);
+  return found ? (found[1].toLowerCase() as CheckLine["schedule"]) : null;
+}
+
+function seqOf(row: string) {
+  const rate = row.match(/\bseq\s+(0\.\d{2})\b/i);
+  const pay = amountAfter(row, "seqpay");
+  return { rate: rate ? Number(rate[1]) : null, pay };
 }
 
 function settingIn(text: string): "nf" | "fac" | null {
@@ -321,7 +452,7 @@ function payerIn(text: string): "medicare" | "medicaid" | null {
 
 function centsOf(raw: string) {
   const cleaned = raw.replace(/[$,\s]/g, "");
-  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) return null;
   return Math.round(Number(cleaned) * 100);
 }
 

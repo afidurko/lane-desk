@@ -4,6 +4,7 @@ import { money } from "@/lib/desk/clock";
 import { readGold, type GoldRow } from "@/lib/team/gold";
 import { readQueue, type Packet } from "@/lib/team/protocol";
 import { DESKS } from "@/lib/team/desks";
+import { FEE_TEAMS } from "@/lib/team/fee-teams";
 import { readBoard, type BoardRow } from "@/lib/team/scoreboard";
 import { UPDATES } from "@/lib/team/updates";
 
@@ -56,6 +57,19 @@ export function TeamPage() {
             </li>
           ))}
         </ol>
+        <section className="mt-10">
+          <h2 className="font-display text-3xl text-ink">Inside the bill</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">Fee management holds the file. Finder stops at unknown. Audit compares their amount with the correct fee. Nothing is sent.</p>
+          <ol className="mt-4 grid gap-3 lg:grid-cols-3">
+            {FEE_TEAMS.map((team) => (
+              <li key={team.id} className="rounded-2xl border border-line bg-paper-2 p-4">
+                <h3 className="font-display text-2xl text-ink">{team.name}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink">{team.does}</p>
+                <p className="mt-2 text-sm text-muted">{team.doesNot}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         <section className="mt-10">
           <h2 className="font-display text-3xl text-ink">What the team already verified</h2>

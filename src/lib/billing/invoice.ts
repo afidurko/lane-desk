@@ -1,4 +1,5 @@
 import { quoteCode, type Books, type Claim, type Line } from "@/lib/billing/billing";
+import { sheetSeparator } from "@/lib/lookup/check";
 
 export type InvoiceLine = {
   id: string;
@@ -47,7 +48,7 @@ export function categorize(schedule: string) {
   return "Unmatched";
 }
 
-function splitCsv(row: string) {
+function splitCsv(row: string, sep = ",") {
   const cells: string[] = [];
   let current = "";
   let quoted = false;
@@ -56,7 +57,7 @@ function splitCsv(row: string) {
       quoted = !quoted;
       continue;
     }
-    if (char === "," && !quoted) {
+    if (char === sep && !quoted) {
       cells.push(current.trim());
       current = "";
       continue;
@@ -70,8 +71,10 @@ function splitCsv(row: string) {
 /** Turn a spreadsheet export into the line shape the reader already understands. */
 export function invoiceText(raw: string) {
   const lines = raw.replace(/^\uFEFF/, "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  if (lines.length < 2 || !lines[0].includes(",")) return raw;
-  const header = splitCsv(lines[0]).map((cell) => cell.toLowerCase());
+  if (lines.length < 2) return raw;
+  const sep = sheetSeparator(lines[0]);
+  if (!sep) return raw;
+  const header = splitCsv(lines[0], sep).map((cell) => cell.toLowerCase());
   const codeAt = header.findIndex((cell) => /code|hcpcs|cpt|proc/.test(cell));
   if (codeAt < 0) return raw;
   const entityAt = header.findIndex((cell) => /entity|provider|org|facility|vendor/.test(cell));
@@ -79,7 +82,7 @@ export function invoiceText(raw: string) {
   const amountAt = header.findIndex((cell) => /amount|charge|billed|due|paid|total/.test(cell));
   const noteAt = header.findIndex((cell) => /desc|service|note|procedure/.test(cell));
   return lines.slice(1).map((line) => {
-    const cells = splitCsv(line);
+    const cells = splitCsv(line, sep);
     const entity = entityAt >= 0 ? cells[entityAt] : "";
     const code = cells[codeAt] ?? "";
     const date = dateAt >= 0 ? cells[dateAt] : "";

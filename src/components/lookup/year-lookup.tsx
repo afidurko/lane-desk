@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
+import { morePosted, unknownBeside, type MoreYear } from "@/lib/lookup/reason";
+import type { SavedRow } from "@/lib/lookup/saved-codes";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 
 export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
@@ -13,6 +15,19 @@ export const FAMILIES = [
 
 export type Family = (typeof FAMILIES)[number]["id"];
 export type Row = { n: string; a: Record<string, number | null>; s?: string };
+
+let savedCache: Promise<SavedRow[]> | null = null;
+
+function loadSavedCard() {
+  savedCache ??= fetch("/saved-codes.json")
+    .then(async (response) => {
+      if (!response.ok) return [];
+      const body = (await response.json()) as { groups?: { rows: SavedRow[] }[] };
+      return body.groups?.flatMap((group) => group.rows) ?? [];
+    })
+    .catch(() => []);
+  return savedCache;
+}
 
 const cache = new Map<string, Record<string, Row>>();
 
@@ -152,31 +167,38 @@ export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
 export function YearLookup() {
   const [text, setText] = useState("");
   const [hits, setHits] = useState<{ family: Family; label: string; row: Row }[]>([]);
+  const [extra, setExtra] = useState<MoreYear[]>([]);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "miss" | "bad" | "down">("idle");
 
   useEffect(() => {
     const clean = text.trim().toUpperCase();
     if (!clean) {
       setHits([]);
+      setExtra([]);
       setState("idle");
       return;
     }
     if (!CODE.test(clean)) {
       setHits([]);
+      setExtra([]);
       setState("bad");
       return;
     }
     let cancel = false;
     setState("loading");
-    findAcross(clean)
-      .then((found) => {
+    Promise.all([findAcross(clean), loadOnce(clean[0]), loadSavedCard()])
+      .then(([found, shard, saved]) => {
         if (cancel) return;
+        const covered = found.flatMap((hit) => Object.entries(hit.row.a).flatMap(([year, cents]) => (typeof cents === "number" ? [Number(year)] : [])));
+        const more = morePosted(covered, saved, shard[clean] ?? [], clean);
         setHits(found);
-        setState(found.length > 0 ? "ready" : "miss");
+        setExtra(more);
+        setState(found.length > 0 || more.length > 0 ? "ready" : "miss");
       })
       .catch(() => {
         if (!cancel) {
           setHits([]);
+          setExtra([]);
           setState("down");
         }
       });
@@ -210,8 +232,20 @@ export function YearLookup() {
             <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
             {hit.row.n && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{hit.row.n}</p> : null}
             <YearPrices row={hit.row} />
+            {typeof hit.row.a["2026"] === "number" ? null : (
+              <p className="mt-2 text-sm text-muted">{unknownBeside(2026, Object.entries(hit.row.a).flatMap(([year, cents]) => (typeof cents === "number" ? [{ year: Number(year), cents }] : [])))}</p>
+            )}
           </section>
         ))}
+        {extra.length > 0 ? (
+          <ul className="mt-4 space-y-2">
+            {extra.map((row) => (
+              <li key={`${row.year}-${row.label}`} className="text-sm leading-relaxed text-ink">
+                {row.year}. {money(row.cents / 100)}{row.other !== null ? `. The other schedule is ${money(row.other / 100)}` : ""}. {row.label}. Not used for another year.
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </div>
   );

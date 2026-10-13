@@ -1,4 +1,4 @@
-import { contain } from "@/lib/security/patch-net";
+import { contain, gateInvoice } from "@/lib/security/patch-net";
 import { CHAIN, SEATS } from "@/lib/team/roster";
 import { RANK_MEMORY } from "@/lib/team/rank-memory";
 
@@ -44,7 +44,7 @@ export type InvoiceRollout = {
 
 /** Rank orders an imported invoice. A wrong or unpriced line comes before a match. Nothing is sent. */
 export function rankInvoice(counts: { look: number; off: number; match: number }, text = ""): InvoiceRollout {
-  const screened = contain(text);
+  const screened = gateInvoice(text);
   if (text.trim() && screened.decision === "stop") {
     return { seat: "Rank", status: "stop", detail: screened.detail, order: [] };
   }

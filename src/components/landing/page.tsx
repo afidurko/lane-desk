@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { InvoiceCheck } from "@/components/lookup/invoice-check";
+import { FeeTeamList } from "@/components/lookup/fee-teams";
+import { YearLookup } from "@/components/lookup/year-lookup";
 import { DESKS } from "@/lib/team/desks";
 import { Shell } from "./shell";
 
@@ -29,13 +31,21 @@ export function LandingPage() {
             </li>
           ))}
         </ol>
+        <FeeTeamList />
+        <section className="mt-10 max-w-xl">
+          <p className="text-xs font-medium tracking-widest text-teal uppercase">One code</p>
+          <h2 className="mt-2 font-display text-3xl text-ink">Every year on one card.</h2>
+          <div className="mt-4">
+            <YearLookup />
+          </div>
+        </section>
         <p className="mt-8 max-w-2xl text-sm leading-relaxed text-muted">
           This is not a payer. It does not submit a claim, and it does not have a monthly program payment. Those stay with the program.
         </p>
-        <section id="intake" className="mt-12 max-w-xl scroll-mt-28">
+        <section id="intake" className="mt-12 scroll-mt-28">
           <p className="text-xs font-medium tracking-widest text-teal uppercase">Intake team</p>
-          <h2 className="mt-2 font-display text-3xl text-ink">The bill.</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">One line for each service. An invoice uses the charge. An administrator report uses what was paid.</p>
+          <h2 className="mt-2 font-display text-3xl text-ink">The correct fee, then their amount.</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">Each code type uses one file. You pay that amount, after 0.98 when the sheet has it. Their number is compared with it. A different schedule is marked. Nothing is sent.</p>
           <div className="mt-4">
             <InvoiceCheck />
           </div>

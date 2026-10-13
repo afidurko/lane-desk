@@ -1,17 +1,60 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
-import { readInvoiceLines, auditReport, type CheckLine } from "@/lib/lookup/check";
+import { readInvoiceLines, auditReport, gradeLookup, type CheckLine } from "@/lib/lookup/check";
 import { rememberPayments, readPaymentMemory, type StoredAlert } from "@/lib/lookup/memory";
 import { pricedYears, reasonLine } from "@/lib/lookup/reason";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
-import { associate } from "@/lib/lookup/associate";
+import { auditPrice, type AmbulanceRow, type DmeRow, type LabRow, type Priced } from "@/lib/lookup/schedule-price";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
+import { prepareInvoice, readImportFile } from "@/lib/lookup/import-text";
+import { unknownBeside } from "@/lib/lookup/reason";
 import { rankInvoice } from "@/lib/team/rank";
 import { Link } from "@tanstack/react-router";
+import { CodeTypeList, TypeRollup } from "@/components/lookup/code-types";
+import { typeRollup } from "@/lib/lookup/code-types";
+import { exportCheckCsv } from "@/lib/lookup/export-check";
+import { FeeTeamReport } from "@/components/lookup/fee-teams";
+import { detectPosted, rememberFound, type FoundCode } from "@/lib/lookup/detect";
+import { answerFor, rememberLookups, type Lookup } from "@/lib/lookup/persist";
+import type { SavedRow } from "@/lib/lookup/saved-codes";
 
 type Hit = { family: Family; label: string; row: Row };
-type Checked = CheckLine & { hits: Hit[]; once: OnceRow | null; rest: OnceRow[] };
+type Checked = CheckLine & { hits: Hit[]; once: OnceRow | null; rest: OnceRow[]; priced: Priced };
+
+const files = new Map<string, Promise<{ rows: DmeRow[] } | { rows: LabRow[] } | { rows: AmbulanceRow[] } | null>>();
+let savedRows: Promise<SavedRow[]> | null = null;
+let lookupRows: Promise<Lookup[]> | null = null;
+
+function loadLookups() {
+  lookupRows ??= fetch("/lookups.json").then(async (response) => {
+    if (!response.ok) return [];
+    const body = await response.json() as { rows?: Lookup[] };
+    return body.rows ?? [];
+  }).catch(() => []);
+  return lookupRows;
+}
+
+function loadSaved() {
+  savedRows ??= fetch("/saved-codes.json").then(async (response) => {
+    if (!response.ok) return [];
+    const body = await response.json() as { groups?: { rows: SavedRow[] }[] };
+    return (body.groups ?? []).flatMap((group) => group.rows);
+  }).catch(() => []);
+  return savedRows;
+}
+
+function loadFee(path: string) {
+  const hit = files.get(path);
+  if (hit) return hit;
+  const pending = fetch(path).then(async (response) => {
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("missing");
+    return response.json() as Promise<{ rows: DmeRow[] } | { rows: LabRow[] } | { rows: AmbulanceRow[] }>;
+  });
+  files.set(path, pending);
+  return pending;
+}
 
 export function InvoiceCheck() {
   const [text, setText] = useState("");
@@ -32,26 +75,115 @@ export function InvoiceCheck() {
     const gate = rankInvoice({ look: 0, off: 0, match: 0 }, raw);
     if (gate.status === "stop") {
       setText("");
+      setFileName(null);
       setRows(null);
       setNote(gate.detail);
       setDown(false);
       setBusy(false);
       return;
     }
-    const parsed = readInvoiceLines(raw);
+    const short = [...raw.matchAll(/^SHORT (\S+)$/gm)].map((item) => item[1]);
+    const body = raw.replace(/^SHORT .+$/gm, "").trim();
+    const safe = prepareInvoice(body);
+    const parsed = readInvoiceLines(body);
+    setText(safe);
     setBusy(true);
     setDown(false);
-    setNote(null);
+    setNote(short.length > 0 ? `${short.length === 1 ? "1 line had a short code" : `${short.length} lines had a short code`} (${short.join(", ")}). A full code was not guessed.` : null);
     setPlaced(null);
     try {
       const checked: Checked[] = [];
+      const found: FoundCode[] = [];
+      const years = [...new Set(parsed.map((line) => line.year).filter((year): year is number => year !== null))];
+      const [saved, lookups] = await Promise.all([loadSaved(), loadLookups()]);
+      const feeByYear = new Map<number, { dme: { rows: DmeRow[] } | null; lab: { rows: LabRow[] } | null; ambulance: { rows: AmbulanceRow[] } | null }>();
+      await Promise.all(years.map(async (year) => {
+        const [dme, lab, ambulance] = await Promise.all([
+          loadFee(`/dme-${year}.json`),
+          loadFee(`/clfs-${year}.json`),
+          loadFee(`/afs-${year}.json`),
+        ]);
+        feeByYear.set(year, { dme: dme as { rows: DmeRow[] } | null, lab: lab as { rows: LabRow[] } | null, ambulance: ambulance as { rows: AmbulanceRow[] } | null });
+      }));
+      await Promise.all([...new Set(parsed.map((line) => line.code))].map((code) => Promise.all([findAcross(code), loadOnce(code[0])])));
       for (const line of parsed) {
         const hits = await findAcross(line.code);
         const shard = await loadOnce(line.code[0]);
         const list = shard[line.code] ?? [];
         const once = pickOnce(list, line.year, line.month);
-        checked.push({ ...line, hits, once, rest: list.filter((row) => row !== once) });
+        const fee = line.year ? feeByYear.get(line.year) : undefined;
+        const prior = answerFor(lookups, line.code, line.year, line.month);
+        let priced = auditPrice({
+          line,
+          hits,
+          onceList: list,
+          saved,
+          dme: line.schedule === "dme" ? fee?.dme ?? null : null,
+          lab: line.schedule === "lab" ? fee?.lab ?? null : null,
+          ambulance: line.schedule === "ambulance" || line.schedule === "miles" ? fee?.ambulance ?? null : null,
+        });
+        const settled = priced.cents === null && prior;
+        if (!settled && (priced.cents === null || line.schedule === "none" || line.schedule === "dme" || line.schedule === "ambulance")) {
+          const detected = detectPosted({
+            code: line.code,
+            modifier: line.modifier,
+            year: line.year,
+            month: line.month,
+            schedule: line.schedule,
+            dme: fee?.dme?.rows ?? null,
+            lab: fee?.lab?.rows ?? null,
+            ambulance: fee?.ambulance?.rows ?? null,
+            saved,
+          });
+          const related = detected.related.length > 0 ? `Related codes on that file: ${detected.related.join(", ")}.` : null;
+          if ((line.schedule === "none" || line.schedule === "other") && detected.use && priced.cents === null) {
+            priced = { cents: detected.use.cents, label: detected.use.label, block: null, note: related, otherCents: detected.use.otherCents };
+          } else if (priced.block && detected.elsewhere) {
+            priced = { ...priced, block: `${priced.block} ${detected.elsewhere}` };
+          } else if (related && priced.cents !== null) {
+            priced = { ...priced, note: [priced.note, related].filter(Boolean).join(" ") };
+          }
+          if (priced.cents === null || line.schedule === "none" || detected.elsewhere) {
+            found.push({ code: line.code, year: line.year, source: detected.use?.label ?? detected.elsewhere ?? "Unknown", cents: detected.use?.cents ?? null, related: detected.related, at: new Date().toISOString() });
+          }
+        }
+        if (priced.cents === null) {
+          const answer = prior;
+          if (answer?.payable && (line.schedule === "none" || line.schedule === "other")) {
+            priced = { cents: answer.payable, label: answer.asOf, block: null, note: answer.note ?? null, otherCents: null };
+          } else if (!answer) {
+            const priors = [
+              ...hits.flatMap((hit) => Object.entries(hit.row.a).flatMap(([year, cents]) => (typeof cents === "number" ? [{ year: Number(year), cents }] : []))),
+              ...saved.flatMap((row) => (row.c === line.code && row.year && row.cents ? [{ year: row.year, cents: row.cents }] : [])),
+            ];
+            const text = `Unknown. Looked through the posted files. No amount was saved. ${unknownBeside(line.year, priors)}`;
+            priced = { ...priced, block: priced.block ? `${priced.block} ${text}` : text };
+            rememberLookups([{
+              c: line.code,
+              status: "unknown",
+              cents: null,
+              at: new Date().toISOString(),
+              year: line.year,
+              months: line.month ? [line.month] : null,
+              asOf: "No posted dollar.",
+              related: [],
+            }]);
+          } else {
+            const priors = [
+              ...hits.flatMap((hit) => Object.entries(hit.row.a).flatMap(([year, cents]) => (typeof cents === "number" ? [{ year: Number(year), cents }] : []))),
+              ...saved.flatMap((row) => (row.c === line.code && row.year && row.cents ? [{ year: row.year, cents: row.cents }] : [])),
+            ];
+            const relatedCodes = answer.related.length ? ` Related: ${answer.related.join(", ")}.` : "";
+            const beside = answer.status === "unknown" ? ` ${unknownBeside(line.year, priors)}` : "";
+            const text = answer.status === "known"
+              ? `${answer.asOf} ${answer.note ?? ""}`.trim()
+              : `Unknown. ${answer.asOf}${relatedCodes}${beside}`;
+            priced = { ...priced, block: priced.block ? `${priced.block} ${text}` : text };
+          }
+        }
+        checked.push({ ...line, hits, once, rest: list.filter((row) => row !== once), priced });
       }
+      rememberFound(found);
       setRows(checked);
       const alerts = checked.flatMap((line) => {
         const report = reviewed(line);
@@ -77,6 +209,34 @@ export function InvoiceCheck() {
     }
   }
 
+  function saveCopy() {
+    if (!rows || rows.length === 0) return;
+    const body = exportCheckCsv(rows.map((line) => ({
+      code: line.code,
+      modifier: line.modifier,
+      date: line.date,
+      year: line.year,
+      units: line.units,
+      schedule: line.schedule,
+      lookupCents: line.lookupCents,
+      adminCents: line.adminCents,
+      seqRate: line.seqRate,
+      seqPayCents: line.seqPayCents,
+      fileCents: line.priced.cents,
+      otherCents: line.priced.otherCents,
+      fileLabel: line.priced.label,
+      block: line.priced.block,
+      note: line.priced.note,
+    })));
+    const blob = new Blob([`\uFEFF${body}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName ? fileName.replace(/\.[^.]+$/, "") + "-check.csv" : "lane-check.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   function run(event?: FormEvent) {
     event?.preventDefault();
     void runText(text);
@@ -84,16 +244,18 @@ export function InvoiceCheck() {
 
   function onFile(file: File | undefined) {
     if (!file) return;
-    if (file.size > 1_000_000) {
-      setNote("That file is over 1 MB. Export a smaller invoice.");
-      setRows(null);
-      return;
-    }
-    file.text().then((raw) => {
-      setText(raw);
-      setFileName(file.name);
-      void runText(raw);
-    }).catch(() => setDown(true));
+    readImportFile(file)
+      .then((read) => {
+        if ("error" in read) {
+          setNote(read.error);
+          setRows(null);
+          setFileName(null);
+          return;
+        }
+        setFileName(file.name);
+        void runText(read.text);
+      })
+      .catch(() => setDown(true));
   }
 
   function place() {
@@ -101,11 +263,11 @@ export function InvoiceCheck() {
     let added = 0;
     let skipped = 0;
     for (const line of rows) {
-      if (!line.year || line.units === null) {
+      if (!line.year || !line.units) {
         skipped += 1;
         continue;
       }
-      const file = decision(line);
+      const file = line.priced;
       const name = line.hits[0]?.row.n || line.once?.n || line.code;
       addToOpenClaim({
         code: line.code,
@@ -125,7 +287,7 @@ export function InvoiceCheck() {
 
   const groups = new Map<string, Checked[]>();
   for (const row of rows ?? []) {
-    const priced = decision(row);
+    const priced = row.priced;
     const label = priced.block ? "Needs a person" : priced.label ?? "Not on a file";
     const list = groups.get(label) ?? [];
     list.push(row);
@@ -140,26 +302,46 @@ export function InvoiceCheck() {
   const brief = rows
     ? rankInvoice({ look: sorted.look.length, off: sorted.off.length, match: sorted.match.length })
     : null;
-  const cards = {
-    match: { title: "Matches", detail: "The charge matches the file.", tone: "ok" as const },
-    off: { title: "Does not match", detail: "Over or under the file. Do not pay that amount.", tone: "bad" as const },
-    look: { title: "Needs a person", detail: "No year, no charge, or not on a file.", tone: "plain" as const },
-  };
+  const audit = (rows ?? []).some((line) => line.schedule);
+  const adminUnder = (rows ?? []).filter((line) => reviewed(line).adminUnder);
+  const noDollar = (rows ?? []).filter((line) => line.schedule && reviewed(line).bare && line.priced.cents === null);
+  const lead = audit && rows
+    ? typeRollup(rows.map((line) => ({
+        schedule: line.schedule,
+        fileCents: line.priced.cents,
+        units: line.units,
+        seqRate: line.seqRate,
+        adminCents: line.adminCents,
+        otherCents: line.priced.otherCents,
+      })))
+    : null;
+  const cards = audit
+    ? {
+        match: { title: "Lookup matches", detail: "Their fee matches the file for that schedule.", tone: "ok" as const },
+        off: { title: "Lookup is off", detail: "Their fee is not the file amount.", tone: "bad" as const },
+        look: { title: "No dollar loaded", detail: "The schedule was blank, or that file has no amount.", tone: "plain" as const },
+      }
+    : {
+        match: { title: "Matches", detail: "The charge matches the file.", tone: "ok" as const },
+        off: { title: "Does not match", detail: "Over or under the file. Do not pay that amount.", tone: "bad" as const },
+        look: { title: "Needs a person", detail: "No year, no charge, or not on a file.", tone: "plain" as const },
+      };
 
   return (
     <form onSubmit={run}>
-      <label className="inline-flex h-12 cursor-pointer items-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
+      <CodeTypeList />
+      <label className="mt-6 block text-sm font-medium text-ink">
         Import a report
         <input
           type="file"
-          accept=".csv,.txt,.tsv,text/csv,text/plain"
-          className="sr-only"
           onChange={(event) => {
             onFile(event.target.files?.[0]);
             event.target.value = "";
           }}
+          className="mt-1.5 block w-full text-sm text-ink file:mr-3 file:h-11 file:rounded-full file:border-0 file:bg-teal file:px-4 file:text-sm file:font-medium file:text-teal-ink"
         />
       </label>
+      {fileName ? <p className="mt-2 text-sm text-muted">{fileName}</p> : null}
       <label className="mt-4 block text-sm font-medium text-ink" htmlFor="invoice-lines">
         Or type the lines
         <textarea
@@ -175,8 +357,13 @@ export function InvoiceCheck() {
         <button type="submit" className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink" disabled={busy}>
           {busy ? "Checking" : "Check it"}
         </button>
+        {rows && rows.length > 0 ? (
+          <button type="button" onClick={saveCopy} className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
+            Save a copy
+          </button>
+        ) : null}
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted">An invoice is checked on the charge. An administrator report is checked on Paid or Allowed. A paid amount is never used as the charge. The check uses the full file amount for that code and year. Nothing is sent.</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">Bring the sheet. The correct fee is the file for that code type. Then compare what the other party wants to pay. Equipment in Olean uses the rural file. After 0.98, that is the amount you pay. A non-rural number is the wrong schedule. Nothing is sent.</p>
       {memory.length > 0 && !rows ? (
         <section className="mt-4 rounded-2xl border border-alert bg-alert-wash px-4 py-3" role="alert">
           <p className="text-sm font-medium text-ink"><span className="font-medium">Rank.</span> {rankInvoice({ look: memory.filter((item) => item.kind === "look").length, off: memory.filter((item) => item.kind === "off").length, match: 0 }).detail}</p>
@@ -190,12 +377,48 @@ export function InvoiceCheck() {
       {note ? <p className="mt-4 text-sm font-medium text-deep">{note}</p> : null}
       {down ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The invoice is still here. Check it again.</p> : null}
       {rows && rows.length === 0 ? <p className="mt-4 text-sm font-medium text-deep">No code was on those lines.</p> : null}
-      {brief && rows && rows.length > 0 ? <p className="mt-4 text-sm text-ink"><span className="font-medium">Rank.</span> {brief.detail}</p> : null}
-      {rows && rows.length > 0 ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {(brief?.order ?? []).map((key) => (
-            <Summary key={key} title={cards[key].title} detail={cards[key].detail} lines={sorted[key]} tone={cards[key].tone} />
+      {lead ? (
+        <>
+          <p className="mt-6 font-display text-3xl leading-tight text-ink">
+            You pay {money(lead.totals.payable / 100)}. They want to pay {money(lead.totals.theirs / 100)}. {money(lead.totals.wrongGap / 100)} is on the wrong schedule.
+          </p>
+          {lead.groups.filter((type) => type.wrongLines > 0).map((type) => (
+            <p key={type.id} className="mt-1 text-sm text-ink">{type.name}. {money(type.wrongGap / 100)} on the wrong schedule.</p>
           ))}
+        </>
+      ) : null}
+      {audit && rows ? (
+        <FeeTeamReport
+          lines={rows.map((line) => {
+            const report = reviewed(line);
+            return {
+              pricedCents: line.priced.cents,
+              block: line.priced.block,
+              adminCents: line.adminCents,
+              wrongSchedule: report.reasons[0]?.startsWith("Wrong fee schedule") === true,
+              gapCents: report.reasons[0]?.startsWith("Wrong fee schedule") ? report.gapCents : null,
+            };
+          })}
+        />
+      ) : null}
+      {audit && rows ? (
+        <TypeRollup
+          lines={rows.map((line) => ({
+            schedule: line.schedule,
+            fileCents: line.priced.cents,
+            units: line.units,
+            seqRate: line.seqRate,
+            adminCents: line.adminCents,
+            otherCents: line.priced.otherCents,
+          }))}
+        />
+      ) : null}
+      {rows && rows.length > 0 ? (
+        <div className={audit ? "mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" : "mt-4 grid gap-3 sm:grid-cols-3"}>
+          {(audit ? (["match", "off", "look"] as const) : (brief?.order ?? [])).map((key) => (
+            <Summary key={key} title={cards[key].title} detail={cards[key].detail} lines={key === "look" && audit ? noDollar : sorted[key]} tone={cards[key].tone} />
+          ))}
+          {audit ? <Summary title="Administrator paid under" detail="Below the file, and 0.98 does not explain it." lines={adminUnder} tone="bad" /> : null}
         </div>
       ) : null}
       {rows && rows.length > 0 ? (
@@ -267,32 +490,36 @@ function bucket(line: Checked) {
 }
 
 function reviewed(line: Checked) {
-  const priced = decision(line);
-  return auditReport({
+  if (line.schedule) {
+    return gradeLookup({
+      code: line.code,
+      year: line.year,
+      units: line.units,
+      lookupCents: line.lookupCents,
+      fileCents: line.priced.cents,
+      adminCents: line.adminCents,
+      seqRate: line.seqRate,
+      seqPayCents: line.seqPayCents,
+      block: line.priced.block,
+      note: line.priced.note,
+      otherCents: line.priced.otherCents,
+    });
+  }
+  const report = auditReport({
     code: line.code,
     year: line.year,
     billedCents: line.billedCents,
     paidCents: line.paidCents,
     paidKind: line.paidKind,
-    fileCents: priced.cents,
+    fileCents: line.priced.cents,
     units: line.units,
-    block: priced.block,
+    block: line.priced.block,
   });
+  return { ...report, adminUnder: false, bare: false };
 }
 
 function decision(line: Checked) {
-  return associate({
-    code: line.code,
-    modifier: line.modifier,
-    year: line.year,
-    setting: line.setting,
-    payer: line.payer,
-    ambiguous: line.ambiguous,
-    chargeKnown: line.chargeKnown,
-    paymentAudit: line.paidCents !== null,
-    hits: line.hits,
-    once: line.once,
-  });
+  return line.priced;
 }
 
 function Summary({ title, detail, lines, tone }: { title: string; detail: string; lines: Checked[]; tone: "ok" | "bad" | "plain" }) {
@@ -345,6 +572,12 @@ function facts(line: Checked) {
 
 function labelFor(line: Checked) {
   const report = reviewed(line);
+  if (line.schedule) {
+    if (report.reasons[0]?.startsWith("Wrong fee schedule")) return "Wrong fee schedule";
+    if (report.side === "over" || report.side === "under") return `${report.side === "over" ? "Lookup over" : "Lookup under"} ${money(Math.abs(report.gapCents ?? 0) / 100)}`;
+    if (report.kind === "look") return "Needs a person";
+    return "Lookup matches";
+  }
   if (report.side === "over") return `${line.paidKind === "allowed" ? "Allowed over" : line.paidCents !== null ? "Overpaid" : "Over"} ${money((report.gapCents ?? 0) / 100)}`;
   if (report.side === "under") return `${line.paidKind === "allowed" ? "Allowed under" : line.paidCents !== null ? "Underpaid" : "Under"} ${money(Math.abs(report.gapCents ?? 0) / 100)}`;
   if (report.kind === "look") return line.paidCents !== null && !line.year ? "No year on the line" : "Needs a person";
@@ -353,8 +586,14 @@ function labelFor(line: Checked) {
 }
 
 function amounts(line: Checked) {
+  const parts = [line.schedule ? line.schedule.toUpperCase() : null];
+  if (line.lookupCents) parts.push(`lookup ${money(line.lookupCents / 100)}`);
+  if (line.priced.cents !== null && line.seqRate && line.units) parts.push(`pay ${money(Math.round(line.priced.cents * line.units * line.seqRate) / 100)}`);
+  else if (line.priced.cents !== null) parts.push(`file ${money(line.priced.cents / 100)}`);
+  if (line.adminCents) parts.push(`their amount ${money(line.adminCents / 100)}`);
+  if (line.billedCents !== null) parts.push(`billed ${money(line.billedCents / 100)}`);
+  const shown = parts.filter(Boolean).join(" · ");
+  if (shown) return shown;
   const paid = line.paidCents === null ? null : `${line.paidKind === "allowed" ? "allowed" : "paid"} ${money(line.paidCents / 100)}`;
-  const billed = line.billedCents === null ? null : `billed ${money(line.billedCents / 100)}`;
-  if (paid && billed) return `${paid} · ${billed}`;
-  return paid ?? billed ?? "no amount";
+  return paid ?? "no amount";
 }
