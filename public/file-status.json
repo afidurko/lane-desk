@@ -40,12 +40,12 @@
       "id": "dme",
       "name": "DMEPOS",
       "cadence": "Quarterly",
-      "loaded": "October files, 2021\u20132026. 2026 release DME26-D, 3,538 New York rows.",
+      "loaded": "2020 CARES file, 3,233 New York rows, then October files 2021\u20132026. 2026 release DME26-D, 3,538 New York rows.",
       "source": "CMS DMEPOS fee schedule, October 2026. New York non-rural and New York rural. ZIP 14760 is on the 2026 fourth-quarter rural ZIP list.",
       "rows": 3538,
       "status": "current",
       "next": "January 2027",
-      "detail": "The 2020 fee file was not in that year\u2019s zip. The October 2026 New York rural file is loaded."
+      "detail": "October 2020 did not include a fee schedule. The 2020 amounts are DME20-CARES. ZIP 14760 is on the 2020 fourth-quarter rural ZIP list. The July 2020 zip is not at the public file address."
     },
     {
       "id": "asp",
@@ -84,7 +84,7 @@
       "id": "ipps",
       "name": "Inpatient PPS",
       "cadence": "Fiscal year",
-      "loaded": "FY 2021 through FY 2027. The 2027 correction notice has 766 weight rows.",
+      "loaded": "FY 2020 through FY 2027. FY 2020 correction notice has 759 weight rows. The 2027 correction notice has 766.",
       "source": "CMS-1849-CN Table 5 and Tables 1A and 1B, effective October 1, 2026. Weights are the 10 percent cap applied weight.",
       "rows": 766,
       "status": "current",
@@ -95,23 +95,23 @@
       "id": "snf",
       "name": "Skilled nursing PPS",
       "cadence": "Fiscal year",
-      "loaded": "FY 2024 through FY 2027 PDPM component rates. 26 rural rows and 26 urban rows in the current file.",
+      "loaded": "FY 2020 through FY 2027 PDPM component rates. The current file has 25 rural rows and 25 urban rows.",
       "source": "CMS-1843-F Tables 5 and 6. Components on one row are not added together.",
-      "rows": 52,
+      "rows": 50,
       "status": "current",
       "next": "FY 2028",
-      "detail": "Not wage-adjusted. A dash in the file is stored as no amount."
+      "detail": "FY 2020 through FY 2023 component rates are loaded, urban and rural. Components on one row are not added together. Not wage-adjusted."
     },
     {
       "id": "irf",
       "name": "Inpatient rehabilitation",
       "cadence": "Fiscal year",
-      "loaded": "FY 2020 and FY 2024 through FY 2027. The 2027 file has 100 groups.",
+      "loaded": "FY 2020 through FY 2027. The 2027 file has 100 groups.",
       "source": "CMS-1845-CN relative weight file.",
       "rows": 100,
       "status": "current",
       "next": "FY 2028",
-      "detail": "A tier weight is not a dollar. The conversion factor is not in the file."
+      "detail": "A tier weight is not a dollar. The standard payment conversion factor is $16,856 for FY 2021, $17,240 for FY 2022, and $17,878 for FY 2023. It is not in the weight file for the other years."
     },
     {
       "id": "ipf",
@@ -161,18 +161,18 @@
       "id": "hospice-cap",
       "name": "Medicare hospice cap",
       "cadence": "Fiscal year",
-      "loaded": "FY 2027 national per-day rates, cap $36,174.75, and rural New York wage index 0.9122.",
-      "source": "R13976CP Tables 1 and 2, CMS-1851-F, and the FY 2027 final hospice wage index.",
-      "rows": 1,
+      "loaded": "FY 2020 through FY 2027 national per-day rates and caps. Rural New York wage index 0.9122 for FY 2027.",
+      "source": "R13976CP Tables 1 and 2, CMS-1851-F, and the FY 2027 final hospice wage index. Earlier years are the implementing transmittal for that year.",
+      "rows": 5,
       "status": "current",
       "next": "FY 2028",
-      "detail": "National per-day rates are not wage-adjusted. The index is not a payment. The New York non-residential Medicaid sheet ended September 30, 2026."
+      "detail": "CMS-1851-CN, effective October 1, 2026, confirms the quality-data national rates and adds the rates for a hospice that does not submit quality data. Rural New York stays 0.9122 in the September 29, 2026 wage index file. The index is not a payment. The New York non-residential Medicaid sheet after September 30, 2026 is still not posted."
     },
     {
       "id": "ny-medicaid",
       "name": "NY Medicaid fee-for-service",
       "cadence": "As the Department posts",
-      "loaded": "Physician 8,410 rows. Lab fee schedule effective October 1, 2026, 1,077 rows. Transport file dated 4/5/26, 2,318 rows. More schedules, 5,583 rows.",
+      "loaded": "Physician 8,410 rows. Lab fee schedule effective October 1, 2026, 1,077 rows. Transport file dated 4/5/26, 2,318 rows. More schedules, 5,585 rows.",
       "source": "eMedNY fee-for-service schedules. These are not managed-care plan rates, and they are not Medicare.",
       "rows": 17388,
       "status": "current",
@@ -199,7 +199,7 @@
       "rows": 88,
       "status": "due",
       "next": "When the October 1, 2026 sheet is posted",
-      "detail": "The loaded sheet ended September 30, 2026. The next non-residential sheet is not posted. Amounts were not guessed."
+      "detail": "New York Medicaid hospice after September 30, 2026 is not posted. The Department\u2019s page still has no later non-residential sheet. The Western Rural residence rate of $257.41 is not used, because that sheet does not say Cattaraugus."
     },
     {
       "id": "apg",
@@ -232,29 +232,29 @@
       "rows": 1736,
       "status": "current",
       "next": "Next Board file",
-      "detail": "Rows with no dollar in the file are not stored. Physician and therapy workers\u2019 compensation schedules are sold and are not here."
+      "detail": "Rows with no dollar in the file are not stored. No-fault, and workers\u2019 compensation physician and therapy, are not loaded. The August 2026 books are sold. No amount was copied."
     },
     {
       "id": "personal-care",
-      "name": "Personal care, Olean and Allegany",
+      "name": "Personal care",
       "cadence": "As the Department posts",
-      "loaded": "January 1, 2024. Willcare in Cattaraugus. Jan and Bev’s Home Care and Willcare in Allegany.",
+      "loaded": "January 1, 2024 workbook, 209 agencies in the 51 counties the sheet names. A zero is not stored",
       "source": "CY 2024 personal care rates page. Olean is in Cattaraugus County.",
-      "rows": 3,
+      "rows": 209,
       "status": "due",
       "next": "When a later public sheet lists these counties",
-      "detail": "A printed zero is not stored. 2025 rates for other counties are not used for Olean or Allegany."
+      "detail": "Olean and Allegany personal care after 2024 stay on the January 1, 2024 amounts. The January 1, 2025 public sheet is posted. It does not name Cattaraugus, Allegany, Willcare, or Jan and Bev's Home Care."
     },
     {
       "id": "ny-rehab",
-      "name": "NY Medicaid rehabilitation procedure 97110",
+      "name": "NY Medicaid 97110, 97161, and 97160",
       "cadence": "Unknown",
-      "loaded": "Not loaded.",
-      "source": "The January 2026 PDF is a policy. It has no fee table.",
-      "rows": null,
+      "loaded": "IPSIDD locality 99, April 1, 2024: 97110 is $37.81 and 97161 is $83.72. Pending CMS approval of SPA 24-0052, so not used as the rehabilitation amount. Medicare Rest of New York prices 97110 and 97161 for 2020 through 2026",
+      "source": "IPSIDD fee table effective April 1, 2024. The rehabilitation schedules and the July 1, 2026 physician medicine workbook do not name these codes.",
+      "rows": 2,
       "status": "gap",
-      "next": "When a fee table is posted",
-      "detail": "A policy is not a price. The Medicare physician file still prices 97110 for Rest of New York."
+      "next": "When a New York fee table names the code",
+      "detail": "97110 and 97161 are not in the New York rehabilitation schedules for 2020, 2023, 2024, or January 2026, and they are not in the July 1, 2026 physician medicine workbook. Medicare Rest of New York still prices them. A separate IPSIDD sheet, effective April 1, 2024, lists remainder-of-state amounts: 97110 is $37.81 and 97161 is $83.72. Those rates are pending CMS approval of State Plan Amendment 24-0052, so they are not used as the rehabilitation amount. 97160 is not on that sheet and is not on the Medicare physician files for 2020 through 2026."
     },
     {
       "id": "no-fault",
@@ -265,7 +265,7 @@
       "rows": null,
       "status": "gap",
       "next": "When a free file is posted",
-      "detail": "This desk will not invent a no-fault amount."
+      "detail": "No-fault, and workers\u2019 compensation physician and therapy, are not loaded. The August 2026 books are sold. No amount was copied."
     }
   ]
 }

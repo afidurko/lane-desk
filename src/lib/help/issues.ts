@@ -17,7 +17,7 @@ const WORKABLE: { test: RegExp; reply: IssueReply }[] = [
     reply: {
       kind: "workable",
       title: "Check a bill",
-      body: "Start at Teams. Intake reads the bill. Price shows the code and the year. New York is only Olean and Allegany. Review marks a charge that does not match. Nothing is sent.",
+      body: "Start at Teams. Intake reads the bill. Price shows the code and the year. New York uses the county the file names. Review marks a charge that does not match. Nothing is sent.",
       suggestions: ["The price looks wrong", "Where are the New York rates?"],
     },
   },
@@ -26,7 +26,7 @@ const WORKABLE: { test: RegExp; reply: IssueReply }[] = [
     reply: {
       kind: "workable",
       title: "New York rates",
-      body: "Open New York. Olean and Allegany are the two places set on this desk. The personal care amounts are listed there.",
+      body: "Open New York and pick the county. Personal care is shown only for a county the workbook names. Olean is Cattaraugus. Allegany is separate.",
       href: "/ny",
       hrefLabel: "Open New York",
       suggestions: ["Check a bill", "The price looks wrong"],

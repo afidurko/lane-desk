@@ -62,7 +62,7 @@ export function GapRates() {
     <section className="mt-10">
       <h2 className="font-display text-3xl text-ink">Olean and Allegany</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-        Personal care from the January 1, 2024 public sheet. Olean is in Cattaraugus County. A zero on that sheet is not shown.
+        Personal care from the January 1, 2024 workbook. Olean is Cattaraugus. The same workbook is loaded for every county it names. Open New York and pick the county. A zero on the sheet is not shown.
       </p>
       {failed ? <p className="mt-3 text-sm font-medium text-deep">The file did not load.</p> : null}
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -87,7 +87,7 @@ export function GapRates() {
           </article>
         ))}
       </div>
-      <p className="mt-3 max-w-2xl text-sm text-muted">The 2025 public sheet does not list Olean or Allegany. It lists other counties, and those rates are not used here.</p>
+      <p className="mt-3 max-w-2xl text-sm text-muted">The January 1, 2025 public sheet does not name Cattaraugus or Allegany. Erie, Chautauqua, and Wyoming rows from that sheet are on the New York page. Another county’s rate is not used.</p>
 
       <div className="mt-5 rounded-2xl border border-line p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

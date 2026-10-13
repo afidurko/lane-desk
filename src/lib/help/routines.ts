@@ -19,7 +19,7 @@ export function safeFixes(claim: Claim, books: Books, ny: NyMedicaidFile | null 
 
   let changed = 0;
   const lines = claim.lines.map((line) => {
-    const check = checkLine(line, books, claim.payer ?? "medicare", ny);
+    const check = checkLine(line, books, claim.payer ?? "medicare", ny, claim.county);
     if (check.expectedCents === null) return line;
     if (line.chargeCents !== null && Math.abs(line.chargeCents - check.expectedCents) <= 1) return line;
     changed += 1;

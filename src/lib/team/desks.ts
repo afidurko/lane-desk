@@ -28,8 +28,8 @@ export const DESKS: readonly Desk[] = [
     id: "new-york",
     name: "New York",
     href: "/ny",
-    does: "Olean and Allegany only. Personal care from January 1, 2024.",
-    doesNot: "Does not use another county’s rate for these two places.",
+    does: "Any New York county on a loaded file. Personal care is the January 1, 2024 workbook.",
+    doesNot: "Does not use one county’s rate for another county.",
   },
   {
     id: "review",

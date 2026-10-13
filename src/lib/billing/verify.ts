@@ -9,8 +9,8 @@ export type Check = {
   expectedCents: number | null;
 };
 
-export function checkLine(line: Line, books: Books, payer: "medicare" | "medicaid" = "medicare", ny: NyMedicaidFile | null = null): Check {
-  if (payer === "medicaid") return checkMedicaid(line, ny);
+export function checkLine(line: Line, books: Books, payer: "medicare" | "medicaid" = "medicare", ny: NyMedicaidFile | null = null, county?: string): Check {
+  if (payer === "medicaid") return checkMedicaid(line, ny, county);
   const quoted = quoteCode(books, line.code, line.modifier);
   if (quoted.schedule === "Physician file, not priced") {
     return { level: "high", reason: quoted.note || "This code is not separately payable.", expectedCode: line.code, expectedCents: null };
@@ -43,7 +43,7 @@ export function checkLine(line: Line, books: Books, payer: "medicare" | "medicai
   return { level: "clear", reason: "Matches the loaded file.", expectedCode: line.code, expectedCents: quoted.allowedCents };
 }
 
-function checkMedicaid(line: Line, ny: NyMedicaidFile | null): Check {
+function checkMedicaid(line: Line, ny: NyMedicaidFile | null, county?: string): Check {
   if (!ny) {
     return {
       level: "high",
@@ -52,7 +52,7 @@ function checkMedicaid(line: Line, ny: NyMedicaidFile | null): Check {
       expectedCents: null,
     };
   }
-  const quoted = quoteNy(ny, line.code);
+  const quoted = quoteNy(ny, line.code, county);
   if (quoted.allowedCents === null) {
     return { level: "high", reason: quoted.note || "No New York Medicaid fee for this code.", expectedCode: line.code, expectedCents: null };
   }
@@ -70,9 +70,9 @@ function checkMedicaid(line: Line, ny: NyMedicaidFile | null): Check {
   return { level: "clear", reason: "Matches the New York Medicaid file.", expectedCode: line.code, expectedCents: quoted.allowedCents };
 }
 
-export function claimAlerts(claim: Claim, books: Books, today = "", ny: NyMedicaidFile | null = null) {
+export function claimAlerts(claim: Claim, books: Books, today = "", ny: NyMedicaidFile | null = null, county?: string) {
   const payer = claim.payer ?? "medicare";
-  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books, payer, ny) })).filter((item) => item.check.level === "high");
+  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books, payer, ny, county) })).filter((item) => item.check.level === "high");
   const guards = claimGuards(claim, books, today).map((guard, index) => ({
     line: lineForGuard(claim, guard, index),
     check: {

@@ -10,7 +10,7 @@ export function LandingPage() {
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean, New York</p>
         <h1 className="mt-3 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">Four teams. One bill.</h1>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted">
-          Intake reads it. Price finds the year. New York holds Olean and Allegany. Review marks what does not match. A person decides. Nothing is sent.
+          Intake reads it. Price finds the year. New York uses the county on the file. Review marks what does not match. A person decides. Nothing is sent.
         </p>
         <ol className="mt-8 grid gap-4 sm:grid-cols-2">
           {DESKS.map((desk, index) => (
@@ -35,7 +35,7 @@ export function LandingPage() {
         <section id="intake" className="mt-12 max-w-xl scroll-mt-28">
           <p className="text-xs font-medium tracking-widest text-teal uppercase">Intake team</p>
           <h2 className="mt-2 font-display text-3xl text-ink">The bill.</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">One line for each service. Code, date, and charge.</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">One line for each service. An invoice uses the charge. An administrator report uses what was paid.</p>
           <div className="mt-4">
             <InvoiceCheck />
           </div>

@@ -13,7 +13,12 @@ export function readBilling(): BillingBook {
     return {
       clients: Array.isArray(book.clients) ? book.clients.filter(isClient) : [],
       claims: Array.isArray(book.claims)
-        ? book.claims.filter(isClaim).map((claim) => ({ ...claim, number: claim.number ?? "", note: claim.note ?? "" }))
+        ? book.claims.filter(isClaim).map((claim) => ({
+            ...claim,
+            number: claim.number ?? "",
+            note: claim.note ?? "",
+            county: claim.county || "CATTARAUGUS",
+          }))
         : [],
     };
   } catch {
@@ -57,6 +62,7 @@ export function addToOpenClaim(input: {
       number: "",
       note: "",
       payer: "medicare",
+      county: "CATTARAUGUS",
       status: "draft",
       lines: [],
     };

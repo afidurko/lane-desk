@@ -21,9 +21,9 @@ type SnfRow = {
 type YearFile = {
   ipps: { year: number; source: string; rows: { drg: string; title: string; weight: string }[]; laborAtOrBelowOne?: number; nonlaborAtOrBelowOne?: number } | null;
   snf: { year: number; source: string; rural: SnfRow[]; urban: SnfRow[] } | null;
-  irf: { year: number; source: string; rows: { cmg: string; name: string; t1: string; t2: string; t3: string; none: string }[] } | null;
+  irf: { year: number; source: string; standardPaymentCents?: number; rows: { cmg: string; name: string; t1: string; t2: string; t3: string; none: string }[] } | null;
   hh: { year: number; source: string; rows: { hipps: string; name: string; weight: string; lupa: number }[] } | null;
-  hospice: { year: number; source: string; ruralNewYorkIndex?: string; capCents?: number; rates?: { code: string; name: string; cents: number; hourly?: number | null }[] } | null;
+  hospice: { year: number; source: string; ruralNewYorkIndex?: string; capCents?: number; rates?: { code: string; name: string; cents: number; hourly?: number | null }[]; unreported?: { code: string; name: string; cents: number; hourly?: number | null }[] } | null;
   ltch: { asOf: string; rows: { drg: string; title: string; weight: string }[] } | null;
   ipf: { comorbidity?: [string, string][]; ectCents?: number } | null;
 };
@@ -99,7 +99,16 @@ export function InstitutionRates() {
         <ul className="mt-4 space-y-2">
           {file.hospice.rates.map((row) => (
             <li key={row.name} className="text-sm text-ink">
-              {row.code} {row.name}. {money(row.cents / 100)}{row.hourly ? `, ${money(row.hourly / 100)} an hour` : ""}. National rate. Not wage-adjusted.
+              {row.code} {row.name}. {money(row.cents / 100)}{row.hourly ? `, ${money(row.hourly / 100)} an hour` : ""}. Submits quality data. National rate. Not wage-adjusted.
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {file?.hospice?.unreported ? (
+        <ul className="mt-4 space-y-2">
+          {file.hospice.unreported.map((row) => (
+            <li key={`missed-${row.name}`} className="text-sm text-ink">
+              {row.code} {row.name}. {money(row.cents / 100)}{row.hourly ? `, ${money(row.hourly / 100)} an hour` : ""}. Does not submit quality data. National rate. Not wage-adjusted.
             </li>
           ))}
         </ul>
@@ -142,7 +151,7 @@ export function InstitutionRates() {
         <div key={row.cmg} className="mt-4 rounded-2xl border border-line p-5 text-sm leading-relaxed text-ink">
           <p className="text-muted">Inpatient rehabilitation, FY {year}</p>
           <h3 className="mt-1 font-display text-2xl">CMG {row.cmg}</h3>
-          <p className="mt-1">{row.name}. Tier weights {row.t1}, {row.t2}, {row.t3}, and {row.none}. Not dollars.</p>
+          <p className="mt-1">{row.name}. Tier weights {row.t1}, {row.t2}, {row.t3}, and {row.none}.{file?.irf?.standardPaymentCents ? ` Standard payment conversion factor $${(file.irf.standardPaymentCents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}.` : ""} A weight is not a dollar. Not wage-adjusted.</p>
         </div>
       ))}
       {ltch.map((row) => (

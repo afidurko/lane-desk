@@ -22,6 +22,13 @@ export type BridgeResult = {
 
 const WEIGHT = { gap: 0, due: 1, current: 2 } as const;
 
+/** A later sheet is usable for a county only when that sheet names it. */
+export function placeOnSheet(named: readonly string[], county: string) {
+  const clean = county.trim().toUpperCase();
+  if (!clean) return false;
+  return named.some((name) => name.trim().toUpperCase() === clean);
+}
+
 /** Daily read of the loaded files. It does not call a bot, download a schedule, or fill a gap. */
 export function dailyBridge(files: BridgeFile[], text = ""): BridgeResult {
   const chain = CHAIN.map((id) => SEATS.find((seat) => seat.id === id)?.name ?? id);
@@ -38,8 +45,8 @@ export function dailyBridge(files: BridgeFile[], text = ""): BridgeResult {
         file.status === "current"
           ? "Kept. The loaded file is still the one to use."
           : file.status === "due"
-            ? "Left for the next file. This check does not download it."
-            : "Left open. A missing amount is not filled in.",
+            ? "Left for the next posted file that names the county. This check does not download it."
+            : "Left open. A later public sheet is used only when it names the county. Another county is not copied, and a missing amount is not filled in.",
     }));
   const gaps = order.filter((row) => row.status === "gap").length;
   return {

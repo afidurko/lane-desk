@@ -10,7 +10,7 @@ export const RANK_MEMORY = {
     "Teal matches. Rust is a payment mismatch and names both amounts. Amber means a person has to look. No amount is guessed.",
     "An imported file is checked immediately. The charge column is the billed amount, not an allowed column.",
     "Mismatch and unknown lines stay in this browser. A match is not stored as an alert.",
-    "New York is only Olean and Allegany. Personal care is the January 1, 2024 public sheet.",
+    "New York uses the county the file names. Personal care is the January 1, 2024 workbook. One county’s rate is not used for another.",
     "Lane does not submit a claim and does not invent a rate.",
     "rankBrief and rankInvoice both stay in the rank file.",
   ],

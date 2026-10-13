@@ -17,6 +17,7 @@ export const Route = createRootRoute({
         content:
           "Lane codes a de-identified encounter and prices the allowed amount, timed against the manual desk. The chart stays.",
       },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "theme-color", content: "#2F5D56" },
     ],
     links: [
