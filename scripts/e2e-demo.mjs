@@ -161,7 +161,7 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   await page.getByRole("button", { name: "97110", exact: true }).click();
   await page.getByText("What it is").first().waitFor();
   const code = await page.locator("main").innerText();
-  t("code shows a 2026 price and the disclaimer", /\$\d+\.\d{2}/.test(code) && /Medicare reference price, not a payment/.test(code) && /2026/.test(code));
+  t("code shows a 2026 price and the disclaimer", /\$[\d,]+\.\d{2}/.test(code) && /Medicare reference price, not a payment/.test(code) && /2026/.test(code));
   if (!internal) t("code shows no other year in public", !/2025|2024|2023|2022|2021|2020/.test(code.replace(/Medicare national, non-facility, 2026/g, "")));
 
   await page.locator("#one-code").fill("11004");
@@ -324,9 +324,17 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     // PACE month: figures come from the CMS files and say so.
     await page.goto(base + "/pace", { waitUntil: "networkidle" });
     const paceText = await page.locator("main").innerText();
-    t("PACE: 2026 New York County shows $1,983.61 with its source", /\$1,?983\.61/.test(await page.locator('[data-county="New York"]').innerText()) && /CountyRate2026PACE\.csv/.test(paceText));
-    t("PACE: ESRD is the PACE $12,051.55, not the MA $11,414.68", /\$12,?051\.55/.test(await page.locator("[data-pace-esrd]").innerText()) && !/11,?414\.68/.test(paceText));
+    t("PACE: 2026 New York County shows $1,983.61 with its source", /\$1,983\.61/.test(await page.locator('[data-county="New York"]').innerText()) && /CountyRate2026PACE\.csv/.test(paceText));
+    t("PACE: ESRD is the PACE $12,051.55, not the MA $11,414.68", /\$12,051\.55/.test(await page.locator("[data-pace-esrd]").innerText()) && !/11,?414\.68/.test(paceText));
     t("PACE: Part D is labelled national averages with $239.27 and $38.99", /national averages, not New York rates/.test(paceText) && /\$239\.27/.test(paceText) && /\$38\.99/.test(paceText));
+    t("PACE: 62 NY counties are listed", (await page.locator("[data-pace-rates] [data-county]").count()) === 62 && /Bronx/.test(paceText) && /St\. Lawrence/.test(paceText));
+    t("PACE: no Medicare Advantage figure on the month screen", !/Medicare Advantage county/.test(paceText));
+    t("PACE: no dollar figure without thousands commas", !/\$\d{4,}/.test(paceText));
+    await page.locator("[data-pace-year]").selectOption("2020");
+    const pace2020 = await page.locator("main").innerText();
+    t("PACE: switching to 2020 reads the 2020 PACE file", /CountyRate2020PACE\.csv/.test(pace2020) && !/CountyRate2026PACE\.csv/.test(pace2020) && /\$8,651\.11/.test(await page.locator("[data-pace-esrd]").innerText()));
+    t("PACE: 2020 ESRD note says Oct 2, 2020 and the original $8,234.99", /revised .*Oct 2, 2020/.test(await page.locator("[data-esrd-2020-note]").innerText()) && /\$8,234\.99/.test(await page.locator("[data-esrd-2020-note]").innerText()));
+    await page.locator("[data-pace-year]").selectOption("2026");
     t("PACE: base county rate note shows", /before CMS adjusts them for each person/.test(paceText));
   }
 

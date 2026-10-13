@@ -1,3 +1,4 @@
+import { isPaceYear } from "@/lib/pace/rates";
 import { blockedText, canEnroll, type Person } from "@/lib/pace/gates";
 
 const KEY = "lane-pace";
@@ -25,7 +26,8 @@ export function readPace(): PaceBook {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(KEY) ?? "") as PaceBook;
     if (!parsed || !Array.isArray(parsed.people)) return emptyBook();
-    return { ...emptyBook(), ...parsed };
+    const book = { ...emptyBook(), ...parsed };
+    return isPaceYear(book.year) ? book : { ...book, year: 2026 };
   } catch {
     return emptyBook();
   }
@@ -52,6 +54,10 @@ export function addPerson(book: PaceBook, county: string): { book: PaceBook; err
     loc: "open",
   };
   return { book: { ...book, people: [...book.people, person] }, error: null };
+}
+
+export function setYear(book: PaceBook, year: number): PaceBook {
+  return isPaceYear(year) ? { ...book, year } : book;
 }
 
 export function setCenter(book: PaceBook, center: string): { book: PaceBook; error: string | null } {

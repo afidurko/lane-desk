@@ -266,7 +266,9 @@ export function allowedOf(units: number, code = CODE, rates?: Record<string, num
 }
 
 export function money(amount: number) {
-  return `$${amount.toFixed(2)}`;
+  const fixed = Math.abs(amount).toFixed(2);
+  const [whole, cents] = fixed.split(".");
+  return `${amount < 0 && Number(fixed) !== 0 ? "-" : ""}$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${cents}`;
 }
 
 export const SCHEDULE_LABEL = `${SCHEDULE.name}, ${SCHEDULE.setting}, ${SCHEDULE.asOf}`;

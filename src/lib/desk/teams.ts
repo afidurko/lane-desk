@@ -1,4 +1,4 @@
-import type { Line } from "@/lib/desk/clock";
+import { money, type Line } from "@/lib/desk/clock";
 import { serviceOf, SCHEDULE } from "@/lib/desk/schedule";
 
 type Status = "did-not-run" | "stop" | "hold" | "pass";
@@ -98,7 +98,7 @@ export function teamReports(kind: "closed" | "refused" | "priced", lines: Line[]
   const cited = lines
     .map((line) => {
       const service = serviceOf(line.code);
-      return service ? `${line.code} ${service.name}, $${service.unitDollars.toFixed(2)}` : line.code;
+      return service ? `${line.code} ${service.name}, ${money(service.unitDollars)}` : line.code;
     })
     .join("; ");
   const arithmetic = lines.every((line) => {

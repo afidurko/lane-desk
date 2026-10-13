@@ -4,9 +4,9 @@ import { Shell } from "@/components/landing/shell";
 import { money } from "@/lib/desk/clock";
 import { canEnroll, gateGaps, missingSeats, monthLine, SEATS, type Person } from "@/lib/pace/gates";
 import { reasonMonth } from "@/lib/lookup/reason";
-import { BASE_RATE_NOTE, COUNTIES, ESRD_2020_NOTE, NOT_CHECKED, RATE_SOURCE, maCountyRate, paceEsrd, paceRate, partD, type Sourced } from "@/lib/pace/rates";
+import { BASE_RATE_NOTE, COUNTIES, ESRD_2020_NOTE, NOT_CHECKED, PACE_YEARS, RATE_SOURCE, paceEsrd, paceRate, partD, type Sourced } from "@/lib/pace/rates";
 import { rankBrief } from "@/lib/team/rank";
-import { addPerson, emptyBook, readPace, setCenter, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
+import { addPerson, emptyBook, readPace, setCenter, setYear, writePace, type Day, type Meeting, type PaceBook, type Ride } from "@/lib/pace/store";
 
 const TABS = ["Month", "People", "Meeting", "Day", "Rides", "Review"] as const;
 
@@ -78,6 +78,17 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
   const partDYear = partD(book.year);
   return (
     <section className="mt-6">
+      <label className="mb-4 block text-sm font-medium text-ink">
+        Year
+        <select
+          value={book.year}
+          onChange={(event) => onBook(setYear(book, Number(event.target.value)))}
+          className="mt-1.5 h-12 w-full rounded-2xl border border-line bg-paper-2 px-4 text-base"
+          data-pace-year
+        >
+          {PACE_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+        </select>
+      </label>
       <label className="block text-sm font-medium text-ink">
         Center
         <input
@@ -96,7 +107,6 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
       <ul className="mt-4 space-y-2" data-pace-rates>
         {COUNTIES.map((county) => {
           const pace = paceRate(county, book.year, false);
-          const ma = maCountyRate(county, book.year);
           return (
             <li key={county} className="rounded-2xl border border-line px-4 py-3 text-sm" data-county={county}>
               <span className="flex items-center justify-between gap-3">
@@ -104,10 +114,6 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
                 <span className="font-medium text-ink tabular-nums" data-pace-cents={pace?.cents ?? ""}>{pace ? money(pace.cents / 100) : `Unpriced, ${NOT_CHECKED}`}</span>
               </span>
               <SourceLine figure={pace} />
-              <span className="mt-1 block text-xs text-muted">
-                Regular Medicare Advantage county rate {book.year}, context only, not in the month total: {ma ? money(ma.cents / 100) : `unpriced, ${NOT_CHECKED}`}
-              </span>
-              <SourceLine figure={ma} />
             </li>
           );
         })}

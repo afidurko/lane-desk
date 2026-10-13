@@ -1,3 +1,4 @@
+import { money } from "@/lib/desk/clock";
 import { describeCode } from "@/lib/lookup/describe";
 import { readInvoiceLines } from "@/lib/lookup/check";
 
@@ -76,5 +77,5 @@ export function regulate(input: { physician: YearRow | null; ambulance: YearRow 
 
 function shown(cents: number | null | undefined) {
   if (typeof cents !== "number") return "missing";
-  return `$${(cents / 100).toFixed(2)}`;
+  return money(cents / 100);
 }
