@@ -3,6 +3,8 @@
  * It is a strict subset of public/pfs-2026.json: national totals only. No locality or GPCI table (so no New York
  * locality amount can be rebuilt from it) and no modifier rows. Component RVUs (w, pn, mp) are kept only for the
  * therapy codes that the multiple-procedure payment reduction applies to. nn marks codes CMS has no office price for.
+ * No short descriptions (d): CMS short names are CPT text (AMA license), so the public file carries the code number only.
+ * The internal build reads names from public/pfs-2026.json and the year shards, which a public build prunes.
  * Usage: node scripts/build-national.mjs   (prints the row count; --check exits 1 if the file is out of date)
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -20,7 +22,6 @@ const slim = {
     .map((row) => ({
       c: row.c,
       m: "",
-      d: row.d,
       s: row.s,
       tn: row.tn,
       ...(row.nn ? { nn: 1 } : {}),

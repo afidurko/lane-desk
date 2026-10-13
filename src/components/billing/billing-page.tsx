@@ -3,8 +3,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Shell } from "@/components/landing/shell";
 import type { AmbulanceFile } from "@/lib/book/ambulance";
 import type { DmeFile, LabFile } from "@/lib/book/other";
-import { sequester, sequestrationPercent, type PfsFile } from "@/lib/book/price";
-import { centsFromDollars, checkClaim, checkClaimNumber, checkClient, checkNote, allowedByLine, claimTotals, quoteCode, reducedUnitsOf, withReduction, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
+import { NOT_OFFICE_LABEL, sequester, sequestrationPercent, type PfsFile } from "@/lib/book/price";
+import { NOT_OFFICE_NOTE, centsFromDollars, checkClaim, checkClaimNumber, checkClient, checkNote, allowedByLine, claimTotals, quoteCode, reducedUnitsOf, withReduction, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
 import { buildPacket, nextGap, packetJson } from "@/lib/billing/packet";
 import { claimAlerts } from "@/lib/billing/verify";
 import { readSubmitter, writeSubmitter, type Submitter } from "@/lib/billing/submitter";
@@ -542,7 +542,7 @@ export function BillingPage() {
                   <li key={line.id} className="rounded-2xl border border-line px-4 py-3">
                     <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? ` ${line.modifier}` : ""} · {line.units} · {line.schedule}</p>
                     <p className="mt-1 text-sm text-muted">{line.note}</p>
-                    <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {totalOrBlank(allowedTotals[line.id] ?? null) || "none on the selected file"}.{reducedUnits[line.id] > 0 ? ` Therapy multiple-procedure reduction applied to ${reducedUnits[line.id]} ${reducedUnits[line.id] === 1 ? "unit" : "units"}.` : ""}</p>
+                    <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {line.note === NOT_OFFICE_NOTE ? NOT_OFFICE_LABEL : totalOrBlank(allowedTotals[line.id] ?? null) || "none on the selected file"}.{reducedUnits[line.id] > 0 ? ` Therapy multiple-procedure reduction applied to ${reducedUnits[line.id]} ${reducedUnits[line.id] === 1 ? "unit" : "units"}.` : ""}</p>
                     <p className="mt-1 text-sm text-muted">Other payer, {line.otherSchedule ?? "not compared"}: {line.otherCents == null ? "no amount" : money((line.otherCents * line.units) / 100)}.</p>
                     {line.dispute ? <p className="mt-1 text-sm font-medium text-deep">Dispute. {line.dispute}</p> : null}
                   </li>

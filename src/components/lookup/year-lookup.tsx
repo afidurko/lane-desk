@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
-import { IS_INTERNAL, PUBLIC_SCOPE, visibleYears } from "@/lib/config/mode";
+import { IS_INTERNAL, PUBLIC_SCOPE, shortName, visibleYears } from "@/lib/config/mode";
 import { loadNational } from "@/lib/pricing/national";
 import { NOTE_2024 } from "@/lib/pricing/release-2024";
 
@@ -46,7 +46,7 @@ async function findNational(clean: string) {
   const national = await loadNational();
   const row = national.rows.get(clean);
   if (!row) return [];
-  const shown: Row = { n: row.n, a: row.a, s: row.s, ...(row.nn ? { o: [national.year] } : {}) };
+  const shown: Row = { n: shortName(row.n), a: row.a, s: row.s, ...(row.nn ? { o: [national.year] } : {}) };
   return [{ family: "physician" as Family, label: PUBLIC_SCOPE.label, row: shown }];
 }
 
@@ -139,7 +139,7 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
   return (
     <div>
       <p className="font-display text-3xl text-ink">{code.trim().toUpperCase()}</p>
-      {row.n ? <p className="mt-1 text-sm leading-relaxed text-muted">{row.n}</p> : null}
+      {shortName(row.n) ? <p className="mt-1 text-sm leading-relaxed text-muted">{shortName(row.n)}</p> : null}
       <YearPrices row={row} family={family} />
     </div>
   );
@@ -258,7 +258,7 @@ export function YearLookup() {
         {hits.map((hit) => (
           <section key={hit.family} className="mt-4">
             <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
-            {hit.row.n && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{hit.row.n}</p> : null}
+            {shortName(hit.row.n) && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{shortName(hit.row.n)}</p> : null}
             <YearPrices row={hit.row} family={hit.family} />
           </section>
         ))}

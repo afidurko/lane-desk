@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Shell } from "@/components/landing/shell";
 import { AMBULANCE_NAMES, type AmbulanceFile } from "@/lib/book/ambulance";
-import { isProcedure, isTransport, payableStatus, STATUS_LABEL } from "@/lib/book/filter";
+import { isProcedure, isTransport, payableStatus, STATUS_LABEL, claimLineFor } from "@/lib/book/filter";
+import { shortName } from "@/lib/config/mode";
 import { readInterest, writeInterest, type Interest } from "@/lib/book/interest";
 import { type DmeFile, type LabFile } from "@/lib/book/other";
 import { conversionFor, localityDollars, NOT_OFFICE_LABEL, notPricedInOffice, type PfsFile } from "@/lib/book/price";
@@ -23,6 +24,8 @@ type Shown = {
   note: string;
   amount: string | null;
   cents: number | null;
+  /** CMS gives no office price (non-facility NA). */
+  notOffice: boolean;
 };
 
 export function FilterPage() {
@@ -90,17 +93,10 @@ export function FilterPage() {
   }
 
   function add(row: Shown) {
-    const result = addToOpenClaim({
-      code: row.code,
-      modifier: row.modifier,
-      units: 1,
-      chargeCents: row.cents,
-      allowedCents: row.cents,
-      schedule: `${scheduleName}, ${year}`,
-      note: row.name,
-      year,
-    });
-    setAdded(result.createdClaim ? `${row.code} opened a ${year} claim.` : `${row.code} was added to the open ${year} claim.`);
+    const use = claimLineFor(row, scheduleName, year);
+    const result = addToOpenClaim(use.line);
+    const where = result.createdClaim ? `opened a ${year} claim.` : `was added to the open ${year} claim.`;
+    setAdded(use.message ? `${use.message} ${row.code} ${where}` : `${row.code} ${where}`);
   }
 
   return (
@@ -175,7 +171,7 @@ export function FilterPage() {
             <Link to="/billing" className="font-medium text-teal">
               Open the claim.
             </Link>{" "}
-            The charge is the file amount. A therapy line still needs GP, GO, or GN.
+            {added.includes("Not priced in the office setting") ? "The line has no charge and no allowed amount." : "The charge is the file amount. A therapy line still needs GP, GO, or GN."}
           </p>
         ) : null}
         {failed ? <p className="mt-4 text-sm font-medium text-deep">That file did not load.</p> : null}
@@ -246,7 +242,7 @@ export function FilterPage() {
           ) : (
             interest.map((item) => (
               <li key={item.id} className="text-sm text-ink">
-                {item.year} {item.code} {item.name}
+                {item.year} {item.code} {shortName(item.name)}
               </li>
             ))
           )}
@@ -270,19 +266,20 @@ function buildRows(file: AnyFile | null, family: Family, query: string, preset: 
   if ("rows" in file && family === "physician" && "localities" in file) {
     const place = file.localities.find((item) => item.mac === "13282" && item.number === "99") ?? null;
     return take(
-      file.rows.filter((row) => row.m === "" && (status === "any" || row.s === status) && presetOk(row.c, row.d) && textOk(row.c, row.d) && (!needsQuery || needle.length >= 2)),
+      file.rows.filter((row) => row.m === "" && (status === "any" || row.s === status) && presetOk(row.c, row.d) && textOk(row.c, shortName(row.d)) && (!needsQuery || needle.length >= 2)),
       (row) => {
         const label = STATUS_LABEL[row.s] ?? `Status ${row.s}.`;
         let amount: string | null = null;
         let dollars = 0;
-        if (notPricedInOffice(row)) {
+        const notOffice = notPricedInOffice(row);
+        if (notOffice) {
           amount = NOT_OFFICE_LABEL;
         } else if (payableStatus(row.s)) {
           const conversion = conversionFor(row, "nonQp", file);
           dollars = conversion ? localityDollars(row, "nf", place, conversion) : 0;
           amount = dollars > 0 ? money(dollars) : null;
         }
-        return { key: `physician-${file.year}-${row.c}`, code: row.c, modifier: "", name: row.d, note: label, amount, cents: dollars > 0 ? Math.round(dollars * 100) : null };
+        return { key: `physician-${file.year}-${row.c}`, code: row.c, modifier: "", name: shortName(row.d), note: label, amount, cents: !notOffice && dollars > 0 ? Math.round(dollars * 100) : null, notOffice };
       },
     );
   }
@@ -300,6 +297,7 @@ function buildRows(file: AnyFile | null, family: Family, query: string, preset: 
         note: "Ambulance file, Rest of New York, rural ground.",
         amount: row.rural === null ? null : money(row.rural / 100),
         cents: row.rural,
+        notOffice: false,
       }),
     );
   }
@@ -316,6 +314,7 @@ function buildRows(file: AnyFile | null, family: Family, query: string, preset: 
         note: `Lab file. Indicator ${row.indicator || "blank"}.`,
         amount: row.rate === null ? null : money(row.rate / 100),
         cents: row.rate,
+        notOffice: false,
       }),
     );
   }
@@ -332,6 +331,7 @@ function buildRows(file: AnyFile | null, family: Family, query: string, preset: 
         note: row.m2 ? `New York rural DME. Second modifier ${row.m2} is not on the claim line.` : "New York rural DME.",
         amount: row.rural === null ? null : money(row.rural / 100),
         cents: row.rural,
+        notOffice: false,
       }),
     );
   }

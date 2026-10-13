@@ -34,6 +34,12 @@ export const DEMO_MODE: DemoMode = IS_INTERNAL ? "internal" : "public";
  */
 export const KEEP_TYPED_NY_AMOUNTS: boolean = typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : true;
 
+/**
+ * The typed therapy names (src/lib/desk/therapy-names.ts) are only kept in an internal build: many match CMS short
+ * descriptions (CPT text). Under plain node (checks) they are kept, because the coder checks read them.
+ */
+export const KEEP_TYPED_NAMES: boolean = typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : true;
+
 /** The one sentence that sits next to every price. Do not reword it. */
 export const REFERENCE_NOTE = "Medicare reference price, not a payment";
 
@@ -80,3 +86,14 @@ export const INTERNAL_ONLY = [
   /^proof-internal\.json$/,
   /^history\//, // Rest of New York year-over-year changes, includes lab
 ];
+
+/**
+ * CMS short descriptions (the "d" field of the fee files) are CPT text under the AMA license.
+ * The internal build shows them. A public build shows the code number only, and ships no file that carries them.
+ */
+export function shortName(text: string | null | undefined, mode: DemoMode = DEMO_MODE): string {
+  return mode === "internal" ? (text ?? "") : "";
+}
+
+/** Said in place of a short name in a public build. */
+export const NO_SHORT_NAME = "Code number only. CPT descriptions are not shown in this demo.";

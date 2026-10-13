@@ -10,6 +10,10 @@ import { scanPhysician } from "../src/lib/desk/scan.ts";
 import { notPricedInOffice, NOT_OFFICE_LABEL } from "../src/lib/book/price.ts";
 import { localityPrices } from "../src/lib/pricing/locality.ts";
 import { readFileSync } from "node:fs";
+import { claimLineFor, NOT_OFFICE_USE_NOTE } from "../src/lib/book/filter.ts";
+import { NOT_OFFICE_NOTE, quoteCode } from "../src/lib/billing/billing.ts";
+import { shortName, NO_SHORT_NAME } from "../src/lib/config/mode.ts";
+import { indexNational } from "../src/lib/pricing/national.ts";
 
 const failures = [];
 let ran = 0;
@@ -298,6 +302,28 @@ check("scan: NA code has no office price this year", naMove?.current === null &&
 const realScan = scanPhysician(pfs2026, pfs2025);
 check("scan on real files never prices an NA code", realScan.changes.every((row) => !(row.currentNotOffice && row.current !== null) && !(row.priorNotOffice && row.prior !== null)));
 check("scan on real files flags 15851 as not office-priced in 2026", realScan.changes.some((row) => row.code === "15851" && row.currentNotOffice && row.current === null));
+// Filter "Use" step (Add to claim): a code with no office price stays unpriced. Never the typed Rest of NY therapy price, never an office price.
+const use11004 = claimLineFor({ code: "11004", modifier: "", name: "", cents: null, notOffice: true }, "Physician", 2026);
+check("Filter Use: 11004 says Not priced in the office setting", use11004.message?.includes(NOT_OFFICE_LABEL) && use11004.line.note.startsWith(NOT_OFFICE_LABEL));
+check("Filter Use: 11004 adds no charge and no allowed amount", use11004.line.chargeCents === null && use11004.line.allowedCents === null);
+check("Filter Use: note matches the claim worksheet's NA note", NOT_OFFICE_USE_NOTE === NOT_OFFICE_NOTE);
+const sneaky = claimLineFor({ code: "11004", modifier: "", name: "", cents: 2827, notOffice: true }, "Physician", 2026);
+check("Filter Use: an NA row never carries an amount, even if one is passed", sneaky.line.chargeCents === null && sneaky.line.allowedCents === null);
+const naCodes = [...new Set(naShared.map((row) => row.c))];
+check("Filter Use: all 4,043 NA codes add no amount", naCodes.length === 4043 && naCodes.every((code) => { const u = claimLineFor({ code, modifier: "", name: "", cents: null, notOffice: true }, "Physician", 2026); return u.line.allowedCents === null && u.line.chargeCents === null; }));
+const naBooks = { physician: pfs2026, ambulance: null, lab: null, dme: null };
+check("Claim worksheet quote: 11004 has no allowed amount and the NA note", (() => { const q = quoteCode(naBooks, "11004", ""); return q.allowedCents === null && q.note === NOT_OFFICE_NOTE; })());
+check("Claim worksheet quote: every 2026 NA code has no allowed amount", naCodes.every((code) => quoteCode(naBooks, code, "").allowedCents === null));
+const use97110 = claimLineFor({ code: "97110", modifier: "", name: "", cents: 2827, notOffice: false }, "Physician", 2026);
+check("Filter Use: a priced code keeps its file amount", use97110.line.allowedCents === 2827 && use97110.message === null);
+// Short names (CPT text): internal shows them, public shows the code number only and ships none.
+check("shortName: internal keeps the CMS short name", shortName("Dbrdmt skin xtrnl gent&per", "internal") === "Dbrdmt skin xtrnl gent&per");
+check("shortName: public shows no short name", shortName("Dbrdmt skin xtrnl gent&per", "public") === "" && !/Dbrdmt/.test(NO_SHORT_NAME));
+const publicNational = JSON.parse(readFileSync("public/pfs-national-2026.json", "utf8"));
+check("public national file carries no short-name field", publicNational.rows.every((row) => !("d" in row) && !("n" in row)));
+check("public national file has no 11004 short name text", !readFileSync("public/pfs-national-2026.json", "utf8").includes("Dbrdmt skin xtrnl gent&per"));
+check("public national index: 11004 has an empty name", indexNational(publicNational).rows.get("11004")?.n === "");
+check("internal 2026 file still has the 11004 short name", pfs2026.rows.some((row) => row.c === "11004" && row.d === "Dbrdmt skin xtrnl gent&per"));
 const vague = classifyIssue("Hello there");
 check("help asks when it is unclear", vague.kind === "ask");
 

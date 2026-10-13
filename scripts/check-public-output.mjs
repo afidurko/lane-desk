@@ -3,7 +3,8 @@
  *   - the Build Output config sends every route to the server function (no client-only fallback needed);
  *   - static files hold no year shards, lab files, Medicaid, other-year or Rest of NY files;
  *   - the only price file is pfs-national-2026.json, with no localities;
- *   - no Rest of NY (or any NY locality) 2026 therapy amount appears in any built script.
+ *   - no Rest of NY (or any NY locality) 2026 therapy amount appears in any built script;
+ *   - no CMS short description (CPT text, AMA license) appears in any built file: public shows the code number only.
  * Usage: node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-public-output.mjs [outputDir]
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -57,5 +58,17 @@ for (const path of scripts) {
   for (const amount of amounts) if (new RegExp(`(^|[^0-9.])${amount.replace(".", "\\.")}([^0-9]|$)`).test(text)) leaks.push(`${path.replace(root + "/", "")}: ${amount}`);
 }
 check(`no NY locality therapy amount (${amounts.size} distinct values, 5 localities) in ${scripts.length} built scripts`, leaks.length === 0, leaks.slice(0, 5).join("; "));
+// CMS short descriptions are CPT text. None may ship in a public build: not in a data file, not in a script.
+check("national file rows carry no short-name field", national.rows.every((r) => !("d" in r) && !("n" in r)));
+const shortNames = new Set();
+for (const row of f2026.rows) if (row.d && row.d.trim().length >= 8) shortNames.add(row.d.trim());
+const builtFiles = [...files.map((p) => join(root, "static", p)), ...walk(join(root, "functions")).filter((p) => /\.(mjs|js|json)$/.test(p)).map((p) => join(root, "functions", p))].filter((p) => !/\.(jpg|png|svg|ico|woff2?)$/.test(p));
+const nameLeaks = [];
+for (const path of builtFiles) {
+  const text = readFileSync(path, "utf8");
+  for (const name of shortNames) if (text.includes(name)) nameLeaks.push(`${path.replace(root + "/", "")}: ${name}`);
+}
+check(`no CMS short description (${shortNames.size} names from the 2026 file) in ${builtFiles.length} built files`, nameLeaks.length === 0, `${nameLeaks.length} hits; ${nameLeaks.slice(0, 8).join("; ")}`);
+check("the sample short name 'Dbrdmt skin xtrnl gent&per' is not in the build", !builtFiles.some((p) => readFileSync(p, "utf8").includes("Dbrdmt skin xtrnl gent&per")));
 console.log(JSON.stringify({ staticFiles: files.length, failCount: failures.length }));
 process.exit(failures.length === 0 ? 0 : 1);

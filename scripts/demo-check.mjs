@@ -48,7 +48,8 @@ check("NYC localities come from the loaded file", ["13202/01", "13202/02", "1329
 // National 2026 prices come from the file.
 const national = indexNational(pfs);
 const slim = JSON.parse(readFileSync("public/pfs-national-2026.json", "utf8"));
-check("public national file has no locality table and no component RVUs", !("localities" in slim) && !("anesthesia" in slim) && Object.keys(slim.rows[0]).sort().join() === "c,d,m,s,tn");
+check("public national file has no locality table and no component RVUs", !("localities" in slim) && !("anesthesia" in slim) && Object.keys(slim.rows[0]).sort().join() === "c,m,s,tn");
+check("public national file has no CMS short names (CPT text)", slim.rows.every((row) => !("d" in row)));
 check("public national file prices identically to the full file", [...indexNational(slim).rows].every(([code, row]) => row.a["2026"] === national.rows.get(code).a["2026"]) && indexNational(slim).rows.size === national.rows.size);
 check("national 97110 is the file total times the factor", national.rows.get("97110").a["2026"] === Math.round(0.87 * 33.4009 * 100));
 check("a bundled code has no national amount", Object.values(national.rows.get("0001F").a)[0] === null);

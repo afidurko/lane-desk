@@ -280,6 +280,20 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.locator("tr", { hasText: "11004" }).first().waitFor();
     const naFilter = await page.locator("tr", { hasText: "11004" }).first().innerText();
     t("Filter: NA code 11004 says not priced in the office setting", /Not priced in the office setting/.test(naFilter) && !/\$\d/.test(naFilter), naFilter.replace(/\s+/g, " ").slice(0, 120));
+    t("Filter (internal): keeps the CMS short name", /Dbrdmt skin xtrnl gent&per/.test(naFilter));
+    // Filter "Use" step: Add to claim on an NA code must say so and must not take any office price.
+    await page.evaluate(() => localStorage.clear());
+    await page.locator("tr", { hasText: "11004" }).first().getByRole("button", { name: "Add to claim" }).click();
+    const useStatus = await page.getByRole("status").filter({ hasText: "11004" }).first().innerText();
+    t("Filter Use: 11004 says Not priced in the office setting", /Not priced in the office setting/.test(useStatus) && !/\$\d/.test(useStatus) && !/charge is the file amount/.test(useStatus), useStatus.replace(/\s+/g, " ").slice(0, 140));
+    await page.goto(base + "/billing", { waitUntil: "networkidle" });
+    const useLineText = await page.locator("li", { hasText: "11004 · 1" }).first().innerText();
+    t("Filter Use: the 11004 claim line reads Not priced in the office setting", /Allowed Not priced in the office setting/.test(useLineText), useLineText.replace(/\s+/g, " ").slice(0, 160));
+    t("Filter Use: the 11004 claim line has no dollar amount (no Rest of NY therapy price, no office price)", !/\$\d/.test(useLineText) && !/28\.27/.test(useLineText));
+    t("Filter Use: the worksheet total takes no amount for 11004", /Selected allowed none/.test(await page.locator("main").innerText()));
+    await page.goto(base + "/filter", { waitUntil: "networkidle" });
+    await page.getByPlaceholder("knee or A0130").fill("11004");
+    await page.locator("tr", { hasText: "11004" }).first().waitFor();
     await page.getByLabel("Year").first().selectOption("2024");
     await page.locator("[data-note-2024]").first().waitFor();
     t("Filter: 2024 shows the year-end release note", (await page.locator("[data-note-2024]").count()) >= 1);
@@ -301,6 +315,19 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
       await page.goto(base + path, { waitUntil: "networkidle" });
       t(`${path} is closed in public`, await page.getByText("is not part of this demo").isVisible());
     }
+    // CMS short names are CPT text: public Book and Filter show none, and no public screen or data file carries them.
+    for (const path of ["/book", "/filter"]) {
+      await page.goto(base + path, { waitUntil: "networkidle" });
+      const body = await page.locator("body").innerText();
+      t(`${path} (public) renders no CMS short name`, !/Dbrdmt skin xtrnl gent&per|Therapeutic exercises|Neuromuscular reeducation/.test(body));
+    }
+    await page.goto(base + "/code", { waitUntil: "networkidle" });
+    await page.locator("#one-code").fill("11004");
+    await page.getByText("Not priced in the office setting").first().waitFor();
+    const code11004 = await page.locator("main").innerText();
+    t("Code (public): 11004 shows the code number only, no short name", !/Dbrdmt/.test(code11004) && /Code number only/.test(code11004));
+    const nationalJson = await page.evaluate(async () => (await fetch("/pfs-national-2026.json")).text());
+    t("public national file carries no short names", !/"d":/.test(nationalJson) && !/Dbrdmt skin xtrnl gent&per/.test(nationalJson));
     const nav = await page.locator("header").innerText();
     await page.goto(base + "/code", { waitUntil: "networkidle" });
     await page.locator("#one-code").fill("97110");

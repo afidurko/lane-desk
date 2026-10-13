@@ -9,6 +9,7 @@ import { dollarsFromTotal, reducedDollars, type PfsFile, type PfsRow } from "@/l
  * The file copies the facility value into the office column for those codes. It is not shown as an office price.
  */
 export type NationalRow = {
+  /** Short name. Empty from the public file: CMS short names are CPT text and are not shipped publicly. */
   n: string;
   a: Record<string, number | null>;
   s: string;
@@ -28,7 +29,7 @@ export type National = {
 
 /** What the national indexer needs. The public file carries only this; the full file also fits. */
 export type NationalFile = Pick<PfsFile, "release" | "year" | "conversion"> & {
-  rows: (Pick<PfsRow, "c" | "m" | "d" | "s" | "tn"> & Partial<Pick<PfsRow, "w" | "pn" | "mp" | "mu" | "nn">>)[];
+  rows: (Pick<PfsRow, "c" | "m" | "s" | "tn"> & Partial<Pick<PfsRow, "d" | "w" | "pn" | "mp" | "mu" | "nn">>)[];
 };
 
 const PAYABLE = new Set(["A", "R", "T"]);
@@ -48,7 +49,7 @@ export function indexNational(file: NationalFile): National {
     const code = row.c.toUpperCase();
     const cents = nationalCents(row, conversion);
     rows.set(code, {
-      n: row.d,
+      n: row.d ?? "",
       s: row.s,
       a: { [String(file.year)]: cents },
       ...(row.nn && PAYABLE.has(row.s) ? { nn: true as const } : {}),

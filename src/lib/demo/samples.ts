@@ -55,8 +55,8 @@ export const DEFAULT_SAMPLE = SAMPLES[0];
 /** Short synthetic notes the Proof screen times. Same wording the coder reads, no identifiers. */
 export const PROOF_NOTES: readonly string[] = [
   ...SAMPLES.filter((sample) => sample.id !== "refused").map((sample) => sample.note),
-  "Synthetic note. Neuromuscular reeducation, 15 minutes.",
+  "Synthetic note. Did neuromuscular reeducation, 15 minutes.",
   "Synthetic note. Self-care training, one unit.",
-  "Synthetic note. Therapeutic activities, 15 minutes.\nTherapeutic exercise, 15 minutes.",
-  "Synthetic note. Group caregiver training.",
+  "Synthetic note. Did therapeutic activities, 15 minutes.\nTherapeutic exercise, 15 minutes.",
+  "Synthetic note. Did group caregiver training.",
 ];

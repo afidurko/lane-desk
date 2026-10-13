@@ -26,8 +26,8 @@ export type RateSet = {
  */
 export async function loadRates(localityKey: string = DEFAULT_LOCALITY.key): Promise<RateSet> {
   const national: National = await loadNational();
+  // Public: no short names (CPT text). The public national file carries none; the desk shows its own plain label or the code.
   const names = new Map<string, string>();
-  for (const [code, row] of national.rows) names.set(code, row.n);
   if (!IS_INTERNAL) {
     const notOffice = notOfficeOf(national);
     return {
@@ -45,6 +45,7 @@ export async function loadRates(localityKey: string = DEFAULT_LOCALITY.key): Pro
   if (!response.ok) throw new Error("The 2026 file did not load.");
   const file = (await response.json()) as PfsFile;
   const { place, rates, mppr, notOffice, localities: ny } = localityPrices(file, localityKey);
+  for (const row of file.rows) if (row.m === "" && row.d) names.set(row.c.toUpperCase(), row.d);
   return {
     rates: fromFile(rates, { mppr, notOffice }),
     mppr,

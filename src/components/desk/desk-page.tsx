@@ -223,10 +223,10 @@ export function DeskPage() {
                         <td className="px-4 py-3 font-medium text-ink tabular-nums">
                           {line.code}
                           <span className="block text-xs font-normal text-muted sm:hidden">
-                            {rateSet?.names.get(line.code) ?? line.name}
+                            {rateSet?.names.get(line.code) || line.name || "Code number only"}
                           </span>
                         </td>
-                        <td className="hidden px-4 py-3 text-ink sm:table-cell">{rateSet?.names.get(line.code) ?? line.name}</td>
+                        <td className="hidden px-4 py-3 text-ink sm:table-cell">{rateSet?.names.get(line.code) || line.name || "Code number only"}</td>
                         <td className="px-4 py-3 text-ink tabular-nums">
                           {line.units}
                           {line.mppr && line.mppr.reducedUnits > 0 ? (

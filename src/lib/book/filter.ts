@@ -33,3 +33,35 @@ export function isTransport(code: string, name: string) {
 export function payableStatus(status: string) {
   return status === "A" || status === "R" || status === "T";
 }
+
+/** What the Filter "Use" step (Add to claim) shows and puts on the claim when CMS gives a code no office price. */
+export const NOT_OFFICE_USE_NOTE =
+  "Not priced in the office setting. CMS has no office price for this code because it is rarely or never done in the office.";
+
+export type FilterPick = { code: string; modifier: string; name: string; cents: number | null; notOffice: boolean };
+
+/**
+ * The claim line the Filter "Use" step adds. A code with no office price is added with no charge and no allowed amount,
+ * and says so. It never takes another amount: not the typed Rest of New York therapy price, not any office price.
+ */
+export function claimLineFor(row: FilterPick, scheduleName: string, year: number) {
+  if (row.notOffice) {
+    return {
+      line: {
+        code: row.code,
+        modifier: row.modifier,
+        units: 1,
+        chargeCents: null,
+        allowedCents: null,
+        schedule: "Physician file, not priced",
+        note: NOT_OFFICE_USE_NOTE,
+        year,
+      },
+      message: `${row.code}: Not priced in the office setting. No office amount was used.`,
+    };
+  }
+  return {
+    line: { code: row.code, modifier: row.modifier, units: 1, chargeCents: row.cents, allowedCents: row.cents, schedule: `${scheduleName}, ${year}`, note: row.name || row.code, year },
+    message: null as string | null,
+  };
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Empty, FIELD, LINK, Page, ReferenceNote, SECONDARY } from "@/components/ui";
-import { IS_INTERNAL } from "@/lib/config/mode";
+import { IS_INTERNAL, NO_SHORT_NAME } from "@/lib/config/mode";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { describeCode } from "@/lib/lookup/describe";
 import { loadMppr } from "@/lib/pricing/books";
@@ -112,7 +112,7 @@ export function CodePage() {
           <p className="font-display text-4xl text-ink tabular-nums">{clean}</p>
           <p className="mt-1 text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
           <h2 className="mt-4 text-sm font-medium text-ink">What it is</h2>
-          <p className="mt-1 text-lg text-ink">{hit.row.n || "The file has no short name for this code."}</p>
+          <p className="mt-1 text-lg text-ink">{IS_INTERNAL ? hit.row.n || "The file has no short name for this code." : NO_SHORT_NAME}</p>
           <h2 className="mt-4 text-sm font-medium text-ink">About this price</h2>
           <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
           <h2 className="mt-4 text-sm font-medium text-ink">{IS_INTERNAL ? "Years and amounts" : "Reference price, 2026"}</h2>

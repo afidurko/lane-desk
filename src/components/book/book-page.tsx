@@ -1,3 +1,4 @@
+import { shortName } from "@/lib/config/mode";
 import { nyLocalities, localityName } from "@/lib/config/ny";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
@@ -125,7 +126,7 @@ export function BookPage() {
       .filter((row) => {
         if (modifier === "blank" && row.m !== "") return false;
         if (modifier === "only" && row.m === "") return false;
-        return row.c.toLowerCase().includes(text) || row.d.toLowerCase().includes(text);
+        return row.c.toLowerCase().includes(text) || shortName(row.d).toLowerCase().includes(text);
       })
       .slice(0, 40);
   }, [physician, query, modifier]);
@@ -285,7 +286,7 @@ export function BookPage() {
                       <li key={`${row.c}-${row.m}`} className="border-t border-line first:border-t-0">
                         <button type="button" onClick={() => setSelected(row)} className={active ? "w-full bg-paper-2 px-4 py-3 text-left" : "w-full px-4 py-3 text-left hover:bg-paper-2"}>
                           <span className="font-medium text-ink tabular-nums">{row.c}{row.m ? `-${row.m}` : ""}</span>
-                          <span className="mt-1 block text-sm text-ink">{row.d}</span>
+                          <span className="mt-1 block text-sm text-ink">{shortName(row.d)}</span>
                           <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {setting === "nf" && notPricedInOffice(row) ? NOT_OFFICE_LABEL : value === null ? "No national amount" : money(value)}</span>
                         </button>
                       </li>
@@ -297,7 +298,7 @@ export function BookPage() {
                 {shown && allowed !== null && cut ? (
                   <>
                     <p className="text-xs font-medium tracking-widest text-teal uppercase">{year} {STATUS[shown.s] ?? shown.s}</p>
-                    <h2 className="mt-2 font-display text-3xl text-ink">{shown.c}{shown.m ? ` ${shown.m}` : ""} {shown.d}</h2>
+                    <h2 className="mt-2 font-display text-3xl text-ink">{shown.c}{shown.m ? ` ${shown.m}` : ""} {shortName(shown.d)}</h2>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div><dt className="text-xs tracking-widest text-muted uppercase">Fee schedule</dt><dd className="mt-1 font-medium text-ink tabular-nums">{money(allowed)}</dd></div>
                       <div><dt className="text-xs tracking-widest text-muted uppercase">Work / PE / MP</dt><dd className="mt-1 text-ink tabular-nums">{shown.w} / {setting === "nf" ? shown.pn : shown.pf} / {shown.mp}</dd></div>
