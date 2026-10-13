@@ -37,6 +37,7 @@ export type Claim = {
   diagnosis: string;
   note: string;
   payer: "medicare" | "medicaid";
+  county?: string;
   status: "draft" | "ready";
   lines: Line[];
 };
@@ -49,6 +50,13 @@ export type Books = {
 };
 
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
+const DISCIPLINE = new Set(["GP", "GO", "GN"]);
+
+function pricedRow<T extends { c: string; m: string }>(rows: T[] | undefined, code: string, modifier: string) {
+  const exact = rows?.find((row) => row.c === code && row.m === modifier);
+  if (exact || !DISCIPLINE.has(modifier)) return exact;
+  return rows?.find((row) => row.c === code && row.m === "");
+}
 const ICD = /^[A-Z][0-9][0-9A-Z](?:\.[0-9A-Z]{1,4})?$/;
 
 export function validDiagnosis(value: string) {
@@ -137,7 +145,7 @@ export function quoteCode(
     };
   }
 
-  const physician = books.physician?.rows.find((row) => row.c === clean && row.m === mod);
+  const physician = pricedRow(books.physician?.rows, clean, mod);
   if (physician && payableStatus(physician.s) && physician.nn) {
     return { schedule: "Physician file, not priced", allowedCents: null, note: NOT_OFFICE_NOTE };
   }

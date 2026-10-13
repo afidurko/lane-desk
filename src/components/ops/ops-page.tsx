@@ -105,7 +105,7 @@ export function OpsPage() {
                   <p className="font-medium break-words text-ink">{file.name}</p>
                   <p className={statusClass(file.status)}>{statusLabel(file.status)}</p>
                   <p className="mt-1 text-sm leading-relaxed break-words text-ink">
-                    {file.cadence}. Loaded: {file.loaded}. Next: {file.next}.
+                    {file.cadence.replace(/\.+$/, "")}. Loaded: {file.loaded.replace(/\.+$/, "")}. Next: {file.next.replace(/\.+$/, "")}.
                     {file.rows === null ? "" : ` ${file.rows.toLocaleString()} rows.`}
                   </p>
                   <p className="mt-1 text-sm leading-relaxed break-words text-ink">{file.detail}</p>

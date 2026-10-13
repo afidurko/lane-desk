@@ -13,14 +13,23 @@ export type IssueReply = {
 
 const WORKABLE: { test: RegExp; reply: IssueReply }[] = [
   {
-    test: /automat|routine|safe fix|what should i do|next step|just do it/i,
+    test: /check a bill|where do i start|what is this for/i,
     reply: {
       kind: "workable",
-      title: "Run the safe fixes",
-      body: "On the claim, Run the safe fixes sets every charge that has a loaded amount to that amount, and sets place of service 41 when every line is an ambulance code. It does not pick a therapy modifier, a diagnosis, or a claim number, and it does not send the claim.",
-      href: "/billing",
-      hrefLabel: "Open the claim",
-      suggestions: ["The amount does not match", "Add a diagnosis code"],
+      title: "Check a bill",
+      body: "Start at Teams. Intake reads the bill. Price shows the code and the year. New York uses the county the file names. Review marks a charge that does not match. Nothing is sent.",
+      suggestions: ["The price looks wrong", "Where are the New York rates?"],
+    },
+  },
+  {
+    test: /new york|olean|allegany/i,
+    reply: {
+      kind: "workable",
+      title: "New York rates",
+      body: "Open New York and pick the county. Personal care is shown only for a county the workbook names. Olean is Cattaraugus. Allegany is separate.",
+      href: "/ny",
+      hrefLabel: "Open New York",
+      suggestions: ["Check a bill", "The price looks wrong"],
     },
   },
   {
@@ -57,7 +66,7 @@ const WORKABLE: { test: RegExp; reply: IssueReply }[] = [
     },
   },
   {
-    test: /high alert|wrong amount|does not match|doesn't match|incorrect (claim|code|amount)|amount (is|was) wrong|file amount/i,
+    test: /high alert|wrong amount|does not match|doesn't match|looks wrong|incorrect (claim|code|amount)|amount (is|was) wrong|file amount/i,
     reply: {
       kind: "workable",
       title: "The amount does not match",

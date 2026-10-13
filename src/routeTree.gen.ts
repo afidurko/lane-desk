@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as BookRouteImport } from './routes/book'
+import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as CodeRouteImport } from './routes/code'
 import { Route as CompeteRouteImport } from './routes/compete'
 import { Route as DeskRouteImport } from './routes/desk'
@@ -51,6 +52,11 @@ const BillingRoute = BillingRouteImport.update({
 const BookRoute = BookRouteImport.update({
   id: '/book',
   path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClaimRoute = ClaimRouteImport.update({
+  id: '/claim',
+  path: '/claim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CodeRoute = CodeRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
+  '/claim': typeof ClaimRoute
   '/code': typeof CodeRoute
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
+  '/claim': typeof ClaimRoute
   '/code': typeof CodeRoute
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
+  '/claim': typeof ClaimRoute
   '/code': typeof CodeRoute
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/billing'
     | '/book'
+    | '/claim'
     | '/code'
     | '/compete'
     | '/desk'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/billing'
     | '/book'
+    | '/claim'
     | '/code'
     | '/compete'
     | '/desk'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/billing'
     | '/book'
+    | '/claim'
     | '/code'
     | '/compete'
     | '/desk'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   BillingRoute: typeof BillingRoute
   BookRoute: typeof BookRoute
+  ClaimRoute: typeof ClaimRoute
   CodeRoute: typeof CodeRoute
   CompeteRoute: typeof CompeteRoute
   DeskRoute: typeof DeskRoute
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       path: '/book'
       fullPath: '/book'
       preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claim': {
+      id: '/claim'
+      path: '/claim'
+      fullPath: '/claim'
+      preLoaderRoute: typeof ClaimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/code': {
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   BillingRoute: BillingRoute,
   BookRoute: BookRoute,
+  ClaimRoute: ClaimRoute,
   CodeRoute: CodeRoute,
   CompeteRoute: CompeteRoute,
   DeskRoute: DeskRoute,

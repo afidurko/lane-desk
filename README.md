@@ -2,6 +2,15 @@
 
 De-identified Medicare reference-price desk for New York. Not a payment, not an EHR. Full notes: `docs/HANDOFF.md`.
 
+## The four teams
+
+| Team | What it does | What it does not do |
+|---|---|---|
+| Intake | Reads each line: code, date, and charge. | Does not invent a code that is not written on the line. |
+| Price | Shows one code and the amount for each year on the file. | Does not guess a code the file does not contain. |
+| New York | Uses the county the file names. Personal care is the January 1, 2024 workbook. | Does not use one county's rate for another county. |
+| Review | Marks a charge that does not match the file. | Does not send the bill. A person decides. |
+
 ## Setup
 ```
 nvm use                 # Node 22.12 (.nvmrc; engines ">=22.12.0 <23")

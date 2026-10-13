@@ -12,7 +12,7 @@ type Turn = {
   suggestions?: string[];
 };
 
-const STARTERS = ["Run the safe fixes", "The amount does not match", "Can this be submitted?"];
+const STARTERS = ["How do I check a bill?", "The price looks wrong", "Where are the New York rates?"];
 
 export function HelpChat() {
   const [open, setOpen] = useState(false);
@@ -22,8 +22,8 @@ export function HelpChat() {
       id: "start",
       role: "desk",
       kind: "ask",
-      text: "One next step at a time. A name or a member number is dropped.",
-      suggestions: ["Add the organization", "The amount does not match", "Can this be submitted?"],
+      text: "Ask in plain words. For example, how do I check a bill?",
+      suggestions: ["How do I check a bill?", "The price looks wrong", "Where are the New York rates?"],
     },
   ]);
 
@@ -60,7 +60,7 @@ export function HelpChat() {
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div>
               <p className="font-display text-lg text-ink">Help</p>
-              <p className="text-xs text-muted">Workable fixes, and stops.</p>
+              <p className="text-xs text-muted">A short answer, then where to click.</p>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="h-10 rounded-full px-3 text-sm text-muted hover:text-ink">
               Close
@@ -113,7 +113,7 @@ export function HelpChat() {
                 id="help-text"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
-                placeholder="What is stuck?"
+                placeholder="Ask a question"
                 className="h-11 min-w-0 flex-1 rounded-full border border-line bg-paper-2 px-4 text-sm"
               />
               <button type="submit" className="h-11 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">

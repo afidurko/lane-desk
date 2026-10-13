@@ -12,7 +12,7 @@ import { readBilling, writeBilling } from "@/lib/billing/store";
 import { InvoiceIntake } from "@/components/billing/invoice-intake";
 import { money } from "@/lib/desk/clock";
 import { safeFixes } from "@/lib/help/routines";
-import { NY, quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
+import { NY, countiesOf, quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
 
 const emptyBooks: Books = { physician: null, ambulance: null, lab: null, dme: null };
 
@@ -20,6 +20,7 @@ export function BillingPage() {
   const [books, setBooks] = useState<Books>(emptyBooks);
   const [ny, setNy] = useState<NyMedicaidFile | null>(null);
   const [payer, setPayer] = useState<"medicare" | "medicaid">("medicare");
+  const [county, setCounty] = useState<string>(NY.county);
   const [clients, setClients] = useState<Client[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [ready, setReady] = useState(false);
@@ -57,7 +58,7 @@ export function BillingPage() {
   const client = clients.find((item) => item.id === (claim?.clientId ?? clientId)) ?? null;
   const fileYear = fileYearOf(claim?.dos ?? dos);
   const today = todayIso();
-  const alerts = claim ? claimAlerts(claim, books, today, ny) : [];
+  const alerts = claim ? claimAlerts(claim, books, today, ny, claim.county) : [];
   const day = claim ? withReduction(claim.lines, books, claim.payer ?? "medicare") : [];
   const allowedTotals = allowedByLine(day);
   const reducedUnits = reducedUnitsOf(day);
@@ -133,6 +134,7 @@ export function BillingPage() {
       number: numbered.number,
       note: noted.note,
       payer,
+      county,
       status: "draft",
       lines: [],
     };
@@ -156,7 +158,7 @@ export function BillingPage() {
     }
     const federal = quoteCode(books, code, modifier);
     const state = ny
-      ? quoteNy(ny, code, NY.county)
+      ? quoteNy(ny, code, claim.county || county)
       : { schedule: "NY Medicaid", allowedCents: null, note: "The state file is not loaded." };
     const selected = (claim.payer ?? "medicare") === "medicaid" ? state : federal;
     const other = (claim.payer ?? "medicare") === "medicaid" ? federal : state;
@@ -196,7 +198,7 @@ export function BillingPage() {
               ...item,
               lines: item.lines.map((line) =>
                 line.id === lineId
-                  ? { ...line, dispute: "Disputed against the Olean file. The high alert stays until the charge matches." }
+                  ? { ...line, dispute: `Disputed against the ${countyLabel(claim.county || NY.county)} file. The high alert stays until the charge matches.` }
                   : line,
               ),
             },
@@ -208,7 +210,7 @@ export function BillingPage() {
   function setStatus(status: "draft" | "ready") {
     if (!claim) return;
     if (status === "ready") {
-      const step = nextGap(claim, client, submitter, claimAlerts(claim, books, todayIso(), ny).length);
+      const step = nextGap(claim, client, submitter, claimAlerts(claim, books, todayIso(), ny, claim.county).length);
       if (step.title !== "Download the packet") {
         setMessage(`${step.title}. ${step.detail}`);
         return;
@@ -294,12 +296,12 @@ export function BillingPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760 · claims</p>
+        <p className="text-xs font-medium tracking-widest text-teal uppercase">Review team</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Ready for a person to review.
+          What does not match.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          The lines from the invoice sit here. This page does not send a claim.
+          These are the lines Intake saved. Review marks a charge that does not match the file. A person decides. Nothing is sent.
         </p>
         <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
           <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
@@ -358,6 +360,16 @@ export function BillingPage() {
               <option value="medicaid">New York Medicaid fee-for-service</option>
             </select>
           </label>
+          {payer === "medicaid" ? (
+            <label className="text-sm font-medium text-ink sm:col-span-2">
+              County
+              <select value={county} onChange={(event) => setCounty(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                {(ny ? countiesOf(ny) : [NY.county]).map((name) => (
+                  <option key={name} value={name}>{countyLabel(name)}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label className="text-sm font-medium text-ink">
             Date of service
             <input type="date" value={dos} onChange={(event) => setDos(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
@@ -435,7 +447,21 @@ export function BillingPage() {
 
         {claim ? (
           <section className="mt-6 rounded-2xl border border-line p-5">
-            <p className="text-sm text-muted">{claim.number || "No claim number"} · {client?.name ?? "No organization"} · {claim.dos} · {(claim.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · place {claim.pos || "not set"}{claim.diagnosis ? ` · ${claim.diagnosis}` : ""} · {claim.status}</p>
+            <p className="text-sm text-muted">{claim.number || "No claim number"} · {client?.name ?? "No organization"} · {claim.dos} · {(claim.payer ?? "medicare") === "medicaid" ? `NY Medicaid, ${countyLabel(claim.county || NY.county)}` : "Medicare, Rest of New York"} · place {claim.pos || "not set"}{claim.diagnosis ? ` · ${claim.diagnosis}` : ""} · {claim.status}</p>
+            {(claim.payer ?? "medicare") === "medicaid" && claim.status === "draft" ? (
+              <label className="mt-4 block text-sm font-medium text-ink">
+                County on this claim
+                <select
+                  value={claim.county || NY.county}
+                  onChange={(event) => setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, county: event.target.value } : item)))}
+                  className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base"
+                >
+                  {(ny ? countiesOf(ny) : [NY.county]).map((name) => (
+                    <option key={name} value={name}>{countyLabel(name)}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="mt-4 block text-sm font-medium text-ink">
               Diagnosis
               <input
@@ -538,15 +564,20 @@ export function BillingPage() {
               {claim.lines.length === 0 ? (
                 <li className="text-sm text-muted">No lines yet.</li>
               ) : (
-                claim.lines.map((line) => (
-                  <li key={line.id} className="rounded-2xl border border-line px-4 py-3">
+                claim.lines.map((line) => {
+                  const hit = alerts.find((item) => item.line.id === line.id);
+                  const mismatch = Boolean(hit && hit.check.expectedCents !== null && line.chargeCents !== null);
+                  return (
+                  <li key={line.id} className={mismatch ? "rounded-2xl border border-alert bg-alert-wash px-4 py-3" : hit ? "rounded-2xl border border-wait bg-wait-wash px-4 py-3" : "rounded-2xl border border-teal bg-wash px-4 py-3"}>
                     <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? ` ${line.modifier}` : ""} · {line.units} · {line.schedule}</p>
                     <p className="mt-1 text-sm text-muted">{line.note}</p>
                     <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {line.note === NOT_OFFICE_NOTE ? NOT_OFFICE_LABEL : totalOrBlank(allowedTotals[line.id] ?? null) || "none on the selected file"}.{reducedUnits[line.id] > 0 ? ` Therapy multiple-procedure reduction applied to ${reducedUnits[line.id]} ${reducedUnits[line.id] === 1 ? "unit" : "units"}.` : ""}</p>
+                    {hit ? <p className="mt-2 text-sm font-medium text-ink" role="alert">{hit.check.reason}{hit.check.expectedCents === null ? " No amount was guessed." : ""}</p> : null}
                     <p className="mt-1 text-sm text-muted">Other payer, {line.otherSchedule ?? "not compared"}: {line.otherCents == null ? "no amount" : money((line.otherCents * line.units) / 100)}.</p>
-                    {line.dispute ? <p className="mt-1 text-sm font-medium text-deep">Dispute. {line.dispute}</p> : null}
+                    {line.dispute ? <p className="mt-1 text-sm font-medium text-alert">Dispute. {line.dispute}</p> : null}
                   </li>
-                ))
+                  );
+                })
               )}
             </ul>
             {Object.values(reducedUnits).some((count) => count > 0) ? (
@@ -626,6 +657,10 @@ export function BillingPage() {
 function fileYearOf(dos: string) {
   const year = Number(dos.slice(0, 4));
   return year >= 2020 && year <= 2026 ? year : 2026;
+}
+
+function countyLabel(county: string) {
+  return county.toLowerCase().replace(/(^|[^a-z'])([a-z])/g, (_match, lead: string, letter: string) => `${lead}${letter.toUpperCase()}`);
 }
 
 function todayIso() {

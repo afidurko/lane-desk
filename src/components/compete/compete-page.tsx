@@ -5,10 +5,10 @@ const LOADED = [
   { name: "Physician fee schedule", span: "2020–2026", count: "About 19,000 codes a year", note: "Rest of New York, MAC 13282, locality 99" },
   { name: "Clinical laboratory", span: "2020–2026, fourth quarter", count: "About 2,200 codes", note: "80053 is $10.56 in 2026" },
   { name: "Ambulance", span: "2020–2026", count: "About 1,300 rows", note: "Urban, rural, and quartile" },
-  { name: "DMEPOS", span: "2021–2026", count: "New York rural and non-rural", note: "2020 fee file was not in that year’s zip" },
+  { name: "DMEPOS", span: "2020–2026", count: "New York rural and non-rural", note: "2020 is the CARES file. October 2020 had no fee schedule." },
   { name: "Hospital outpatient", span: "October 2026", count: "Addendum B", note: "Only October through December 2026" },
   { name: "Ambulatory surgical center", span: "October 2026", count: "Addendum AA and BB", note: "Only October through December 2026" },
-  { name: "Inpatient PPS", span: "FY 2026", count: "Weights and national amounts", note: "Not wage-adjusted" },
+  { name: "Inpatient PPS", span: "FY 2027", count: "Weights and national amounts", note: "Not wage-adjusted" },
   { name: "Part B drug ASP", span: "October 2026", count: "Quarterly", note: "Only October through December 2026" },
   { name: "NY Medicaid fee-for-service", span: "As posted", count: "Physician, lab, transport, dental, DME, and others", note: "Managed-care plan rates are not loaded" },
   { name: "NADAC", span: "Week of October 7, 2026", count: "About 30,000 rows", note: "Acquisition cost, not a pharmacy payment" },
@@ -97,7 +97,7 @@ export function CompetePage() {
             <li>This is not an EHR. It does not replace a chart.</li>
             <li>It does not submit a claim, log into a portal, or store an identifier.</li>
             <li>It does not invent a clinician label. A gold set is labeled by a person.</li>
-            <li>Rehab procedure 97110 on New York Medicaid, chiropractic, no-fault, and the sold workers’ compensation physician schedule still have no public dollar file.</li>
+            <li>97110 and 97161 have no New York Medicaid amount. Medicare Rest of New York still prices them. 97160, chiropractic, no-fault, and the sold workers’ compensation physician and therapy books have no public dollar on this desk.</li>
             <li>Wage index is not applied to hospital outpatient or inpatient amounts.</li>
           </ul>
         </section>

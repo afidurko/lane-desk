@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Shell } from "@/components/landing/shell";
 import { money } from "@/lib/desk/clock";
 import { readGold, type GoldRow } from "@/lib/team/gold";
-import { readQueue, seatName, type Packet } from "@/lib/team/protocol";
-import { CHAIN, SEATS } from "@/lib/team/roster";
+import { readQueue, type Packet } from "@/lib/team/protocol";
+import { DESKS } from "@/lib/team/desks";
 import { readBoard, type BoardRow } from "@/lib/team/scoreboard";
 import { UPDATES } from "@/lib/team/updates";
 
@@ -42,27 +42,20 @@ export function TeamPage() {
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
         <p className="text-xs font-medium tracking-widest text-teal uppercase">Team</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          The note is screened, priced, and checked.
+          The same four teams.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          A note is priced in this browser. A cleared packet waits here. Nothing is submitted.
+          Intake, Price, New York, and Review. A bill stops at Review. Nothing is submitted.
         </p>
-
         <ol className="mt-8 grid gap-3 lg:grid-cols-2">
-          {SEATS.map((seat) => (
-            <li key={seat.id} className="rounded-2xl border border-line bg-paper-2 p-4">
-              <p className="text-xs font-medium tracking-widest text-teal uppercase">Reports to {seat.reportsTo}</p>
-              <h2 className="mt-2 font-display text-2xl text-ink">{seat.name}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-ink">{seat.job}</p>
-              <p className="mt-2 text-sm text-muted">{seat.doesNot}</p>
+          {DESKS.map((desk) => (
+            <li key={desk.id} className="rounded-2xl border border-line bg-paper-2 p-4">
+              <h2 className="font-display text-2xl text-ink">{desk.name}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink">{desk.does}</p>
+              <p className="mt-2 text-sm text-muted">{desk.doesNot}</p>
             </li>
           ))}
         </ol>
-
-        <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">Chain on a note</h2>
-          <p className="mt-2 text-sm text-muted">{CHAIN.map(seatName).join(" → ")}</p>
-        </section>
 
         <section className="mt-10">
           <h2 className="font-display text-3xl text-ink">What the team already verified</h2>

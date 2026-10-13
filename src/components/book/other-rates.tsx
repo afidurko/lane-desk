@@ -182,10 +182,10 @@ export function OtherRates() {
           </button>
           {unadjusted != null ? (
             <p className="mt-3 text-sm leading-relaxed text-ink">
-              {money(unadjusted / 100)}. That is the weight times the national standardized amount for a wage index at or below 1. Wage index, DSH, teaching, and outliers are not in it. The weight file is fiscal year 2026, {FISCAL.label}. October 1, 2026 is the next fiscal year, and that file is not loaded.
+              {money(unadjusted / 100)}. That is the weight times the national standardized amount for a wage index at or below 1. Wage index, DSH, teaching, and outliers are not in it. The weight file is fiscal year 2027, {FISCAL.label}.
             </p>
           ) : (
-            <p className="mt-3 text-sm text-muted">Off, so this stays a weight. The weight file is fiscal year 2026, {FISCAL.label}, not a calendar-year price.</p>
+            <p className="mt-3 text-sm text-muted">Off, so this stays a weight. The weight file is fiscal year 2027, {FISCAL.label}, not a calendar-year price.</p>
           )}
         </div>
       ) : null}

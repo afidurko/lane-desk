@@ -10,6 +10,10 @@
   --color-teal-ink: #e7f2ef;
   --color-deep: #163832;
   --color-wash: #e6efed;
+  --color-alert: #8f3d2a;
+  --color-alert-wash: #f6ebe6;
+  --color-wait: #8a5a12;
+  --color-wait-wash: #f8f1e4;
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --radius-card: 1rem;
