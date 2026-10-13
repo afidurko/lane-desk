@@ -1,0 +1,23 @@
+
+> check:key
+> node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/answer-key-compare.mjs
+
+(node:2244414) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2244414) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+┌─────────┬────────┬───────────────┬───────┬─────────────┬─────────────┬─────────────┬─────────────┬──────┐
+│ (index) │ sample │ codes         │ units │ appNational │ keyNational │ appRestOfNY │ keyRestOfNY │ ok   │
+├─────────┼────────┼───────────────┼───────┼─────────────┼─────────────┼─────────────┼─────────────┼──────┤
+│ 0       │ 1      │ '97110+97116' │ '3+1' │ 95.69       │ 95.69       │ 93.58       │ 93.58       │ true │
+│ 1       │ 2      │ '97112+97110' │ '2+2' │ 102.03      │ 102.03      │ 99.78       │ 99.78       │ true │
+│ 2       │ 3      │ '97110+97140' │ '2+1' │ 72.48       │ 72.48       │ 70.82       │ 70.82       │ true │
+│ 3       │ 4      │ '97116+97110' │ '2+1' │ 73.48       │ 73.48       │ 71.81       │ 71.81       │ true │
+│ 4       │ 5      │ 'none'        │ '-'   │ 0           │ 0           │ 0           │ 0           │ true │
+│ 5       │ 6      │ 'none'        │ '-'   │ 0           │ 0           │ 0           │ 0           │ true │
+│ 6       │ 7      │ 'none'        │ '-'   │ 0           │ 0           │ 0           │ 0           │ true │
+│ 7       │ 8      │ 'none'        │ '-'   │ 0           │ 0           │ 0           │ 0           │ true │
+│ 8       │ 9      │ '97110'       │ '2'   │ 51.27       │ 51.27       │ 50.04       │ 50.04       │ true │
+│ 9       │ 10     │ '97110+97116' │ '2+1' │ 73.48       │ 73.48       │ 71.81       │ 71.81       │ true │
+└─────────┴────────┴───────────────┴───────┴─────────────┴─────────────┴─────────────┴─────────────┴──────┘
+{"samples":10,"differences":0}

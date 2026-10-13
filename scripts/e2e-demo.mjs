@@ -4,6 +4,7 @@
  * Runs at desktop and phone width. Fails on: a console error, a failed request, a page wider than the screen,
  * a missing disclaimer, a forbidden file request in public mode, or a broken step in the demo path.
  */
+const money = (d) => `$${d.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
@@ -233,6 +234,15 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.getByText("Manhattan, MAC 13202").waitFor();
     text = await page.locator("main").innerText();
     t("Manhattan prices 97110 from the same file", text.includes(`$${(manCents / 100).toFixed(2)}`), `${manCents}`);
+    for (const place of pfs.localities.filter((l) => l.state === "NY")) {
+      const key = `${place.mac}/${place.number}`;
+      const cents = Math.round(Math.round((row.w * place.work + row.pn * place.pe + row.mp * place.mp) * Number(pfs.conversion.nonQp) * 100 + 1e-9));
+      await page.getByLabel("New York locality (internal)").selectOption(key);
+      await page.getByRole("button", { name: "Price this note" }).click();
+      await page.getByText(`MAC ${place.mac}, locality ${place.number}`).first().waitFor();
+      const shown = await page.locator("main").innerText();
+      t(`locality ${key} prices 97110 at its own file amount, no other area's`, shown.includes(money(cents / 100)) && new RegExp(`MAC ${place.mac}, locality ${place.number}`).test(shown), `${cents}`);
+    }
     await page.goto(base + "/code", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "97110", exact: true }).click();
     await page.getByText("Years and amounts").waitFor();

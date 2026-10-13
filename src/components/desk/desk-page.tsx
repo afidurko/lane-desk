@@ -9,7 +9,7 @@ import { DEFAULT_SAMPLE, SAMPLES } from "@/lib/demo/samples";
 import { formatSeconds, OUR_SIDE_LABEL, timeCoder, type Timing } from "@/lib/demo/timing";
 import { DEFAULT_LOCALITY } from "@/lib/config/ny";
 import { MPPR_EXPLAIN, MPPR_LABEL } from "@/lib/pricing/mppr";
-import { loadRates, type RateSet } from "@/lib/pricing/rates";
+import { loadRates, ratesFor, type RateSet } from "@/lib/pricing/rates";
 
 const GATE_COPY: Record<Exclude<Gate, "ok">, string> = {
   empty: "There is no note yet. Pick a sample above or paste a de-identified note.",
@@ -21,7 +21,7 @@ const GATE_COPY: Record<Exclude<Gate, "ok">, string> = {
     "Not priced. This note does not name a therapy service the coder reads, and no listed code is in it. The coder does not guess.",
 };
 
-type State = { kind: "idle" } | { kind: "done"; lane: LaneRun; timing: Timing } | { kind: "stopped"; copy: string };
+type State = { kind: "idle" } | { kind: "done"; lane: LaneRun; timing: Timing; scope: string; release: string } | { kind: "stopped"; copy: string };
 
 export function DeskPage() {
   const [note, setNote] = useState<string>(DEFAULT_SAMPLE.note);
@@ -60,10 +60,13 @@ export function DeskPage() {
     setSent(false);
   }
 
+  // The set loaded for the locality on screen, or null while that locality's amounts are still loading.
+  const ready = ratesFor(rateSet, locality);
+
   function run() {
-    if (!rateSet) return;
+    if (!ready) return;
     setSent(false);
-    const lane = runLane(note, null, null, rateSet.rates);
+    const lane = runLane(note, null, null, ready.rates);
     if (lane.block) return setState({ kind: "stopped", copy: GATE_COPY[lane.block] });
 
     if (lane.boundary) return setState({ kind: "stopped", copy: lane.boundary });
@@ -71,14 +74,16 @@ export function DeskPage() {
     setState({
       kind: "done",
       lane,
-      timing: timeCoder(lane.text, rateSet.rates),
+      timing: timeCoder(lane.text, ready.rates),
+      scope: ready.scope,
+      release: ready.release,
     });
   }
 
   const humanSeconds = human.trim() === "" ? null : Number(human);
   const humanBad = humanSeconds !== null && (!Number.isFinite(humanSeconds) || humanSeconds < 0 || humanSeconds > 86_400);
 
-  function worksheet(lane: LaneRun) {
+  function worksheet(lane: LaneRun, scope: string) {
     for (const line of lane.lines) {
       const separate = serviceOf(line.code)?.separate !== false && line.allowed > 0;
       const cents = separate ? Math.round(line.allowed * 100) : null;
@@ -88,7 +93,7 @@ export function DeskPage() {
         units: line.units,
         chargeCents: cents,
         allowedCents: cents,
-        schedule: `2026 physician, ${rateSet?.scope ?? "New York"}`,
+        schedule: `2026 physician, ${scope}`,
         note: line.span,
         year: 2026,
         claimNote: lane.text,
@@ -170,8 +175,8 @@ export function DeskPage() {
             </select>
           </div>
         ) : null}
-        <button type="button" onClick={run} disabled={!rateSet || note.trim() === ""} className={`${PRIMARY} mt-4 w-full sm:w-auto`}>
-          {rateSet ? "Price this note" : loadFailed ? "Fee file did not load" : "Loading the fee file"}
+        <button type="button" onClick={run} disabled={!ready || note.trim() === ""} className={`${PRIMARY} mt-4 w-full sm:w-auto`}>
+          {ready ? "Price this note" : loadFailed ? "Fee file did not load" : "Loading the fee file"}
         </button>
         {loadFailed ? (
           <p className="mt-3 text-sm font-medium text-deep" role="alert">
@@ -268,10 +273,10 @@ export function DeskPage() {
             <div>
               <ReferenceNote scope={false} />
               <p className="mt-1 text-sm leading-relaxed text-muted">
-                {rateSet?.scope}. PACE is capitated, so this is a check figure, not what anyone is paid.
+                {state.scope}. PACE is capitated, so this is a check figure, not what anyone is paid.
               </p>
               <p className="mt-2 text-sm leading-relaxed text-muted">
-                Provisional until a clinician reviews the code. Every price is the loaded CMS file ({rateSet?.release}) amount for that
+                Provisional until a clinician reviews the code. Every price is the loaded CMS file ({state.release}) amount for that
                 code.
               </p>
             </div>
@@ -317,7 +322,7 @@ export function DeskPage() {
                 Next: check an invoice
               </Link>
               {IS_INTERNAL ? (
-                <button type="button" className={SECONDARY} onClick={() => worksheet(state.lane)} disabled={sent}>
+                <button type="button" className={SECONDARY} onClick={() => worksheet(state.lane, state.scope)} disabled={sent}>
                   {sent ? "On the claim worksheet" : "Send to the claim worksheet (internal)"}
                 </button>
               ) : null}

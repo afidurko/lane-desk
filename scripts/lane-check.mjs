@@ -15,6 +15,7 @@ import { payableStatus as filterPayable } from "../src/lib/book/filter.ts";
 import { localityPrices } from "../src/lib/pricing/locality.ts";
 import { readFileSync } from "node:fs";
 import { emptyBook as emptyPace, setYear as setPaceYear } from "../src/lib/pace/store.ts";
+import { loadRates, ratesFor } from "../src/lib/pricing/rates.ts";
 import { OFFICIAL as OFFICIAL_PACE } from "../src/lib/pace/official.ts";
 import { money as fmtMoney } from "../src/lib/desk/clock.ts";
 import { claimLineFor, NOT_OFFICE_USE_NOTE } from "../src/lib/book/filter.ts";
@@ -357,6 +358,32 @@ check("/history: 32445 (no office price) has no office amount", !shipped.some((r
 check("/history: without the rule it would be the old 7,444 rows", physicianHistory(allYears, { ignoreNoDollarRule: true }).moves.length === 7444);
 check("/history: rows showing 2024 get the note (43 rows)", shipped.filter(shows2024).length === 43 && shows2024({ from: 2024, to: 2026 }) && !shows2024({ from: 2020, to: 2026 }));
 check("/history page renders the 2024 note", readFileSync("src/components/lookup/history-page.tsx", "utf8").includes("<Note2024 />"));
+// Desk locality: every NY area drives the price. loadRates (the desk's loader) runs against the real files with a stubbed fetch.
+{
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const path = String(url).replace(/^.*\//, "");
+    return { ok: true, json: async () => JSON.parse(readFileSync(`public/${path}`, "utf8")) };
+  };
+  const pfs = JSON.parse(readFileSync("public/pfs-2026.json", "utf8"));
+  const row = pfs.rows.find((r) => r.c === "97110" && r.m === "");
+  const areas = { "13282/99": 2827, "13202/01": 3243, "13202/02": 3290, "13202/03": 3111, "13292/04": 3266 };
+  const seen = [];
+  for (const [key, cents] of Object.entries(areas)) {
+    const [mac, number] = key.split("/");
+    const place = pfs.localities.find((l) => l.mac === mac && l.number === number);
+    const fromFile = Math.round(Math.round((row.w * place.work + row.pn * place.pe + row.mp * place.mp) * Number(pfs.conversion.nonQp) * 100 + 1e-9));
+    const set = await loadRates(key);
+    const lane = runLane("Did therapeutic exercise, 15 minutes.", null, null, set.rates);
+    const got = Math.round(lane.allowed * 100);
+    seen.push(got);
+    check(`desk locality ${key}: 97110 priced at ${cents} from the file, with its own scope`, set.key === key && fromFile === cents && got === cents && new RegExp(`MAC ${mac}, locality ${number}`).test(set.scope), `${got} vs ${fromFile}`);
+    check(`desk locality ${key}: a set loaded for another area is never used`, ratesFor(set, key) === set && Object.keys(areas).filter((k) => k !== key).every((other) => ratesFor(set, other) === null) && ratesFor(null, key) === null);
+  }
+  check("desk locality: the 5 NY areas give 5 different 97110 amounts", new Set(seen).size === 5, seen.join(","));
+  check("desk page prices only with the set for the locality on screen", /const ready = ratesFor\(rateSet, locality\)/.test(readFileSync("src/components/desk/desk-page.tsx", "utf8")) && /disabled=\{!ready/.test(readFileSync("src/components/desk/desk-page.tsx", "utf8")));
+  globalThis.fetch = realFetch;
+}
 // PACE month: every figure comes from the CMS index files via src/lib/pace/official.ts (build-pace-rates.py --check compares with the sqlite files).
 check("PACE: 2026 New York County PACE rate is $1,983.61 from the 2026 PACE ratebook", paceRate("New York", 2026, false)?.cents === 198361 && /CountyRate2026PACE\.csv/.test(paceRate("New York", 2026, false)?.source ?? ""));
 check("PACE: 2026 NY PACE ESRD is $12,051.55 from the PACE file, never the MA $11,414.68", paceEsrd(2026)?.cents === 1205155 && medicareCents("Erie", 2026, true) === 1205155 && !readFileSync("src/lib/pace/official.ts", "utf8").includes("1141468"));

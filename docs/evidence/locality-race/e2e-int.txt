@@ -1,0 +1,246 @@
+ok   [desktop] / loads, no sideways scroll — overflow 0px
+ok   [desktop] / has one h1 — 1
+ok   [desktop] / has at most one primary action — 1
+ok   [desktop] /desk loads, no sideways scroll — overflow 0px
+ok   [desktop] /desk has one h1 — 1
+ok   [desktop] /desk has at most one primary action — 1
+ok   [desktop] /invoice loads, no sideways scroll — overflow 0px
+ok   [desktop] /invoice has one h1 — 1
+ok   [desktop] /invoice has at most one primary action — 1
+ok   [desktop] /code loads, no sideways scroll — overflow 0px
+ok   [desktop] /code has one h1 — 1
+ok   [desktop] /code has at most one primary action — 0
+ok   [desktop] /proof loads, no sideways scroll — overflow 0px
+ok   [desktop] /proof has one h1 — 1
+ok   [desktop] /proof has at most one primary action — 1
+ok   [desktop] /about loads, no sideways scroll — overflow 0px
+ok   [desktop] /about has one h1 — 1
+ok   [desktop] /about has at most one primary action — 1
+ok   [desktop] /pricing loads, no sideways scroll — overflow 0px
+ok   [desktop] /pricing has one h1 — 1
+ok   [desktop] /pricing has at most one primary action — 1
+ok   [desktop] /request loads, no sideways scroll — overflow 0px
+ok   [desktop] /request has one h1 — 1
+ok   [desktop] /request has at most one primary action — 1
+ok   [desktop] / direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /desk direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /invoice direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /code direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /proof direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /about direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /pricing direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /request direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] 404 page: HTTP status is 404 — 404
+ok   [desktop] 404 page: says Not Found and gives a plain-words message
+ok   [desktop] 404 page: does not repeat the requested path or query
+ok   [desktop] 404 page: same header, nav and footer wording as other screens
+ok   [desktop] 404 page: one h1 and one primary action
+ok   [desktop] 404 page: links to Try a note, Check an invoice, Request a pilot — Try a note=/desk|Check an invoice=/invoice|Request a pilot=/request
+ok   [desktop] 404 page: no sideways scroll — overflow 0px
+ok   [desktop] 404 page (internal): internal links are the same as other screens — 4
+ok   [desktop] 404 page: no console errors
+ok   [desktop] 404 page: the link home works — http://127.0.0.1:4173/
+ok   [desktop] no dead links (20 distinct on-site links)
+ok   [desktop] first Tab is the skip link
+ok   [desktop] a focused control shows an outline — solid 2px
+ok   [desktop] desk idle state is explained
+ok   [desktop] desk shows 97110
+ok   [desktop] desk price comes with the disclaimer
+ok   [desktop] desk timing label is verbatim
+ok   [desktop] desk manual side is not timed
+ok   [desktop] desk shows seconds, not ms
+ok   [desktop] desk refuses an identifier
+ok   [desktop] desk two lines get a total
+ok   [desktop] therapy day prices 97110 at 3 units, not 6 — 97110 Therapeutic exercises 3 1 full rate, 2 reduced $71.81 / 97116 Gait training therapy 1 0 full rate, 1 reduced $21.77
+ok   [desktop] therapy day total is $93.58
+ok   [desktop] therapy day says the reduction was applied and shows the split
+ok   [desktop] a single unit shows no reduction
+ok   [desktop] invoice idle state is explained
+ok   [desktop] invoice finds one match and one miss
+ok   [desktop] invoice carries the disclaimer
+ok   [desktop] invoice labels the therapy reduction on line two
+ok   [desktop] invoice: a non-facility NA code is not priced and not called a mismatch
+ok   [desktop] invoice refuses an identifier
+ok   [desktop] code shows a 2026 price and the disclaimer
+ok   [desktop] code 11004 (non-facility NA): the Medicare years list shows no dollar amount, only 'not priced in the office setting' — 2026 Not priced in the office setting | 2025 Not priced in the office setting | 2024 Not priced in the office setting | 
+ok   [desktop] code 97026 is priced — Rest of NY $6.36
+ok   [desktop] about says prices use the year-end release
+ok   [desktop] proof headline is about prices
+ok   [desktop] proof timing label verbatim
+ok   [desktop] proof manual side blank
+ok   [desktop] request form has plan select plus four inputs only — 5
+ok   [desktop] request has no textarea
+ok   [desktop] request validates empty form
+ok   [desktop] request shows a summary, plan carried over
+ok   [desktop] request wrote nothing to the browser's storage
+ok   [desktop] pricing says list shape, not a quote
+ok   [desktop] pricing has no card button without env
+ok   [desktop] internal desk prices 97110 at the Rest of NY file amount — 2827
+ok   [desktop] locality list is the five New York localities and nothing else — Manhattan (13202/01) | NYC Suburbs/Long Island (13202/02) | Poughkeepsie/N NYC Suburbs (13202/03) | Queens (13292/04) | Rest Of New York (13282/99)
+ok   [desktop] Manhattan prices 97110 from the same file — 3243
+ok   [desktop] locality 13202/01 prices 97110 at its own file amount, no other area's — 3243
+ok   [desktop] locality 13202/02 prices 97110 at its own file amount, no other area's — 3290
+ok   [desktop] locality 13202/03 prices 97110 at its own file amount, no other area's — 3111
+ok   [desktop] locality 13292/04 prices 97110 at its own file amount, no other area's — 3266
+ok   [desktop] locality 13282/99 prices 97110 at its own file amount, no other area's — 2827
+ok   [desktop] internal code page shows every year
+ok   [desktop] code 97110: the 2020 Rest of NY amount is $30.47, as in the history database — 2020 $30.47
+ok   [desktop] claim worksheet applies and labels the therapy reduction — Selected allowed $49.05.
+ok   [desktop] internal invoice: a 2020 line at the database amount matches the 2020 file — Matches the 2020 file | Matches the 2020 file
+ok   [desktop] /billing opens in internal
+ok   [desktop] /book opens in internal
+ok   [desktop] /ny opens in internal
+ok   [desktop] /ops opens in internal
+ok   [desktop] code book lists New York localities only — 5 localities
+ok   [desktop] Book: NA code 11004 says not priced in the office setting
+ok   [desktop] Book: NA code 11004 shows no fee schedule amount
+ok   [desktop] Book: 2024 shows the year-end release note
+ok   [desktop] Filter: NA code 11004 says not priced in the office setting — 11004 Dbrdmt skin xtrnl gent&per Active. Priced on the physician schedule. Physician 2026 Not priced in the office setti
+ok   [desktop] Filter (internal): keeps the CMS short name
+ok   [desktop] Filter Use: 11004 says Not priced in the office setting — 11004: Not priced in the office setting. No office amount was used. 11004 opened a 2026 claim. Open the claim. The line has no charge and no
+ok   [desktop] Filter Use: the 11004 claim line reads Not priced in the office setting — 11004 · 1 · Physician file, not priced Not priced in the office setting. CMS has no office price for this code because it is rarely or never done in the office.
+ok   [desktop] Filter Use: the 11004 claim line has no dollar amount (no Rest of NY therapy price, no office price)
+ok   [desktop] Filter Use: the worksheet total takes no amount for 11004
+ok   [desktop] Filter: 2024 shows the year-end release note
+ok   [desktop] Code (internal): 2024 price carries the year-end release note
+ok   [desktop] /pace opens in internal
+ok   [desktop] /history opens in internal
+ok   [desktop] /filter opens in internal
+ok   [desktop] /history: physician lists 3,362 changed codes
+ok   [desktop] /history: the 2024 year-end note shows
+ok   [desktop] /history: 32445 (no office price) shows no office amount
+ok   [desktop] Book: 97010 (status B) says Medicare does not pay it and shows no amount
+ok   [desktop] PACE: 2026 New York County shows $1,983.61 with its source
+ok   [desktop] PACE: ESRD is the PACE $12,051.55, not the MA $11,414.68
+ok   [desktop] PACE: Part D is labelled national averages with $239.27 and $38.99
+ok   [desktop] PACE: 62 NY counties are listed
+ok   [desktop] PACE: no Medicare Advantage figure on the month screen
+ok   [desktop] PACE: no dollar figure without thousands commas
+ok   [desktop] PACE: switching to 2020 reads the 2020 PACE file
+ok   [desktop] PACE: 2020 ESRD note says Oct 2, 2020 and the original $8,234.99
+ok   [desktop] PACE: base county rate note shows
+ok   [desktop] no console errors
+ok   [phone] / loads, no sideways scroll — overflow 0px
+ok   [phone] / has one h1 — 1
+ok   [phone] / has at most one primary action — 1
+ok   [phone] /desk loads, no sideways scroll — overflow 0px
+ok   [phone] /desk has one h1 — 1
+ok   [phone] /desk has at most one primary action — 1
+ok   [phone] /invoice loads, no sideways scroll — overflow 0px
+ok   [phone] /invoice has one h1 — 1
+ok   [phone] /invoice has at most one primary action — 1
+ok   [phone] /code loads, no sideways scroll — overflow 0px
+ok   [phone] /code has one h1 — 1
+ok   [phone] /code has at most one primary action — 0
+ok   [phone] /proof loads, no sideways scroll — overflow 0px
+ok   [phone] /proof has one h1 — 1
+ok   [phone] /proof has at most one primary action — 1
+ok   [phone] /about loads, no sideways scroll — overflow 0px
+ok   [phone] /about has one h1 — 1
+ok   [phone] /about has at most one primary action — 1
+ok   [phone] /pricing loads, no sideways scroll — overflow 0px
+ok   [phone] /pricing has one h1 — 1
+ok   [phone] /pricing has at most one primary action — 1
+ok   [phone] /request loads, no sideways scroll — overflow 0px
+ok   [phone] /request has one h1 — 1
+ok   [phone] /request has at most one primary action — 1
+ok   [phone] / direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /desk direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /invoice direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /code direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /proof direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /about direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /pricing direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /request direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] 404 page: HTTP status is 404 — 404
+ok   [phone] 404 page: says Not Found and gives a plain-words message
+ok   [phone] 404 page: does not repeat the requested path or query
+ok   [phone] 404 page: same header, nav and footer wording as other screens
+ok   [phone] 404 page: one h1 and one primary action
+ok   [phone] 404 page: links to Try a note, Check an invoice, Request a pilot — Try a note=/desk|Check an invoice=/invoice|Request a pilot=/request
+ok   [phone] 404 page: no sideways scroll — overflow 0px
+ok   [phone] 404 page (internal): internal links are the same as other screens — 4
+ok   [phone] 404 page: no console errors
+ok   [phone] 404 page: the link home works — http://127.0.0.1:4173/
+ok   [phone] no dead links (20 distinct on-site links)
+ok   [phone] first Tab is the skip link
+ok   [phone] a focused control shows an outline — solid 2px
+ok   [phone] desk idle state is explained
+ok   [phone] desk shows 97110
+ok   [phone] desk price comes with the disclaimer
+ok   [phone] desk timing label is verbatim
+ok   [phone] desk manual side is not timed
+ok   [phone] desk shows seconds, not ms
+ok   [phone] desk refuses an identifier
+ok   [phone] desk two lines get a total
+ok   [phone] therapy day prices 97110 at 3 units, not 6 — 97110 Therapeutic exercises 3 1 full rate, 2 reduced $71.81 / 97116 Gait training therapy 1 0 full rate, 1 reduced $21.77
+ok   [phone] therapy day total is $93.58
+ok   [phone] therapy day says the reduction was applied and shows the split
+ok   [phone] a single unit shows no reduction
+ok   [phone] invoice idle state is explained
+ok   [phone] invoice finds one match and one miss
+ok   [phone] invoice carries the disclaimer
+ok   [phone] invoice labels the therapy reduction on line two
+ok   [phone] invoice: a non-facility NA code is not priced and not called a mismatch
+ok   [phone] invoice refuses an identifier
+ok   [phone] code shows a 2026 price and the disclaimer
+ok   [phone] code 11004 (non-facility NA): the Medicare years list shows no dollar amount, only 'not priced in the office setting' — 2026 Not priced in the office setting | 2025 Not priced in the office setting | 2024 Not priced in the office setting | 
+ok   [phone] code 97026 is priced — Rest of NY $6.36
+ok   [phone] about says prices use the year-end release
+ok   [phone] proof headline is about prices
+ok   [phone] proof timing label verbatim
+ok   [phone] proof manual side blank
+ok   [phone] request form has plan select plus four inputs only — 5
+ok   [phone] request has no textarea
+ok   [phone] request validates empty form
+ok   [phone] request shows a summary, plan carried over
+ok   [phone] request wrote nothing to the browser's storage
+ok   [phone] pricing says list shape, not a quote
+ok   [phone] pricing has no card button without env
+ok   [phone] internal desk prices 97110 at the Rest of NY file amount — 2827
+ok   [phone] locality list is the five New York localities and nothing else — Manhattan (13202/01) | NYC Suburbs/Long Island (13202/02) | Poughkeepsie/N NYC Suburbs (13202/03) | Queens (13292/04) | Rest Of New York (13282/99)
+ok   [phone] Manhattan prices 97110 from the same file — 3243
+ok   [phone] locality 13202/01 prices 97110 at its own file amount, no other area's — 3243
+ok   [phone] locality 13202/02 prices 97110 at its own file amount, no other area's — 3290
+ok   [phone] locality 13202/03 prices 97110 at its own file amount, no other area's — 3111
+ok   [phone] locality 13292/04 prices 97110 at its own file amount, no other area's — 3266
+ok   [phone] locality 13282/99 prices 97110 at its own file amount, no other area's — 2827
+ok   [phone] internal code page shows every year
+ok   [phone] code 97110: the 2020 Rest of NY amount is $30.47, as in the history database — 2020 $30.47
+ok   [phone] claim worksheet applies and labels the therapy reduction — Selected allowed $49.05.
+ok   [phone] internal invoice: a 2020 line at the database amount matches the 2020 file — Matches the 2020 file | Matches the 2020 file
+ok   [phone] /billing opens in internal
+ok   [phone] /book opens in internal
+ok   [phone] /ny opens in internal
+ok   [phone] /ops opens in internal
+ok   [phone] code book lists New York localities only — 5 localities
+ok   [phone] Book: NA code 11004 says not priced in the office setting
+ok   [phone] Book: NA code 11004 shows no fee schedule amount
+ok   [phone] Book: 2024 shows the year-end release note
+ok   [phone] Filter: NA code 11004 says not priced in the office setting — 11004 Dbrdmt skin xtrnl gent&per Active. Priced on the physician schedule. Physician 2026 Not priced in the office setti
+ok   [phone] Filter (internal): keeps the CMS short name
+ok   [phone] Filter Use: 11004 says Not priced in the office setting — 11004: Not priced in the office setting. No office amount was used. 11004 opened a 2026 claim. Open the claim. The line has no charge and no
+ok   [phone] Filter Use: the 11004 claim line reads Not priced in the office setting — 11004 · 1 · Physician file, not priced Not priced in the office setting. CMS has no office price for this code because it is rarely or never done in the office.
+ok   [phone] Filter Use: the 11004 claim line has no dollar amount (no Rest of NY therapy price, no office price)
+ok   [phone] Filter Use: the worksheet total takes no amount for 11004
+ok   [phone] Filter: 2024 shows the year-end release note
+ok   [phone] Code (internal): 2024 price carries the year-end release note
+ok   [phone] /pace opens in internal
+ok   [phone] /history opens in internal
+ok   [phone] /filter opens in internal
+ok   [phone] /history: physician lists 3,362 changed codes
+ok   [phone] /history: the 2024 year-end note shows
+ok   [phone] /history: 32445 (no office price) shows no office amount
+ok   [phone] Book: 97010 (status B) says Medicare does not pay it and shows no amount
+ok   [phone] PACE: 2026 New York County shows $1,983.61 with its source
+ok   [phone] PACE: ESRD is the PACE $12,051.55, not the MA $11,414.68
+ok   [phone] PACE: Part D is labelled national averages with $239.27 and $38.99
+ok   [phone] PACE: 62 NY counties are listed
+ok   [phone] PACE: no Medicare Advantage figure on the month screen
+ok   [phone] PACE: no dollar figure without thousands commas
+ok   [phone] PACE: switching to 2020 reads the 2020 PACE file
+ok   [phone] PACE: 2020 ESRD note says Oct 2, 2020 and the original $8,234.99
+ok   [phone] PACE: base county rate note shows
+ok   [phone] no console errors
+
+E2E PASS
