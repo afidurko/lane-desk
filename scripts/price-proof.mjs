@@ -5,7 +5,8 @@
  *   2. An independent recompute from the file's component RVUs: (work + non-facility practice
  *      expense + malpractice) times the file's conversion factor, rounded to the cent.
  *
- * Public output (public/proof.json): national, non-facility, non-QP, every year 2020 to 2026.
+ * Public output (public/proof.json): national, non-facility, non-QP, 2026 only (the year the public demo shows).
+ * The every-year national proof (2020 to 2026) is in the internal output, under `national`.
  * Internal output (public/proof-internal.json): Rest of NY locality 99 against the year files and the
  * typed-in therapy table. The public build prunes the internal file.
  *
@@ -132,27 +133,38 @@ const controlCaught = controlApp !== controlIndependent;
 if (!controlCaught) totalMismatch += 1;
 
 const generated = new Date().toISOString().slice(0, 10);
-const publicOut = {
+const totalsOf = (years) => ({
+  years: years.length,
+  codesChecked: years.reduce((n, y) => n + y.codesChecked, 0),
+  mismatches: years.reduce((n, y) => n + y.mismatches, 0),
+  codesNotOffice: years.reduce((n, y) => n + y.codesNotOffice, 0),
+});
+const public2026 = publicYears.filter((y) => y.year === 2026);
+const nationalAll = {
   generated,
   what: "National Medicare physician fee schedule, non-facility, non-QP. Each price the app shows was recomputed from the file's component RVUs and the file's conversion factor.",
   years: publicYears,
   negativeControlCaught: controlCaught,
   publicFileMismatches: slimBad,
-  totals: {
-    years: publicYears.length,
-    codesChecked: publicYears.reduce((n, y) => n + y.codesChecked, 0),
-    mismatches: publicYears.reduce((n, y) => n + y.mismatches, 0),
-    codesNotOffice: publicYears.reduce((n, y) => n + y.codesNotOffice, 0),
-  },
+  totals: totalsOf(publicYears),
+};
+const publicOut = {
+  generated,
+  what: "National Medicare physician fee schedule, non-facility, non-QP. Each price the app shows was recomputed from the file's component RVUs and the file's conversion factor.",
+  years: public2026,
+  negativeControlCaught: controlCaught,
+  publicFileMismatches: slimBad,
+  totals: totalsOf(public2026),
 };
 const internalOut = {
   generated,
   what: "Rest of New York, MAC 13282, locality 99. Year files the Code screen reads, and the therapy table used by the note coder.",
   years: internalYears,
+  national: nationalAll,
   therapyTable: { codes: THERAPY.length, mismatches: tableBad, codes_off: tableDetail },
 };
 
-console.log(JSON.stringify({ national: publicOut.totals, negativeControlCaught: controlCaught, rest_of_ny_mismatches: internalYears.reduce((n, y) => n + y.mismatches, 0), therapyTable: internalOut.therapyTable, totalMismatch }));
+console.log(JSON.stringify({ national: nationalAll.totals, public2026: publicOut.totals, negativeControlCaught: controlCaught, rest_of_ny_mismatches: internalYears.reduce((n, y) => n + y.mismatches, 0), therapyTable: internalOut.therapyTable, totalMismatch }));
 if (process.argv.includes("--check")) process.exit(totalMismatch === 0 ? 0 : 1);
 writeFileSync("public/proof.json", JSON.stringify(publicOut, null, 2) + "\n");
 writeFileSync("public/proof-internal.json", JSON.stringify(internalOut, null, 2) + "\n");

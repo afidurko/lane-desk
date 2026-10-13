@@ -1,0 +1,11 @@
+#!/bin/sh
+# Pre-commit secret scan of the staged changes. Install once per clone: `npm run hooks:install`
+# (sets git core.hooksPath to scripts/hooks). Needs gitleaks 8.21+ on PATH, or GITLEAKS=/path/to/gitleaks:
+#   https://github.com/gitleaks/gitleaks/releases (the CI workflow pins 8.21.2).
+# Fails closed: no gitleaks, no commit. Findings are printed redacted.
+GL="${GITLEAKS:-gitleaks}"
+if ! command -v "$GL" >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not found. Install it (see scripts/hooks/pre-commit) or set GITLEAKS=/path/to/gitleaks." >&2
+  exit 1
+fi
+exec "$GL" git --pre-commit --staged --redact --no-banner --exit-code 1 .

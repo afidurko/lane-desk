@@ -1,0 +1,59 @@
+// Andrea co-sign fixes F2 (secret scan), F4 (internal builds), F5 (Node pin). Run by `npm test` (node --test scripts/**/*.test.mjs).
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { buildModeDecision } from "./demo-mode-guard.mjs";
+
+const read = (p) => readFileSync(p, "utf8");
+
+test("F4: an unflagged internal production build is refused", () => {
+  const d = buildModeDecision({ VITE_DEMO_MODE: "internal" });
+  assert.equal(d.mode, null);
+  assert.match(d.error, /LANE_INTERNAL_BUILD=1/);
+});
+test("F4: an internal build on Vercel is refused even with the flag", () => {
+  for (const env of [{ VERCEL: "1" }, { VERCEL_ENV: "production" }, { VERCEL_ENV: "preview" }]) {
+    const d = buildModeDecision({ ...env, VITE_DEMO_MODE: " Internal ", LANE_INTERNAL_BUILD: "1" });
+    assert.equal(d.mode, null);
+    assert.match(d.error, /Refusing an internal build on Vercel/);
+  }
+});
+test("F4: flagged local internal build is allowed; anything else is public", () => {
+  assert.deepEqual(buildModeDecision({ VITE_DEMO_MODE: "internal", LANE_INTERNAL_BUILD: "1" }), { mode: "internal", error: null });
+  for (const v of [undefined, "", "public", "internl", "INTERNAL-ish"]) assert.equal(buildModeDecision({ VITE_DEMO_MODE: v, VERCEL_ENV: "production" }).mode, "public");
+});
+test("F4: vite.config runs the guard on build, and build:internal sets the flag", () => {
+  assert.match(read("vite.config.ts"), /command === "build" && !isPreview[\s\S]*buildModeDecision\(process\.env\)[\s\S]*throw new Error/);
+  assert.match(JSON.parse(read("package.json")).scripts["build:internal"], /LANE_INTERNAL_BUILD=1 VITE_DEMO_MODE=internal npm run build/);
+});
+test("F4: every internal-only route throws notFound() in a public build", () => {
+  const routes = ["billing", "book", "compete", "filter", "history", "ny", "operate", "ops", "pace", "run", "team", "why"];
+  for (const r of routes) assert.match(read(`src/routes/${r}.tsx`), /beforeLoad: publicNotFound,/, r);
+  assert.match(read("src/components/gate.tsx"), /IS_INTERNAL\s*\?\s*undefined\s*:\s*\(\) => \{\s*throw notFound\(\);/);
+});
+test("F5: Node is pinned to >=22.12 in engines, .nvmrc and CI", () => {
+  assert.equal(JSON.parse(read("package.json")).engines.node, ">=22.12.0 <23");
+  assert.equal(read(".nvmrc").trim(), "22.12.0");
+  for (const wf of ["self-check.yml", "fee-watch.yml"]) assert.match(read(`.github/workflows/${wf}`), /node-version-file: "\.nvmrc"/);
+});
+test("F2: gitleaks CI scans full history and the tree with a pinned, checksummed binary", () => {
+  const wf = read(".github/workflows/gitleaks.yml");
+  assert.match(wf, /fetch-depth: 0/);
+  assert.match(wf, /GITLEAKS_VERSION: "8\.21\.2"/);
+  assert.match(wf, /GITLEAKS_SHA256: "[0-9a-f]{64}"/);
+  assert.match(wf, /sha256sum -c -/);
+  assert.match(wf, /gitleaks git \. --redact[^\n]*--exit-code 1/);
+  assert.match(wf, /gitleaks dir \. --redact[^\n]*--exit-code 1/);
+});
+test("F2: pre-commit hook scans staged changes, fails closed, and is installable", () => {
+  const hook = read("scripts/hooks/pre-commit");
+  assert.ok(statSync("scripts/hooks/pre-commit").mode & 0o111, "hook is executable");
+  assert.match(hook, /git --pre-commit --staged --redact/);
+  assert.match(hook, /exit 1/);
+  assert.match(JSON.parse(read("package.json")).scripts["hooks:install"], /core\.hooksPath scripts\/hooks/);
+});
+test("F2: .gitleaksignore allows only the one historical finding, by fingerprint (no secret value)", () => {
+  const lines = read(".gitleaksignore").split("\n").filter((l) => l.trim() && !l.startsWith("#"));
+  assert.deepEqual(lines, ["4a180f7b399499ceed8f248732c41eec0555e37b:src/lib/auth/preview.ts:generic-api-key:20"]);
+  assert.ok(existsSync(".github/workflows/gitleaks.yml"));
+});

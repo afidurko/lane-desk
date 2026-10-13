@@ -14,7 +14,8 @@ import { describeCode } from "../src/lib/lookup/describe.ts";
 import { runLane } from "../src/lib/desk/lane.ts";
 import { PLANS, planOf } from "../src/lib/billing/plans.ts";
 import { validateRequest, summaryText, mailtoLink } from "../src/lib/billing/invoice-request.ts";
-import { billingStatus, createCheckout, createPortal, checkoutBody, priceFor } from "../src/lib/billing/stripe.server.ts";
+import { requireGrokClientSecret, MissingAuthSecretError } from "../src/lib/auth/client-secret.ts";
+import { appBaseUrl, billingStatus, createCheckout, createPortal, checkoutBody, priceFor } from "../src/lib/billing/stripe.server.ts";
 
 const failures = [];
 let ran = 0;
@@ -126,16 +127,43 @@ globalThis.fetch = async (url, init) => {
   globalThis.__last = { url: String(url), init };
   return new Response(JSON.stringify({ url: "https://checkout.stripe.com/c/test_123" }), { status: 200 });
 };
-const off = await createCheckout("stopwatch", "http://localhost:8080", {});
+const off = await createCheckout("stopwatch", {});
 check("checkout with no env: refused, no network", off.ok === false && off.status === 503 && calls === 0);
-const noPrice = await createCheckout("stopwatch", "http://localhost:8080", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_x" });
+const noPrice = await createCheckout("stopwatch", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_x" });
 check("checkout with no price id: refused, no network", noPrice.ok === false && calls === 0);
-const badPlan = await createCheckout("gold", "http://localhost:8080", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_x", STRIPE_PRICE_STOPWATCH: "price_1" });
+const badPlan = await createCheckout("gold", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_x", STRIPE_PRICE_STOPWATCH: "price_1" });
 check("checkout with an unknown plan: refused", badPlan.ok === false && badPlan.status === 400 && calls === 0);
-const live = await createCheckout("stopwatch", "http://localhost:8080", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_live_x", STRIPE_PRICE_STOPWATCH: "price_1" });
+const live = await createCheckout("stopwatch", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_live_x", STRIPE_PRICE_STOPWATCH: "price_1" });
 check("checkout with a live key: refused, no network", live.ok === false && calls === 0);
-const on = await createCheckout("stopwatch", "http://localhost:8080", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_abc", STRIPE_PRICE_STOPWATCH: "price_123" });
+const on = await createCheckout("stopwatch", { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_abc", STRIPE_PRICE_STOPWATCH: "price_123" });
 check("checkout with test env: one call to Stripe, returns the hosted page", on.ok === true && calls === 1 && globalThis.__last.url === "https://api.stripe.com/v1/checkout/sessions");
+
+// F6: return URLs come from APP_URL only, never the request host; fail closed in prod.
+const onBody = String(globalThis.__last.init.body);
+check("checkout without APP_URL in dev returns to the fixed dev origin", onBody.includes(encodeURIComponent("http://localhost:8080/request?paid=test")));
+const T = { BILLING_MODE: "test", STRIPE_SECRET_KEY: "sk_test_abc", STRIPE_PRICE_STOPWATCH: "price_123" };
+const before = calls;
+const prodMissing = await createCheckout("stopwatch", { ...T, VERCEL_ENV: "production" });
+const previewMissing = await createCheckout("stopwatch", { ...T, VERCEL_ENV: "preview" });
+const nodeProdMissing = await createCheckout("stopwatch", { ...T, NODE_ENV: "production" });
+check("prod/preview without APP_URL: refused, no network", [prodMissing, previewMissing, nodeProdMissing].every((r) => r.ok === false && r.status === 503 && /APP_URL/.test(r.error)) && calls === before);
+const prodHttp = await createCheckout("stopwatch", { ...T, VERCEL_ENV: "production", APP_URL: "http://lane.example.org" });
+const prodBad = await createCheckout("stopwatch", { ...T, VERCEL_ENV: "production", APP_URL: "not a url" });
+check("prod with http or junk APP_URL: refused, no network", prodHttp.ok === false && prodBad.ok === false && calls === before);
+const prodOk = await createCheckout("stopwatch", { ...T, VERCEL_ENV: "production", APP_URL: "https://lane.example.org/some/path" });
+const prodSent = String(globalThis.__last.init.body);
+check("prod with APP_URL: success, cancel use APP_URL's origin only", prodOk.ok === true && prodSent.includes(encodeURIComponent("https://lane.example.org/request?paid=test&plan=stopwatch")) && prodSent.includes(encodeURIComponent("https://lane.example.org/pricing?plan=stopwatch")) && !/some%2Fpath/.test(prodSent));
+check("appBaseUrl ignores everything but APP_URL (no host input exists)", appBaseUrl.length === 1 && appBaseUrl({ APP_URL: "https://a.example" }).base === "https://a.example" && appBaseUrl({ APP_URL: "https://u:p@a.example", VERCEL_ENV: "production" }).ok === false);
+check("checkout route does not read the request host", !/request\.url|headers\.get\(["']host|\.origin/.test(readFileSync("src/routes/api/billing.checkout.ts", "utf8")));
+
+// F1: the broker client secret is env only; with auth on, a missing secret refuses to start.
+const envOf = (o) => (k) => o[k];
+let thrown = null;
+try { requireGrokClientSecret(envOf({})); } catch (e) { thrown = e; }
+check("auth on + no GROK_AUTH_CLIENT_SECRET: refuses to start with a clear error", thrown instanceof MissingAuthSecretError && /GROK_AUTH_CLIENT_SECRET is not set/.test(thrown.message));
+check("auth on + secret set: uses the env value", requireGrokClientSecret(envOf({ GROK_AUTH_CLIENT_SECRET: "from-env" })) === "from-env");
+check("auth explicitly off: no secret needed", requireGrokClientSecret(envOf({ VITE_AUTH_ENABLED: "false" })) === null);
+check("no client secret literal left in src/lib/auth", !/PREVIEW_CLIENT_SECRET/.test(readFileSync("src/lib/auth/preview.ts", "utf8") + readFileSync("src/lib/auth/server.ts", "utf8")) && !/\?\?\s*PREVIEW_CLIENT_SECRET/.test(readFileSync("src/lib/auth/server.ts", "utf8")) && /requireGrokClientSecret\(env\)/.test(readFileSync("src/lib/auth/server.ts", "utf8")));
 const sent = String(globalThis.__last.init.body);
 check("only a price id and return urls go to Stripe", sent.includes("line_items%5B0%5D%5Bprice%5D=price_123") && !/email|name|patient/i.test(sent));
 check("checkout mode matches the plan", checkoutBody(planOf("stopwatch"), "price_1", "http://x").get("mode") === "payment" && checkoutBody(planOf("parallel"), "price_1", "http://x").get("mode") === "subscription");

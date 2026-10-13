@@ -11,17 +11,17 @@ export const SAMPLES: readonly Sample[] = [
     label: "One service",
     why: "One therapy line, one unit.",
     note: `Participant, adult day health. Synthetic note, not a real person.
-Therapeutic exercise, supervised, 15 minutes. One unit.
-Gait and balance. No new pain reported.
-Plan: continue therapeutic exercise next session.`,
+Exercise for strength and range of motion, supervised, 15 minutes. One unit.
+Balance looked steady. No new pain reported.
+Plan: continue the same exercise next session.`,
   },
   {
     id: "two",
     label: "Two services",
     why: "Two therapy lines. Medicare cuts the practice-expense part of the second one.",
     note: `Participant, adult day health. Synthetic note, not a real person.
-Therapeutic exercise, 15 minutes.
-Manual therapy, 15 minutes.
+Exercise for strength and range of motion, 15 minutes.
+Joint mobilization, 15 minutes.
 Plan: repeat next session.`,
   },
   {
@@ -29,7 +29,7 @@ Plan: repeat next session.`,
     label: "Minutes become units",
     why: "Thirty minutes of one service is two units.",
     note: `Participant, adult day health. Synthetic note, not a real person.
-Gait training, 30 minutes.
+Walking practice with assist, 30 minutes.
 Plan: continue.`,
   },
   {
@@ -37,8 +37,8 @@ Plan: continue.`,
     label: "A full therapy day",
     why: "Three units of one service and one of another. Medicare cuts the practice-expense part of every unit after the first.",
     note: `Participant, adult day health. Synthetic note, not a real person.
-Therapeutic exercise (97110), 45 minutes, 3 units.
-Gait training (97116), 15 minutes, 1 unit.
+Exercise for strength and range of motion, 45 minutes.
+Walking practice with assist, 15 minutes.
 Plan: continue.`,
   },
   {
@@ -46,7 +46,7 @@ Plan: continue.`,
     label: "A note with an identifier",
     why: "Shows the refusal. Nothing is priced or kept.",
     note: `MRN 000000. Synthetic example of what gets refused.
-Therapeutic exercise, 15 minutes.`,
+Exercise for strength and range of motion, 15 minutes.`,
   },
 ];
 
@@ -55,8 +55,8 @@ export const DEFAULT_SAMPLE = SAMPLES[0];
 /** Short synthetic notes the Proof screen times. Same wording the coder reads, no identifiers. */
 export const PROOF_NOTES: readonly string[] = [
   ...SAMPLES.filter((sample) => sample.id !== "refused").map((sample) => sample.note),
-  "Synthetic note. Did neuromuscular reeducation, 15 minutes.",
+  "Synthetic note. Did balance and coordination retraining, 15 minutes.",
   "Synthetic note. Self-care training, one unit.",
-  "Synthetic note. Did therapeutic activities, 15 minutes.\nTherapeutic exercise, 15 minutes.",
+  "Synthetic note. Did functional activity practice, 15 minutes.\nExercise for strength and range of motion, 15 minutes.",
   "Synthetic note. Did group caregiver training.",
 ];

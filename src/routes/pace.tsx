@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { closedScreen, lazyScreen } from "@/components/gate";
+import { closedScreen, lazyScreen, publicNotFound } from "@/components/gate";
 import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/pace")({
+  beforeLoad: publicNotFound,
   component: IS_INTERNAL
     ? lazyScreen(() => import("@/components/pace/pace-page").then((m) => ({ default: m.PacePage })))
     : closedScreen("PACE month"),

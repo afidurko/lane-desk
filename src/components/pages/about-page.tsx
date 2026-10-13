@@ -76,7 +76,7 @@ export function AboutPage() {
           Lane covers New York only. Other states are not loaded and are not offered.{" "}
           {IS_INTERNAL
             ? "This internal build shows New York locality prices, with Rest of New York (Medicare administrative contractor 13282, locality 99) as the default. Manhattan, NYC suburbs and Long Island, Poughkeepsie and northern NYC suburbs, and Queens are offered because the loaded file carries them."
-            : "This public demo shows the national Medicare amount for 2026 as the reference. New York locality prices, with Rest of New York as the default, are held back until they are cleared for public use."}
+            : "This public demo shows the national Medicare amount for 2026 as the reference. New York locality prices are held back until they are cleared for public use."}
         </p>
       </section>
 
@@ -89,7 +89,7 @@ export function AboutPage() {
             "Source: the CMS Medicare Physician Fee Schedule relative value files. Amounts are the file's non-facility total times that year's conversion factor.",
             IS_INTERNAL
               ? "Years loaded: 2020 to 2026. The public demo shows 2026 only."
-              : "Year shown in this demo: 2026. The proof page checks every year from 2020 to 2026.",
+              : "Year shown in this demo: 2026. The proof page checks the 2026 file.",
             "Prices use the year-end release. For each year, Lane loads the last fee schedule CMS published that year, not the January release. A date of service early in a year can price a little differently from what Medicare used on that date.",
             IS_INTERNAL
               ? "Known gap: 2024 dates of service from January 1 to March 8 used an earlier conversion factor, so those dates price slightly higher here than in the January 2024 CMS file. Other quarters match for the codes checked."

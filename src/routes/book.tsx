@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { closedScreen, lazyScreen } from "@/components/gate";
+import { closedScreen, lazyScreen, publicNotFound } from "@/components/gate";
 import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/book")({
+  beforeLoad: publicNotFound,
   component: IS_INTERNAL
     ? lazyScreen(() => import("@/components/book/book-page").then((m) => ({ default: m.BookPage })))
     : closedScreen("Code book"),

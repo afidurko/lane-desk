@@ -2,6 +2,9 @@
   "name": "app-builder-workspace",
   "private": true,
   "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "type": "module",
   "overrides": {
     "nf3": "0.3.17"
@@ -10,6 +13,8 @@
     "dev": "node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
     "build": "node scripts/with-app-env.mjs vite build && npm run db:migrate && npm run prune:public",
     "db:migrate": "node scripts/migrate.mjs",
+    "build:internal": "LANE_INTERNAL_BUILD=1 VITE_DEMO_MODE=internal npm run build",
+    "hooks:install": "git config core.hooksPath scripts/hooks && echo pre-commit gitleaks hook installed",
     "build:dev": "node scripts/with-app-env.mjs vite build --mode development",
     "preview": "node scripts/with-app-env.mjs vite preview",
     "preview:restart": "node scripts/preview.mjs restart",

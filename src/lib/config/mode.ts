@@ -8,6 +8,8 @@
  * Set VITE_DEMO_MODE=internal to turn internal on. Anything else, or nothing, is public.
  * Rest of NY figures stay internal until Shield, Andrea and Aaron clear them.
  */
+import { INTERNAL_SCOPE_LABEL } from "@/lib/config/internal-only";
+
 export type DemoMode = "public" | "internal";
 
 export function resolveMode(raw: string | undefined | null): DemoMode {
@@ -50,9 +52,8 @@ export const PUBLIC_SCOPE = {
   short: "National, 2026",
 } as const;
 
-export const INTERNAL_SCOPE = {
-  label: "Rest of New York, MAC 13282, locality 99, non-facility",
-} as const;
+/** Internal scope label, from internal-only.ts. Empty in a public build so the string is not bundled. */
+export const INTERNAL_SCOPE: { label: string } = { label: INTERNAL_SCOPE_LABEL };
 
 export function scopeLabel(mode: DemoMode = DEMO_MODE) {
   return mode === "internal" ? INTERNAL_SCOPE.label : PUBLIC_SCOPE.label;

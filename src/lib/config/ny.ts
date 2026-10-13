@@ -1,10 +1,12 @@
+import { INTERNAL_DEFAULT_LOCALITY } from "@/lib/config/internal-only";
 /**
  * Lane covers New York only.
- * Default locality is Rest of New York, MAC 13282, locality 99.
+ * The internal default locality lives in internal-only.ts.
  * Other New York localities (Manhattan, NYC suburbs/Long Island, Poughkeepsie/N NYC suburbs, Queens)
  * are offered in the internal build only, and only when the loaded fee file carries them.
  */
-export const DEFAULT_LOCALITY = { mac: "13282", number: "99", key: "13282/99", name: "Rest of New York" } as const;
+/** Internal: Rest of New York. Public: a placeholder (the public build prices the national file and never uses it). */
+export const DEFAULT_LOCALITY = INTERNAL_DEFAULT_LOCALITY;
 
 export type LocalityLike = { mac: string; number: string; name: string; state?: string };
 

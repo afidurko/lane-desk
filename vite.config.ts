@@ -11,6 +11,8 @@ import { grokPwaPlugin } from "./scripts/grok-pwa-plugin.mjs";
 // @ts-expect-error JS plugin alongside the TS vite config
 import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
+// @ts-expect-error JS helper alongside the TS vite config
+import { buildModeDecision } from "./scripts/demo-mode-guard.mjs";
 
 /** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
 function hasGlobbedMigrations(root: string): boolean {
@@ -145,7 +147,13 @@ function authPopupPlugin(): Plugin {
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
-export default defineConfig(({ command, isPreview }) => ({
+export default defineConfig(({ command, isPreview }) => {
+  // A production build is internal only with an explicit flag, and never on Vercel. See scripts/demo-mode-guard.mjs.
+  if (command === "build" && !isPreview) {
+    const decision = buildModeDecision(process.env);
+    if (decision.error) throw new Error(decision.error);
+  }
+  return {
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -173,9 +181,10 @@ export default defineConfig(({ command, isPreview }) => ({
       ? [
           // Vercel deploy: Nitro writes .vercel/output (static files + one server function that renders every route).
           // No serverDir: this repo has no server/ folder (no PWA install page or manifest middleware).
-          nitro({ preset: "vercel" }),
+          nitro({ preset: "vercel", minify: true }),
         ]
       : []),
     viteReact(),
   ],
-}));
+};
+});

@@ -16,6 +16,7 @@ type ProofFile = {
 type Internal = {
   years: { year: number; codesChecked: number; mismatches: number }[];
   therapyTable: { codes: number; mismatches: number };
+  national?: ProofFile;
 };
 
 type Timed = { perNote: number; slowest: number; notes: number };
@@ -37,7 +38,12 @@ export function ProofPage() {
     if (IS_INTERNAL) {
       fetch("/proof-internal.json")
         .then((response) => (response.ok ? (response.json() as Promise<Internal>) : null))
-        .then((file) => !cancel && file && setInternal(file))
+        .then((file) => {
+          if (cancel || !file) return;
+          setInternal(file);
+          // Internal: the every-year national proof lives in the internal file; the public file is 2026 only.
+          if (file.national) setProof(file.national);
+        })
         .catch(() => undefined);
     }
     return () => {
@@ -79,8 +85,8 @@ export function ProofPage() {
         {proof ? (
           <>
             <p className="mt-3 text-lg leading-relaxed text-ink">
-              {proof.totals.codesChecked.toLocaleString("en-US")} payable codes were recomputed across {proof.totals.years} fee schedule
-              years (2020 to 2026).{" "}
+              {proof.totals.codesChecked.toLocaleString("en-US")} payable codes were recomputed across {proof.totals.years} fee schedule{" "}
+              {proof.totals.years === 1 ? `year (${proof.years[0]?.year})` : `years (${proof.years[0]?.year} to ${proof.years[proof.years.length - 1]?.year})`}.{" "}
               <strong className="font-medium">
                 {proof.totals.mismatches === 0
                   ? "None differed from what the app shows."

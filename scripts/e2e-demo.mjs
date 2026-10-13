@@ -26,7 +26,9 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   const errors = [];
   page.on("console", (message) => message.type() === "error" && !/fonts\.g|ERR_(NAME|INTERNET|CONNECTION)|status of 404/.test(message.text()) && errors.push(message.text()));
   // A 404 is expected only for a year or period shard that has no rows for a code. Anything else is an error.
-  page.on("response", (response) => response.status() === 404 && !/\/(years|once)\//.test(response.url()) && errors.push(`404 ${response.url()}`));
+  // In a public build, internal-only routes are deliberately HTTP 404 (Andrea F4); those document 404s are checked on their own.
+  const EXPECTED_404 = internal ? null : /^\/(billing|ny|ops|book|pace|history|filter|team|why|run|operate|compete)$/;
+  page.on("response", (response) => response.status() === 404 && !/\/(years|once)\//.test(response.url()) && !(EXPECTED_404 && response.request().resourceType() === "document" && EXPECTED_404.test(new URL(response.url()).pathname)) && errors.push(`404 ${response.url()}`));
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("request", (request) => requests.push(new URL(request.url()).pathname));
   const t = (name, ok, detail) => check(`[${label}] ${name}`, ok, detail);
@@ -144,14 +146,14 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   await page.getByRole("button", { name: "Check the invoice" }).click();
   await page.getByText("do not match the file amount").or(page.getByText("does not match the file amount")).first().waitFor();
   const inv = await page.locator("main").innerText();
-  t("invoice finds one match and one miss", /1 of 2 lines do not match/.test(inv) && /Matches the 2026 file/.test(inv) && /Over by/.test(inv));
+  t("invoice finds one match and one miss", /1 of 2 lines do not match/.test(inv) && /Matches reference \(2026 Medicare file\)/.test(inv) && /Flagged for review: over reference by \$[\d,]+\.\d\d · reference \$[\d,]+\.\d\d/.test(inv));
   t("invoice carries the disclaimer", /Medicare reference price, not a payment/.test(inv));
   t("invoice labels the therapy reduction on line two", /therapy reduction applied/.test(inv) && /Multiple-procedure payment reduction applied/.test(inv));
   await page.locator("textarea").fill("Code,Date,Charge\n11004,2026-03-02,100.00");
   await page.getByRole("button", { name: "Check the invoice" }).click();
   await page.getByText("not priced in the office setting").first().waitFor();
   const naInv = await page.locator("main").innerText();
-  t("invoice: a non-facility NA code is not priced and not called a mismatch", /Not priced in the office setting/.test(naInv) && !/do not match/.test(naInv) && !/Over by|Under by/.test(naInv));
+  t("invoice: a non-facility NA code is not priced and not called a mismatch", /Not priced in the office setting/.test(naInv) && !/do not match/.test(naInv) && !/Flagged for review/.test(naInv));
   await page.locator("textarea").fill("MRN 12345 97110 2026-03-01 10.00");
   await page.getByRole("button", { name: "Check the invoice" }).click();
   await page.getByRole("alert").filter({ hasText: /^Refused\./ }).waitFor();
@@ -185,7 +187,7 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   await page.getByRole("button", { name: "Run the timing" }).click();
   await page.getByText("per note, average over").waitFor();
   const proof = await page.locator("main").innerText();
-  t("proof headline is about prices", /payable codes were recomputed across 7 fee schedule years/.test(proof));
+  t("proof headline is about prices", (internal ? /payable codes were recomputed across 7 fee schedule years \(2020 to 2026\)/ : /payable codes were recomputed across 1 fee schedule year \(2026\)/).test(proof));
   t("proof timing label verbatim", proof.toLowerCase().includes("our side, measured: synthetic notes, rule-based coder, provisional"));
   t("proof manual side blank", proof.includes("Not yet timed"));
 
@@ -266,9 +268,9 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.goto(base + "/invoice", { waitUntil: "networkidle" });
     await page.locator("textarea").fill("Code,Date,Charge\n97110,2020-03-02,30.47\n11401,2020-03-02,150.16");
     await page.getByRole("button", { name: "Check the invoice" }).click();
-    await page.getByText("Matches the 2020 file").first().waitFor();
+    await page.getByText("Matches reference (2020 Medicare file)").first().waitFor();
     const inv2020 = await page.locator("main").innerText();
-    t("internal invoice: a 2020 line at the database amount matches the 2020 file", /Matches the 2020 file/.test(inv2020), inv2020.match(/(Matches|Over by|Under by)[^\n]*/g)?.join(" | ") ?? "");
+    t("internal invoice: a 2020 line at the database amount matches the 2020 file", /Matches reference \(2020 Medicare file\)/.test(inv2020), inv2020.match(/(Matches reference|Flagged for review)[^\n]*/g)?.join(" | ") ?? "");
     for (const path of ["/billing", "/book", "/ny", "/ops"]) {
       await page.goto(base + path, { waitUntil: "networkidle" });
       t(`${path} opens in internal`, !(await page.getByText("is not part of this demo").isVisible().catch(() => false)));
@@ -352,9 +354,10 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   if (!internal) {
     const forbidden = requests.filter((path) => /^\/(clfs-|years\/|once\/|ny-|found-rates|gap-rates|medicare-other|afs-|dme-|pfs-20\d\d)/.test(path));
     t("public mode never requests held-back files", forbidden.length === 0, forbidden.join(","));
-    for (const path of ["/billing", "/ny", "/ops", "/book", "/pace", "/history", "/filter"]) {
-      await page.goto(base + path, { waitUntil: "networkidle" });
-      t(`${path} is closed in public`, await page.getByText("is not part of this demo").isVisible());
+    // Andrea F4: every internal-only route is a real HTTP 404 in a public build, with the site's 404 page.
+    for (const path of ["/billing", "/ny", "/ops", "/book", "/pace", "/history", "/filter", "/team", "/why", "/run", "/operate", "/compete"]) {
+      const response = await page.goto(base + path, { waitUntil: "networkidle" });
+      t(`${path} returns HTTP 404 in public`, response?.status() === 404 && !(await page.getByText("is not part of this demo").isVisible()), `${response?.status()}`);
     }
     // CMS short names are CPT text: public Book and Filter show none, and no public screen or data file carries them.
     for (const path of ["/book", "/filter"]) {

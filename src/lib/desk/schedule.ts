@@ -1,11 +1,13 @@
+import { PUBLIC_SCOPE } from "@/lib/config/mode";
+import { INTERNAL_SCHEDULE_SETTING } from "@/lib/config/internal-only";
 import { THERAPY } from "@/lib/desk/therapy-codes";
 
 export const SCHEDULE = {
   id: "mpfs-2026-nf",
   name: "2026 Medicare Physician Fee Schedule",
-  setting: "Rest of New York, MAC 13282, locality 99, non-facility, non-QP",
+  setting: INTERNAL_SCHEDULE_SETTING || PUBLIC_SCOPE.label,
   asOf: "Q4 2026",
-} as const;
+};
 
 export type ScheduleId = typeof SCHEDULE.id;
 

@@ -25,7 +25,7 @@ const CLAIMS: Member[] = [
 ];
 
 const CODES: Member[] = [
-  { role: "pfs", job: "Verify the rate against the loaded Rest of New York file." },
+  { role: "pfs", job: "Verify the rate against the loaded Medicare file." },
   { role: "qa", job: "Units times the schedule rate. Reject a mismatch." },
 ];
 

@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { closedScreen, lazyScreen } from "@/components/gate";
+import { closedScreen, lazyScreen, publicNotFound } from "@/components/gate";
 import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/ops")({
+  beforeLoad: publicNotFound,
   component: IS_INTERNAL
     ? lazyScreen(() => import("@/components/ops/ops-page").then((m) => ({ default: m.OpsPage })))
     : closedScreen("File status"),
   head: () => ({
     meta: [
       { title: "Lane — Files" },
-      { name: "description", content: "Which Rest of New York fee files are loaded, and when the next file is due." },
+      { name: "description", content: IS_INTERNAL ? "Which Rest of New York fee files are loaded, and when the next file is due." : "Internal screen." },
     ],
   }),
 });

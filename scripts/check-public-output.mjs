@@ -4,14 +4,16 @@
  *   - static files hold no year shards, lab files, Medicaid, other-year or Rest of NY files;
  *   - the only price file is pfs-national-2026.json, with no localities;
  *   - no Rest of NY (or any NY locality) 2026 therapy amount appears in any built script;
- *   - no CMS short description (CPT text, AMA license) appears in any built file: public shows the code number only.
+ *   - no CMS short description (CPT text, AMA license) appears in any built file: public shows the code number only;
+ *   - Shield 12: no "Rest of New York", "13282" or "RVU24" anywhere in the built output (client or server), no
+ *     near-descriptor note matcher, and proof.json is 2026 only.
  * Usage: node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-public-output.mjs [outputDir]
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { INTERNAL_ONLY, NEVER_PUBLIC } from "../src/lib/config/mode.ts";
 import { localityPrices } from "../src/lib/pricing/locality.ts";
-import { THERAPY } from "../src/lib/desk/therapy-codes.ts";
+import { NEAR_DESCRIPTOR_PHRASES, THERAPY } from "../src/lib/desk/therapy-codes.ts";
 
 function walk(dir, base = dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -73,5 +75,26 @@ const paceMarks = ["CountyRate2026PACE", "198361", "1205155", "865111", "paceEsr
 const paceLeaks = builtFiles.filter((p) => { const text = readFileSync(p, "utf8"); return paceMarks.some((mark) => text.includes(mark)); });
 check("no PACE ratebook data or /history data in the public build", paceLeaks.length === 0 && !files.some((p) => p.startsWith("history/")), paceLeaks.slice(0, 5).join(", "));
 check("the sample short name 'Dbrdmt skin xtrnl gent&per' is not in the build", !builtFiles.some((p) => readFileSync(p, "utf8").includes("Dbrdmt skin xtrnl gent&per")));
+// Shield 12: these strings regress loudly. Searched case-insensitively in every built text file, client and server.
+const BANNED = ["Rest of New York", "13282", "RVU24"];
+// Client files are checked as shipped. Server files are not minified, so source comments are stripped first
+// (comments never run or render); every string and identifier in server code is still checked.
+const codeOf = (p) => {
+  const text = readFileSync(p, "utf8");
+  return p.includes("/functions/") ? text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "") : text;
+};
+for (const word of BANNED) {
+  const hits = builtFiles.filter((p) => codeOf(p).toLowerCase().includes(word.toLowerCase()));
+  check(`no "${word}" in ${builtFiles.length} built files`, hits.length === 0, hits.slice(0, 5).map((p) => p.replace(root + "/", "")).join(", "));
+}
+const nearHits = [];
+for (const path of builtFiles) {
+  const text = readFileSync(path, "utf8").toLowerCase();
+  for (const phrase of NEAR_DESCRIPTOR_PHRASES) if (text.includes(phrase)) nearHits.push(`${path.replace(root + "/", "")}: ${phrase}`);
+}
+check(`no near-descriptor phrase (${NEAR_DESCRIPTOR_PHRASES.length} phrases, anywhere in any text) in the build`, nearHits.length === 0, nearHits.slice(0, 5).join("; "));
+const proofPath = join(root, "static/proof.json");
+const proof = existsSync(proofPath) ? JSON.parse(readFileSync(proofPath, "utf8")) : null;
+check("proof.json is 2026 only (no 2020-2025 rows, no other release)", proof !== null && proof.years.length === 1 && proof.years[0].year === 2026 && proof.totals.years === 1 && !/RVU2[0-5]/.test(JSON.stringify(proof)), proof ? proof.years.map((y) => `${y.year}/${y.release}`).join(",") : "missing");
 console.log(JSON.stringify({ staticFiles: files.length, failCount: failures.length }));
 process.exit(failures.length === 0 ? 0 : 1);

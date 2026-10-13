@@ -31,6 +31,33 @@ export function priceFor(plan: Plan, env: Env): string | null {
   return /^price_[A-Za-z0-9]+$/.test(id) ? id : null;
 }
 
+/** True on a production server (Vercel production or NODE_ENV=production). */
+export function isProductionEnv(env: Env): boolean {
+  return (env.VERCEL_ENV ?? "").trim() === "production" || (env.VERCEL_ENV ?? "").trim() === "preview" || (env.NODE_ENV ?? "").trim() === "production";
+}
+
+export type AppBase = { ok: true; base: string } | { ok: false; error: string };
+
+/**
+ * The origin Stripe sends people back to. It comes from APP_URL only, never from the request Host header.
+ * On a production or preview server APP_URL is required and must be https; missing or bad, billing fails closed.
+ * Local dev without APP_URL uses the fixed dev origin http://localhost:8080.
+ */
+export function appBaseUrl(env: Env): AppBase {
+  const raw = (env.APP_URL ?? "").trim();
+  const prod = isProductionEnv(env);
+  if (!raw) return prod ? { ok: false, error: "APP_URL is not set, so card payment is off. Request an invoice instead." } : { ok: true, base: "http://localhost:8080" };
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return { ok: false, error: "APP_URL is not a valid URL, so card payment is off." };
+  }
+  if (url.protocol !== "https:" && (prod || url.protocol !== "http:")) return { ok: false, error: "APP_URL must be https, so card payment is off." };
+  if (url.username || url.password) return { ok: false, error: "APP_URL must not carry credentials." };
+  return { ok: true, base: url.origin };
+}
+
 /** Only same-origin return URLs are allowed. */
 export function returnUrl(base: string, path: string): string {
   return new URL(path, base).toString();
@@ -67,9 +94,12 @@ async function stripePost(path: string, body: URLSearchParams, key: string) {
 
 export type CheckoutResult = { ok: true; url: string } | { ok: false; status: number; error: string };
 
-export async function createCheckout(planId: string, base: string, env: Env): Promise<CheckoutResult> {
+export async function createCheckout(planId: string, env: Env): Promise<CheckoutResult> {
   const status = billingStatus(env);
   if (!status.enabled) return { ok: false, status: 503, error: "Card payment is not turned on. Request an invoice instead." };
+  const app = appBaseUrl(env);
+  if (!app.ok) return { ok: false, status: 503, error: app.error };
+  const base = app.base;
   const plan = planOf(planId);
   if (!plan) return { ok: false, status: 400, error: "Unknown plan." };
   const priceId = priceFor(plan, env);

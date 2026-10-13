@@ -435,6 +435,6 @@ function labelFor(line: Checked) {
   const cut = line.reduced ? ", therapy reduction applied" : "";
   if (line.billedCents === null) return `${line.year} file ${money(file.cents / 100)}${period}${cut}`;
   const gap = line.billedCents - file.cents;
-  if (Math.abs(gap) <= 1) return `Matches the ${line.year} file${cut}`;
-  return `${gap > 0 ? "Over" : "Under"} by ${money(Math.abs(gap) / 100)} · file ${money(file.cents / 100)}${cut}`;
+  if (Math.abs(gap) <= 1) return `Matches reference (${line.year} Medicare file)${cut}`;
+  return `Flagged for review: ${gap > 0 ? "over" : "under"} reference by ${money(Math.abs(gap) / 100)} · reference ${money(file.cents / 100)}${cut}`;
 }

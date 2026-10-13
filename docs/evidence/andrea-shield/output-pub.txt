@@ -1,0 +1,26 @@
+
+> check:output
+> node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-public-output.mjs
+
+(node:2286213) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2286213) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ok   config.json: everything not a static file goes to the server function — {"src":"/(.*)","dest":"/__server"}
+ok   server function exists
+ok   static assets folder exists with scripts
+ok   no held-back file is in the static output
+ok   no year shards, period shards or lab files
+ok   the only price file is pfs-national-2026.json — pfs-national-2026.json, proof.json
+ok   national file has no localities and no facility or locality fields — family,release,year,conversion,source,rows
+ok   no NY locality therapy amount (242 distinct values, 5 localities) in 75 built scripts
+ok   national file rows carry no short-name field
+ok   no CMS short description (15619 names from the 2026 file) in 79 built files — 0 hits; 
+ok   no PACE ratebook data or /history data in the public build
+ok   the sample short name 'Dbrdmt skin xtrnl gent&per' is not in the build
+ok   no "Rest of New York" in 79 built files
+ok   no "13282" in 79 built files
+ok   no "RVU24" in 79 built files
+ok   no near-descriptor phrase (14 phrases, anywhere in any text) in the build
+ok   proof.json is 2026 only (no 2020-2025 rows, no other release) — 2026/RVU26D
+{"staticFiles":49,"failCount":0}

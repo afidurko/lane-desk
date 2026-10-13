@@ -15,6 +15,9 @@ import { payableStatus as filterPayable } from "../src/lib/book/filter.ts";
 import { localityPrices } from "../src/lib/pricing/locality.ts";
 import { readFileSync } from "node:fs";
 import { emptyBook as emptyPace, setYear as setPaceYear } from "../src/lib/pace/store.ts";
+import { NEAR_DESCRIPTOR_PHRASES } from "../src/lib/desk/therapy-codes.ts";
+import { SAMPLES as DEMO_SAMPLES, PROOF_NOTES as DEMO_PROOF_NOTES } from "../src/lib/demo/samples.ts";
+import { DEFAULT_LOCALITY as DEFAULT_LOCALITY_FOR_CHECK } from "../src/lib/config/ny.ts";
 import { loadRates, ratesFor } from "../src/lib/pricing/rates.ts";
 import { OFFICIAL as OFFICIAL_PACE } from "../src/lib/pace/official.ts";
 import { money as fmtMoney } from "../src/lib/desk/clock.ts";
@@ -383,6 +386,28 @@ check("/history page renders the 2024 note", readFileSync("src/components/lookup
   check("desk locality: the 5 NY areas give 5 different 97110 amounts", new Set(seen).size === 5, seen.join(","));
   check("desk page prices only with the set for the locality on screen", /const ready = ratesFor\(rateSet, locality\)/.test(readFileSync("src/components/desk/desk-page.tsx", "utf8")) && /disabled=\{!ready/.test(readFileSync("src/components/desk/desk-page.tsx", "utf8")));
   globalThis.fetch = realFetch;
+}
+// Shield 3: public sample and Proof notes use plain wording only, so they code the same in a public build,
+// where near-descriptor matchers are stripped; and no sample prints a code beside a name.
+check("near-descriptor matchers are listed (11 codes)", NEAR_DESCRIPTOR_PHRASES.length === 14 && NEAR_DESCRIPTOR_PHRASES.includes("therapeutic exercise") && NEAR_DESCRIPTOR_PHRASES.includes("group therapeutic procedures"));
+check("no sample or Proof note relies on a near-descriptor matcher", [...DEMO_SAMPLES.map((x) => x.note), ...DEMO_PROOF_NOTES].every((n) => !NEAR_DESCRIPTOR_PHRASES.some((p) => n.toLowerCase().includes(p))), [...DEMO_SAMPLES.map((x) => x.note), ...DEMO_PROOF_NOTES].filter((n) => NEAR_DESCRIPTOR_PHRASES.some((p) => n.toLowerCase().includes(p))).join(" | "));
+check("no sample prints a code number beside a service name", DEMO_SAMPLES.every((x) => !/\(\d{5}\)/.test(x.note)));
+check("the full-day sample still codes 97110 x3 + 97116 x1", JSON.stringify(review(DEMO_SAMPLES.find((x) => x.id === "day").note).lines.map((l) => [l.code, l.units])) === JSON.stringify([["97110", 3], ["97116", 1]]));
+// Shield 1-2, 4-10: public wording and internal-only strings.
+{
+  const src = (f) => readFileSync(f, "utf8");
+  const inv = src("src/components/lookup/invoice-check.tsx");
+  check("Shield 1: invoice match reads 'Matches reference (YEAR Medicare file)'", inv.includes("`Matches reference (${line.year} Medicare file)${cut}`") && !inv.includes("Matches the ${line.year} file"));
+  check("Shield 2: invoice gap reads 'Flagged for review: over/under reference by $X · reference $Y' with the comma formatter", inv.includes('`Flagged for review: ${gap > 0 ? "over" : "under"} reference by ${money(Math.abs(gap) / 100)} · reference ${money(file.cents / 100)}${cut}`'));
+  check("Shield 4: /why description is the national reference price", src("src/routes/why.tsx").includes("shows the national Medicare reference price for therapy codes."));
+  check("Shield 5-7: /compete, /ny, /ops descriptions are 'Internal screen.' in public", ["compete", "ny", "ops"].every((r) => /content: IS_INTERNAL \? "[^"]+" : "Internal screen\."/.test(src(`src/routes/${r}.tsx`))));
+  check("Shield 8-9: schedule, DEFAULT_LOCALITY and INTERNAL_SCOPE come from internal-only.ts, folded on the build constant", /setting: INTERNAL_SCHEDULE_SETTING \|\| PUBLIC_SCOPE\.label/.test(src("src/lib/desk/schedule.ts")) && /DEFAULT_LOCALITY = INTERNAL_DEFAULT_LOCALITY/.test(src("src/lib/config/ny.ts")) && /label: INTERNAL_SCOPE_LABEL/.test(src("src/lib/config/mode.ts")) && !/13282/.test(src("src/lib/config/ny.ts").replace(/\/\*[\s\S]*?\*\//g, "")) && /const KEEP: boolean = typeof __DEMO_MODE__ !== "undefined"/.test(src("src/lib/config/internal-only.ts")));
+  check("Shield 9: internal values still load under node (checks)", DEFAULT_LOCALITY_FOR_CHECK.key === "13282/99");
+  check("Shield 10: teams says 'Verify the rate against the loaded Medicare file.'", src("src/lib/desk/teams.ts").includes("Verify the rate against the loaded Medicare file.") && !src("src/lib/desk/teams.ts").includes("loaded Rest of New York file"));
+  const proofPublic = JSON.parse(src("public/proof.json"));
+  const proofInternal = JSON.parse(src("public/proof-internal.json"));
+  check("Shield 11: proof.json is 2026 only; the 2020-2026 national proof is in proof-internal.json", proofPublic.years.map((y) => y.year).join() === "2026" && !/RVU2[0-5]/.test(JSON.stringify(proofPublic)) && proofInternal.national.years.map((y) => y.year).join() === "2020,2021,2022,2023,2024,2025,2026" && proofInternal.national.totals.mismatches === 0);
+  check("Shield 12: check:output bans Rest of New York, 13282 and RVU24", /const BANNED = \["Rest of New York", "13282", "RVU24"\]/.test(src("scripts/check-public-output.mjs")));
 }
 // PACE month: every figure comes from the CMS index files via src/lib/pace/official.ts (build-pace-rates.py --check compares with the sqlite files).
 check("PACE: 2026 New York County PACE rate is $1,983.61 from the 2026 PACE ratebook", paceRate("New York", 2026, false)?.cents === 198361 && /CountyRate2026PACE\.csv/.test(paceRate("New York", 2026, false)?.source ?? ""));
