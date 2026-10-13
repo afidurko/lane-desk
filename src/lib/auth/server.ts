@@ -40,11 +40,11 @@ import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
+import { requireGrokClientSecret } from "./client-secret";
 import {
   GROK_ISSUER_DEFAULT,
   PREVIEW_ALLOWED_HOSTS,
   PREVIEW_CLIENT_ID,
-  PREVIEW_CLIENT_SECRET,
 } from "./preview";
 
 // Kick (and share) PGLite bootstrap as soon as the auth server module loads.
@@ -74,12 +74,12 @@ const env = (key: string): string | undefined => {
 // provisions auth; set it to "false" to force auth off everywhere (dev user).
 const authDisabled = env("VITE_AUTH_ENABLED") === "false";
 
-// Broker federation creds: the deployer injects a per-app client when deployed;
-// otherwise fall back to the shared live-preview client, which the broker accepts
-// for any `*.grok-sandbox.com` callback (see `./preview`).
+// Broker federation creds. The client id may fall back to the shared preview id
+// (not a secret). The client secret is env only: no fallback, and with auth on a
+// missing secret throws here, so the server refuses to start (see `./client-secret`).
 const grokIssuer = env("GROK_AUTH_ISSUER") ?? GROK_ISSUER_DEFAULT;
 const grokClientId = env("GROK_AUTH_CLIENT_ID") ?? PREVIEW_CLIENT_ID;
-const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
+const grokClientSecret = requireGrokClientSecret(env);
 
 /** True when federated sign-in is active (real auth is enforced). */
 export const authConfigured =

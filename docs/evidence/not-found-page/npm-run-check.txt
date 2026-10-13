@@ -1,0 +1,40 @@
+
+> check
+> node scripts/build-national.mjs --check && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-regression.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/demo-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs --check
+
+pfs-national-2026.json is current
+(node:1909139) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909139) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ran":20097,"failures":[],"failCount":0}
+(node:1909152) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909152) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ran":35,"failCount":0,"failures":[]}
+(node:1909164) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909164) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ran":542,"failCount":0,"failures":[],"labClash":0}
+(node:1909176) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909176) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ran":94,"failCount":0,"failures":[]}
+(node:1909194) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909194) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ok":true,"duties":["File/Physician: pass","File/Ambulance: pass","Invoice/Mismatch: pass","Invoice/Match: pass","Code/Describe: pass","Files/Status: pass"]}
+(node:1909206) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909206) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ran":58,"failCount":0,"failures":[]}
+(node:1909218) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1909218) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"national":{"years":7,"codesChecked":55076,"mismatches":0,"codesNotOffice":28149},"negativeControlCaught":true,"rest_of_ny_mismatches":0,"therapyTable":{"codes":61,"mismatches":0,"codes_off":[]},"totalMismatch":0}

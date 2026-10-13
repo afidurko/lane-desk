@@ -18,6 +18,8 @@ const PHI = [
 ];
 
 const RULES: { pattern: RegExp; detail: string }[] = [
+  // Matching control characters is the point of this rule.
+  // eslint-disable-next-line no-control-regex
   { pattern: /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, detail: "Removed hidden control characters." },
   { pattern: /<\s*\/?\s*script\b[^>]*>/gi, detail: "Removed a script tag." },
   { pattern: /<\/?[a-z][^>\n]*>/gi, detail: "Removed markup." },

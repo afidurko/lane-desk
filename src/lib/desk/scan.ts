@@ -1,7 +1,7 @@
 import { AMBULANCE_NAMES, type AmbulanceFile } from "@/lib/book/ambulance";
 import { payableStatus } from "@/lib/book/filter";
 import { type DmeFile, type LabFile } from "@/lib/book/other";
-import { conversionFor, localityDollars, type PfsFile, type PfsRow } from "@/lib/book/price";
+import { conversionFor, localityDollars, noDollarAmount, notPricedInOffice, type PfsFile, type PfsRow } from "@/lib/book/price";
 
 export type ScanChange = {
   schedule: "Physician" | "Ambulance" | "Lab" | "DME";
@@ -9,6 +9,12 @@ export type ScanChange = {
   name: string;
   prior: number | null;
   current: number | null;
+  /** CMS non-facility NA on that year: not priced in the office setting. */
+  priorNotOffice?: boolean;
+  currentNotOffice?: boolean;
+  /** Non-payable status on that year (B, I, N, X and the like): Medicare does not pay it, so no amount. */
+  priorNotPaid?: boolean;
+  currentNotPaid?: boolean;
 };
 
 export type ScanCard = {
@@ -30,6 +36,7 @@ function dollarsToCents(dollars: number | null) {
 }
 
 function physicianCents(file: PfsFile, row: PfsRow) {
+  if (noDollarAmount(row, "nf")) return null;
   const locality = file.localities.find((item) => item.mac === MAC && item.number === LOC) ?? null;
   const conversion = conversionFor(row, "nonQp", file);
   if (!conversion) return null;
@@ -51,13 +58,21 @@ export function scanPhysician(current: PfsFile, prior: PfsFile): { card: ScanCar
     compared += 1;
     const currentCents = currentRow ? physicianCents(current, currentRow) : null;
     const priorCents = priorRow ? physicianCents(prior, priorRow) : null;
-    if (currentCents === priorCents) continue;
+    const currentNotOffice = Boolean(currentRow && notPricedInOffice(currentRow));
+    const priorNotOffice = Boolean(priorRow && notPricedInOffice(priorRow));
+    const currentNotPaid = Boolean(currentRow && !payableStatus(currentRow.s));
+    const priorNotPaid = Boolean(priorRow && !payableStatus(priorRow.s));
+    if (currentCents === priorCents && currentNotOffice === priorNotOffice && currentNotPaid === priorNotPaid) continue;
     changes.push({
       schedule: "Physician",
       code,
       name: currentRow?.d || priorRow?.d || code,
       prior: priorCents,
       current: currentCents,
+      ...(priorNotOffice ? { priorNotOffice } : {}),
+      ...(currentNotOffice ? { currentNotOffice } : {}),
+      ...(priorNotPaid ? { priorNotPaid } : {}),
+      ...(currentNotPaid ? { currentNotPaid } : {}),
     });
   }
   return {
@@ -169,4 +184,9 @@ export function largestMoves(changes: ScanChange[], perSchedule = 2) {
     picked.push(...rows.slice(0, perSchedule));
   }
   return picked;
+}
+
+/** The 2024 year-end note goes with any physician scan whose years include 2024 (same rule as Book and Filter). */
+export function scanNeeds2024Note(cards: Pick<ScanCard, "schedule" | "year" | "priorYear">[]) {
+  return cards.some((card) => card.schedule === "Physician" && (card.year === 2024 || card.priorYear === 2024));
 }

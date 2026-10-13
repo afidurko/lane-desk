@@ -1,176 +1,89 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { DeskScan } from "@/components/desk/desk-scan";
-import { Shell } from "@/components/landing/shell";
+import { DeidWarning, Empty, FIELD, LINK, Page, PRIMARY, ReferenceNote, SECONDARY } from "@/components/ui";
 import { addToOpenClaim } from "@/lib/billing/store";
-import { money, SAMPLE_NOTE, SERVICES, serviceOf, type Gate } from "@/lib/desk/clock";
-import { briefFromRows, runLane, type LaneRun } from "@/lib/desk/lane";
-import { readRows, sealRow, writeRows, type DeskRow } from "@/lib/desk/store";
-import { conversionFor, localityDollars, type PfsFile, type PfsRow } from "@/lib/book/price";
-import { addGold } from "@/lib/team/gold";
-import { makePacket, readQueue, writeQueue } from "@/lib/team/protocol";
-import { addBoard } from "@/lib/team/scoreboard";
-
-const STEPS = ["Read the note", "Assign a code", "Price the allowed amount", "Tie the line to the note"] as const;
-const MARKS_MS = [420, 980, 1540, 2100];
-const DONE_MS = 2300;
+import { IS_INTERNAL } from "@/lib/config/mode";
+import { money, serviceOf, type Gate } from "@/lib/desk/clock";
+import { runLane, type LaneRun } from "@/lib/desk/lane";
+import { DEFAULT_SAMPLE, SAMPLES } from "@/lib/demo/samples";
+import { formatSeconds, OUR_SIDE_LABEL, timeCoder, type Timing } from "@/lib/demo/timing";
+import { DEFAULT_LOCALITY } from "@/lib/config/ny";
+import { MPPR_EXPLAIN, MPPR_LABEL } from "@/lib/pricing/mppr";
+import { loadRates, ratesFor, type RateSet } from "@/lib/pricing/rates";
 
 const GATE_COPY: Record<Exclude<Gate, "ok">, string> = {
-  empty: "No note yet. You do not have to write one. Open the table and pick the code.",
-  phi: "The base gate stopped this note. It looks like an identifier. Nothing was saved.",
-  oversize: "The base gate stopped this note. It is past the size limit. Nothing was saved.",
-  units: "Units have to be a whole number from 1 to 8. Under 8 minutes is not a unit. A fraction, a number past 8, or minutes that disagree with the unit count stops the note. Nothing was saved.",
-  split: "Two codes are on the same line. Put each service on its own line. Nothing was saved.",
+  empty: "There is no note yet. Pick a sample above or paste a de-identified note.",
+  phi: "Refused. The note has something that looks like an identifier, such as a record number, date of birth, phone number, or email. Nothing was priced or kept.",
+  oversize: "Refused. The note is longer than the size limit. Nothing was priced or kept.",
+  units: "Not priced. Units must be a whole number from 1 to 8, and minutes must agree with units. Under 8 minutes is not a unit.",
+  split: "Not priced. Two services are on the same line. Put each service on its own line.",
   "wrong-type":
-    "This note does not name a therapy service the clock can read. It reads physical, occupational, and speech therapy codes from the 2026 file, by code or by description. An office visit, a lab, or a wound code is not guessed. Open the table and pick it.",
+    "Not priced. This note does not name a therapy service the coder reads, and no listed code is in it. The coder does not guess.",
 };
 
-type Phase = "idle" | "running" | "done";
+type State = { kind: "idle" } | { kind: "done"; lane: LaneRun; timing: Timing; scope: string; release: string } | { kind: "stopped"; copy: string };
 
 export function DeskPage() {
-  const [note, setNote] = useState(SAMPLE_NOTE);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [step, setStep] = useState(-1);
-  const [elapsed, setElapsed] = useState(0);
-  const [reduced, setReduced] = useState(false);
-  const [block, setBlock] = useState<Exclude<Gate, "ok"> | null>(null);
-  const [boundary, setBoundary] = useState<string | null>(null);
-  const [lane, setLane] = useState<LaneRun | null>(null);
+  const [note, setNote] = useState<string>(DEFAULT_SAMPLE.note);
+  const [sampleId, setSampleId] = useState<string | null>(DEFAULT_SAMPLE.id);
+  const [state, setState] = useState<State>({ kind: "idle" });
+  const [rateSet, setRateSet] = useState<RateSet | null>(null);
+  const [locality, setLocality] = useState<string>(DEFAULT_LOCALITY.key);
+  const localityId = useId();
+  const [loadFailed, setLoadFailed] = useState(false);
   const [human, setHuman] = useState("");
-  const [rows, setRows] = useState<DeskRow[]>([]);
-  const [ready, setReady] = useState(false);
-  const [kept, setKept] = useState(false);
   const [sent, setSent] = useState(false);
-  const [queued, setQueued] = useState(false);
-  const [codeQuery, setCodeQuery] = useState("");
-  const [rates, setRates] = useState<Record<string, number>>({});
-  const [patches, setPatches] = useState<string[]>([]);
-  const timeouts = useRef<number[]>([]);
-  const interval = useRef<number | null>(null);
+  const noteId = useId();
+  const humanId = useId();
 
   useEffect(() => {
-    setRows(readRows());
-    setReady(true);
-    fetch("/pfs-2026.json")
-      .then((response) => (response.ok ? (response.json() as Promise<PfsFile>) : null))
-      .then((file) => {
-        if (!file) return;
-        const locality = file.localities.find((item) => item.mac === "13282" && item.number === "99") ?? null;
-        const next: Record<string, number> = {};
-        for (const row of file.rows as PfsRow[]) {
-          const conversion = conversionFor(row, "nonQp", file);
-          if (!conversion) continue;
-          const dollars = localityDollars(row, "nf", locality, conversion);
-          if (dollars > 0) next[row.c] = dollars;
-        }
-        setRates(next);
+    let cancel = false;
+    setLoadFailed(false);
+    loadRates(locality)
+      .then((set) => {
+        if (!cancel) setRateSet(set);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancel) setLoadFailed(true);
+      });
     return () => {
-      timeouts.current.forEach((id) => window.clearTimeout(id));
-      if (interval.current !== null) window.clearInterval(interval.current);
+      cancel = true;
     };
-  }, []);
+  }, [locality]);
 
-  useEffect(() => {
-    if (ready) writeRows(rows);
-  }, [ready, rows]);
+  function pick(id: string) {
+    const sample = SAMPLES.find((item) => item.id === id);
+    if (!sample) return;
+    setNote(sample.note);
+    setSampleId(id);
+    setState({ kind: "idle" });
+    setSent(false);
+  }
+
+  // The set loaded for the locality on screen, or null while that locality's amounts are still loading.
+  const ready = ratesFor(rateSet, locality);
 
   function run() {
-    timeouts.current.forEach((id) => window.clearTimeout(id));
-    timeouts.current = [];
-    if (interval.current !== null) {
-      window.clearInterval(interval.current);
-      interval.current = null;
-    }
-    setKept(false);
-    setQueued(false);
-    setHuman("");
-    const first = runLane(note, null, null, rates);
-    if (first.text !== note) setNote(first.text);
-    setPatches(first.patches);
-    setLane(first);
-    setBlock(first.block);
-    setBoundary(first.boundary);
-    if (first.block || first.boundary || first.lines.length === 0) {
-      setPhase("idle");
-      setStep(-1);
-      return;
-    }
-    const motionOff = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setReduced(motionOff);
-    if (motionOff) {
-      setPhase("done");
-      setStep(STEPS.length - 1);
-      setElapsed(0);
-      return;
-    }
-    setPhase("running");
-    setStep(0);
-    setElapsed(0);
-    const started = performance.now();
-    MARKS_MS.forEach((ms, index) => {
-      timeouts.current.push(window.setTimeout(() => setStep(index), ms));
+    if (!ready) return;
+    setSent(false);
+    const lane = runLane(note, null, null, ready.rates);
+    if (lane.block) return setState({ kind: "stopped", copy: GATE_COPY[lane.block] });
+
+    if (lane.boundary) return setState({ kind: "stopped", copy: lane.boundary });
+    if (lane.lines.length === 0) return setState({ kind: "stopped", copy: GATE_COPY["wrong-type"] });
+    setState({
+      kind: "done",
+      lane,
+      timing: timeCoder(lane.text, ready.rates),
+      scope: ready.scope,
+      release: ready.release,
     });
-    interval.current = window.setInterval(() => setElapsed(performance.now() - started), 40);
-    timeouts.current.push(
-      window.setTimeout(() => {
-        if (interval.current !== null) {
-          window.clearInterval(interval.current);
-          interval.current = null;
-        }
-        const seconds = Math.round((performance.now() - started) / 10) / 100;
-        setElapsed(seconds * 1000);
-        setLane(runLane(first.text, null, seconds, rates));
-        setPhase("done");
-      }, DONE_MS),
-    );
   }
 
-  function keep() {
-    if (!lane || lane.lines.length === 0 || lane.block || lane.proof.status === "stop" || humanBad) return;
-    const humanSeconds = human.trim() === "" ? null : Number(human);
-    const stamped = new Date().toISOString();
-    const sealed = lane.lines.map((line) =>
-      sealRow({
-        id: crypto.randomUUID(),
-        at: stamped,
-        span: line.span,
-        code: line.code,
-        units: line.units,
-        allowed: line.allowed,
-        scriptSeconds: lane.scriptSeconds,
-        humanSeconds,
-      }),
-    );
-    if (sealed.some((row) => row === null)) return;
-    setRows((current) => [...sealed.filter((row): row is DeskRow => row !== null), ...current]);
-    setKept(true);
-    addBoard({
-      codes: lane.lines.map((line) => line.code).join(", "),
-      scriptSeconds: lane.scriptSeconds,
-      humanSeconds,
-      allowed: lane.allowed,
-      status: "priced",
-    });
-    for (const line of lane.lines) {
-      addGold({ code: line.code, units: line.units, allowed: line.allowed, label: "unlabeled", note: line.span });
-    }
-  }
+  const humanSeconds = human.trim() === "" ? null : Number(human);
+  const humanBad = humanSeconds !== null && (!Number.isFinite(humanSeconds) || humanSeconds < 0 || humanSeconds > 86_400);
 
-  function queueTeam() {
-    if (!lane || lane.lines.length === 0 || lane.block) return;
-    const packet = makePacket(
-      lane.text,
-      lane.lines.map((line) => ({ code: line.code, units: line.units, allowed: line.allowed })),
-    );
-    if (packet.status === "stopped") return;
-    writeQueue([packet, ...readQueue()]);
-    setQueued(true);
-  }
-
-  function sendToWorksheet() {
-    if (!lane || lane.lines.length === 0 || lane.block || lane.proof.status === "stop") return;
+  function worksheet(lane: LaneRun, scope: string) {
     for (const line of lane.lines) {
       const separate = serviceOf(line.code)?.separate !== false && line.allowed > 0;
       const cents = separate ? Math.round(line.allowed * 100) : null;
@@ -180,7 +93,7 @@ export function DeskPage() {
         units: line.units,
         chargeCents: cents,
         allowedCents: cents,
-        schedule: "2026 physician, Rest of New York",
+        schedule: `2026 physician, ${scope}`,
         note: line.span,
         year: 2026,
         claimNote: lane.text,
@@ -189,354 +102,234 @@ export function DeskPage() {
     setSent(true);
   }
 
-  function download() {
-    const file = {
-      to: "File",
-      brief: briefFromRows(rows),
-      rows,
-    };
-    const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "lane-leave-behind.json";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  const clock =
-    phase === "idle" ? "Not run" : reduced && phase === "done" ? "Not timed" : (elapsed / 1000).toFixed(2);
-  const humanBad =
-    human.trim() !== "" &&
-    (!Number.isFinite(Number(human)) || Number(human) < 0 || Number(human) > 86_400);
-  const humanSeconds = human.trim() === "" || humanBad ? null : Number(human);
-
   return (
-    <Shell>
-      <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Price the note for Olean.
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          The scan is the file change. The note below is the clock. Send a priced line to the claim when the amount is the one on the 2026 file.
-        </p>
-        <DeskScan />
-
-        <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
-          <div>
-            <label htmlFor="note" className="text-sm font-medium text-ink">
-              De-identified note
-            </label>
-            <textarea
-              id="note"
-              value={note}
-              onChange={(event) => {
-                setNote(event.target.value);
-                setBlock(null);
-                setKept(false);
-              }}
-              rows={8}
-              className="mt-1.5 w-full rounded-2xl border border-line bg-paper-2 px-4 py-3 text-base leading-relaxed text-ink"
-            />
+    <Page
+      kicker="Step 1 of 3"
+      title="Try a sample note"
+      lede="Read a short, made-up therapy note, see the code and the Medicare reference price for it, and see how long the rule-based coder took. The note stays in this browser."
+    >
+      <section aria-labelledby="samples-h">
+        <h2 id="samples-h" className="text-sm font-medium text-ink">
+          Pick a sample
+        </h2>
+        <div className="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="samples-h">
+          {SAMPLES.map((sample) => (
             <button
+              key={sample.id}
               type="button"
-              onClick={run}
-              disabled={phase === "running"}
-              className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink transition-colors duration-200 hover:bg-deep disabled:cursor-default disabled:opacity-60"
+              onClick={() => pick(sample.id)}
+              aria-pressed={sampleId === sample.id}
+              className={
+                sampleId === sample.id
+                  ? "h-11 rounded-full border-2 border-teal bg-wash px-4 text-sm font-medium text-ink"
+                  : "h-11 rounded-full border border-muted bg-paper-2 px-4 text-sm text-ink hover:border-teal"
+              }
             >
-              {phase === "running" ? "Running" : "Run this note"}
+              {sample.label}
             </button>
-            <p className="mt-1 text-sm text-muted">Every note crosses the base gate before the clock. Markup is stripped. An identifier stops the run. A unit count and the minutes have to agree. Under 8 minutes is not a unit.</p>
-            {patches.length > 0 ? (
-              <ul className="mt-2 space-y-1 text-sm text-deep" role="status">
-                {patches.map((patch) => (
-                  <li key={patch}>{patch}</li>
-                ))}
-              </ul>
-            ) : null}
-            {boundary ? (
-              <p className="mt-6 rounded-2xl border border-line bg-paper-2 px-5 py-4 text-base text-ink" role="alert">
-                {boundary}
-              </p>
-            ) : block ? (
-              <p className="mt-3 text-sm font-medium text-deep" role="alert">
-                {GATE_COPY[block]}{" "}
-                {block === "wrong-type" || block === "empty" ? (
-                  <Link to="/filter" className="text-teal">
-                    Open the table.
-                  </Link>
-                ) : null}
-              </p>
-            ) : null}
-            <div className="mt-6">
-              <label htmlFor="code-find" className="text-sm font-medium text-ink">
-                Find a therapy code
-              </label>
-              <input
-                id="code-find"
-                value={codeQuery}
-                onChange={(event) => setCodeQuery(event.target.value)}
-                placeholder="97110 or gait training"
-                className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base"
-              />
-              <div className="mt-3 overflow-hidden rounded-2xl border border-line">
-                <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Therapy codes, Rest of New York, 2026</caption>
-                  <thead className="bg-paper-2 text-xs tracking-widest text-muted uppercase">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Code</th>
-                      <th className="px-3 py-2 font-medium">Service</th>
-                      <th className="px-3 py-2 text-right font-medium">Per unit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {SERVICES.filter((service) => {
-                      const needle = codeQuery.trim().toLowerCase();
-                      if (needle.length < 2) return false;
-                      return service.code.toLowerCase().includes(needle) || service.name.toLowerCase().includes(needle);
-                    })
-                      .slice(0, 8)
-                      .map((service) => (
-                        <tr key={service.code} className="border-t border-line">
-                          <td className="px-3 py-2 font-medium text-ink tabular-nums">{service.code}</td>
-                          <td className="px-3 py-2 text-ink">{service.name}</td>
-                          <td className="px-3 py-2 text-right text-ink tabular-nums">{service.separate ? money(service.unitDollars) : "No separate fee"}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-2 text-sm text-muted">
-                {codeQuery.trim().length < 2
-                  ? "Type two letters or a code. Bundled and not-valid codes show as no separate fee."
-                  : "Showing up to 8 matches. Wound care, labs, and office visits are on the table, not in this clock."}{" "}
-                <Link to="/filter" className="font-medium text-teal">
-                  Open the full table.
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          <article className="overflow-hidden rounded-2xl border border-line bg-paper-2">
-            <div className="h-1 bg-teal" />
-            <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <p className="text-xs font-medium tracking-widest text-teal uppercase">Script clock</p>
-              <p className="font-display text-3xl text-ink tabular-nums" aria-live="polite">
-                {phase === "idle" || (reduced && phase === "done") ? (
-                  <span className="font-sans text-sm font-medium text-muted">{clock}</span>
-                ) : (
-                  <>
-                    {clock}
-                    <span className="ml-1 font-sans text-sm font-medium text-muted">s</span>
-                  </>
-                )}
-              </p>
-            </div>
-            <ol className="space-y-2 px-5 py-4" aria-label="Run steps">
-              {STEPS.map((label, index) => {
-                const state = step > index ? "done" : step === index ? "now" : "wait";
-                return (
-                  <li key={label} className="flex items-center gap-3 text-sm">
-                    <span
-                      className={
-                        state === "wait"
-                          ? "grid size-6 place-items-center rounded-full border border-line text-xs text-muted tabular-nums"
-                          : "grid size-6 place-items-center rounded-full bg-teal text-xs text-teal-ink tabular-nums"
-                      }
-                      aria-hidden="true"
-                    >
-                      {index + 1}
-                    </span>
-                    <span className={state === "wait" ? "text-muted" : "text-ink"}>{label}</span>
-                  </li>
-                );
-              })}
-            </ol>
-            {lane && lane.lines.length > 0 && phase === "done" ? (
-              <div className="space-y-4 border-t border-line px-5 py-4">
-                <ul className="space-y-3">
-                  {lane.lines.map((line) => (
-                    <li key={line.code}>
-                      <p className="text-sm leading-relaxed text-ink">
-                        <span className="font-medium">Span. </span>
-                        {line.span}
-                      </p>
-                      <dl className="mt-2 grid grid-cols-3 gap-3">
-                        <div>
-                          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Code</dt>
-                          <dd className="mt-1 font-medium text-ink tabular-nums">{line.code}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Units</dt>
-                          <dd className="mt-1 font-medium text-ink tabular-nums">{line.units}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Allowed</dt>
-                          <dd className="mt-1 font-medium text-ink tabular-nums">
-                            {serviceOf(line.code)?.separate === false ? "No separate fee" : money(line.allowed)}
-                          </dd>
-                        </div>
-                      </dl>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs leading-relaxed text-muted">
-                  Provisional {lane.lines.length === 1 ? money(lane.allowed) : `${money(lane.allowed)} across ${lane.lines.length} codes`}
-                  . 2026 non-facility, Rest of New York, MAC 13282, locality 99. Not a payment. Pending a clinician label.
-                </p>
-                {lane.brief ? (
-                  <dl className="grid gap-3 rounded-xl border border-line bg-paper p-4">
-                    <div>
-                      <dt className="text-xs font-medium tracking-widest text-teal uppercase">Brief</dt>
-                      <dd className="mt-1 text-sm text-muted">
-                        {lane.ship ? "Proof passed this row." : "Proof has not passed a ship."} Not sent anywhere.
-                      </dd>
-                    </div>
-                    {(
-                      [
-                        ["Scope", lane.brief.wedge],
-                        ["Proof path", lane.brief.proofPath],
-                        ["Measured delta", lane.brief.measuredDelta],
-                        ["Public note", lane.brief.intel],
-                        ["Decision", lane.brief.decision],
-                      ] as const
-                    ).map(([label, value]) => (
-                      <div key={label}>
-                        <dt className="text-xs font-medium tracking-widest text-muted uppercase">{label}</dt>
-                        <dd className="mt-1 text-sm leading-relaxed text-ink">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                ) : null}
-                <div>
-                  <label htmlFor="human" className="text-sm font-medium text-ink">
-                    Your seconds on the same note
-                  </label>
-                  <input
-                    id="human"
-                    inputMode="decimal"
-                    value={human}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setHuman(value);
-                      setKept(false);
-                      if (!lane || lane.lines.length === 0) return;
-                      const bad =
-                        value.trim() !== "" &&
-                        (!Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 86_400);
-                      const seconds = value.trim() === "" || bad ? null : Number(value);
-                      setLane(runLane(lane.text, seconds, lane.scriptSeconds, rates));
-                    }}
-                    placeholder="Blank until you time it"
-                    className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base text-ink"
-                  />
-                  {humanBad ? (
-                    <p className="mt-1.5 text-sm font-medium text-deep" role="alert">
-                      Enter seconds as a number under a day, or leave it blank.
-                    </p>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={keep}
-                  disabled={kept || humanBad || lane.proof.status === "stop"}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-full border border-muted px-5 text-sm font-medium text-ink transition-colors duration-200 hover:border-teal disabled:opacity-60"
-                >
-                  {kept ? "Row kept" : "Keep this row"}
-                </button>
-                <button
-                  type="button"
-                  onClick={sendToWorksheet}
-                  disabled={sent || lane.proof.status === "stop"}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink transition-colors duration-200 hover:bg-deep disabled:opacity-60"
-                >
-                  {sent ? "On the worksheet" : "Send to worksheet"}
-                </button>
-                {sent ? (
-                  <p className="text-sm text-muted">
-                    Draft is on the claim. Next, add the organization and the submitter if they are empty.{" "}
-                    <Link to="/billing" className="font-medium text-teal">
-                      Open the claim
-                    </Link>
-                    . Not sent anywhere.
-                  </p>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={queueTeam}
-                  disabled={queued || lane.proof.status === "stop"}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-full border border-muted px-5 text-sm font-medium text-ink transition-colors duration-200 hover:border-teal disabled:opacity-60"
-                >
-                  {queued ? "Queued for the team" : "Queue for the team"}
-                </button>
-                {queued ? (
-                  <p className="text-sm text-muted">
-                    Cleared packet is on the{" "}
-                    <Link to="/team" className="font-medium text-teal">
-                      team page
-                    </Link>
-                    . Not sent.
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="border-t border-line px-5 py-4 text-sm text-muted">
-                Not run yet. A refused note does not get a code.
-              </p>
-            )}
-          </article>
+          ))}
         </div>
+        <p className="mt-2 text-sm text-muted">{SAMPLES.find((item) => item.id === sampleId)?.why ?? "Your own note."}</p>
+      </section>
 
-        <section className="mt-14">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="mt-8" aria-labelledby="note-h">
+        <h2 id="note-h" className="sr-only">
+          The note
+        </h2>
+        <label htmlFor={noteId} className="text-sm font-medium text-ink">
+          De-identified note
+        </label>
+        <textarea
+          id={noteId}
+          value={note}
+          onChange={(event) => {
+            setNote(event.target.value);
+            setSampleId(null);
+            setState({ kind: "idle" });
+          }}
+          rows={7}
+          maxLength={8000}
+          aria-describedby={`${noteId}-warn`}
+          className={`${FIELD} py-3 leading-relaxed`}
+        />
+        <DeidWarning id={`${noteId}-warn`} />
+        {IS_INTERNAL && rateSet && rateSet.localities.length > 1 ? (
+          <div className="mt-4">
+            <label htmlFor={localityId} className="text-sm font-medium text-ink">
+              New York locality (internal)
+            </label>
+            <select
+              id={localityId}
+              value={locality}
+              onChange={(event) => {
+                setLocality(event.target.value);
+                setState({ kind: "idle" });
+              }}
+              className={`${FIELD} h-12`}
+            >
+              {rateSet.localities.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+        <button type="button" onClick={run} disabled={!ready || note.trim() === ""} className={`${PRIMARY} mt-4 w-full sm:w-auto`}>
+          {ready ? "Price this note" : loadFailed ? "Fee file did not load" : "Loading the fee file"}
+        </button>
+        {loadFailed ? (
+          <p className="mt-3 text-sm font-medium text-deep" role="alert">
+            The 2026 fee file did not load. Reload the page to try again. Nothing was priced.
+          </p>
+        ) : null}
+      </section>
+
+      <section className="mt-10" aria-labelledby="result-h" aria-live="polite">
+        <h2 id="result-h" className="font-display text-2xl text-ink">
+          Result
+        </h2>
+        {state.kind === "idle" ? (
+          <div className="mt-3">
+            <Empty>Nothing has run yet. Choose “Price this note”. The result, the price, and the timing appear here.</Empty>
+          </div>
+        ) : null}
+        {state.kind === "stopped" ? (
+          <p className="mt-3 rounded-2xl border border-deep/40 bg-paper-2 px-4 py-4 text-sm leading-relaxed text-ink" role="alert">
+            {state.copy}
+          </p>
+        ) : null}
+        {state.kind === "done" ? (
+          <div className="mt-3 space-y-6">
+            <div className="overflow-x-auto rounded-2xl border border-line bg-paper-2">
+              <table className="w-full text-left text-sm">
+                <caption className="sr-only">Codes found in the note and their Medicare reference price</caption>
+                <thead>
+                  <tr className="border-b border-line text-xs tracking-widest text-muted uppercase">
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Code
+                    </th>
+                    <th scope="col" className="hidden px-4 py-3 font-medium sm:table-cell">
+                      Service
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Units
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium">
+                      Reference price
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.lane.lines.map((line) => {
+                    const none = line.allowed === 0;
+                    return (
+                      <tr key={line.code} className="border-b border-line last:border-0">
+                        <td className="px-4 py-3 font-medium text-ink tabular-nums">
+                          {line.code}
+                          <span className="block text-xs font-normal text-muted sm:hidden">
+                            {rateSet?.names.get(line.code) || line.name || "Code number only"}
+                          </span>
+                        </td>
+                        <td className="hidden px-4 py-3 text-ink sm:table-cell">{rateSet?.names.get(line.code) || line.name || "Code number only"}</td>
+                        <td className="px-4 py-3 text-ink tabular-nums">
+                          {line.units}
+                          {line.mppr && line.mppr.reducedUnits > 0 ? (
+                            <span className="block text-xs font-normal text-muted">
+                              {line.mppr.fullUnits} full rate, {line.mppr.reducedUnits} reduced
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">
+                          {line.notOffice ? "Not priced in the office setting" : none ? "No separate amount" : money(line.allowed)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {state.lane.lines.length > 1 ? (
+                  <tfoot>
+                    <tr className="border-t border-line">
+                      <th scope="row" colSpan={3} className="px-4 py-3 text-left font-medium text-ink">
+                        Total of these lines
+                      </th>
+                      <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">{money(state.lane.allowed)}</td>
+                    </tr>
+                  </tfoot>
+                ) : null}
+              </table>
+            </div>
+            {state.lane.lines.some((line) => line.mppr && line.mppr.reducedUnits > 0) ? (
+              <p className="rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
+                <strong className="font-medium">{MPPR_LABEL}.</strong> {MPPR_EXPLAIN}
+              </p>
+            ) : null}
+            {state.lane.lines.some((line) => line.notOffice) ? (
+              <p className="rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
+                CMS gives some codes no office price because they are rarely or never done in the office. Those lines are not priced and are
+                left out of the total.
+              </p>
+            ) : null}
             <div>
-              <h2 className="font-display text-3xl text-ink">Rows on this browser</h2>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                {rows.length === 0
-                  ? "No rows yet. A kept row is the start of the leave-behind."
-                  : `${rows.length} kept. Blank human seconds means the desk has not been timed.`}
+              <ReferenceNote scope={false} />
+              <p className="mt-1 text-sm leading-relaxed text-muted">
+                {state.scope}. PACE is capitated, so this is a check figure, not what anyone is paid.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Provisional until a clinician reviews the code. Every price is the loaded CMS file ({state.release}) amount for that
+                code.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={download}
-              disabled={rows.length === 0}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-teal px-4 text-sm font-medium text-teal-ink transition-colors duration-200 hover:bg-deep disabled:opacity-60"
-            >
-              Download the file
-            </button>
-          </div>
-          <ul className="mt-6 space-y-3">
-            {rows.map((row) => {
-              const delta =
-                row.scriptSeconds !== null && row.humanSeconds !== null
-                  ? Math.round((row.humanSeconds - row.scriptSeconds) * 100) / 100
-                  : null;
-              return (
-                <li key={row.id} className="rounded-2xl border border-line bg-paper-2 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm leading-relaxed text-ink">{row.span}</p>
-                    <button
-                      type="button"
-                      onClick={() => setRows((current) => current.filter((item) => item.id !== row.id))}
-                      className="shrink-0 text-sm font-medium text-muted hover:text-ink"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <p className="mt-3 text-sm text-muted">
-                    {row.code} {row.name} · {row.units} unit{row.units === 1 ? "" : "s"} · {money(row.allowed)} provisional ·
-                    script {row.scriptSeconds === null ? "not timed" : `${row.scriptSeconds.toFixed(2)}s`} · human{" "}
-                    {row.humanSeconds === null ? "blank" : `${row.humanSeconds}s`}
-                    {delta === null ? "" : ` · difference ${delta}s on this row`}
+
+            <div className="grid gap-3 sm:grid-cols-2" aria-labelledby="time-h" role="group">
+              <h3 id="time-h" className="sr-only">
+                Timing
+              </h3>
+              <div className="rounded-2xl border border-line bg-paper-2 p-4">
+                <p className="text-xs font-medium tracking-widest text-teal uppercase">{OUR_SIDE_LABEL}</p>
+                <p className="mt-2 font-display text-2xl text-ink tabular-nums">{formatSeconds(state.timing.seconds)}</p>
+                <p className="mt-1 text-sm text-muted">per note on this note, average of {state.timing.runs} runs in this browser.</p>
+              </div>
+              <div className="rounded-2xl border border-line bg-paper-2 p-4">
+                <p className="text-xs font-medium tracking-widest text-muted uppercase">Manual desk</p>
+                <p className="mt-2 font-display text-2xl text-ink">
+                  {humanSeconds !== null && !humanBad ? `${humanSeconds} seconds` : "Not yet timed"}
+                </p>
+                <label htmlFor={humanId} className="mt-1 block text-sm text-muted">
+                  Optional: time your own desk on this note and enter the seconds. It is your stopwatch, not our measurement.
+                </label>
+                <input
+                  id={humanId}
+                  inputMode="decimal"
+                  value={human}
+                  onChange={(event) => setHuman(event.target.value)}
+                  aria-invalid={humanBad}
+                  className={`${FIELD} mt-2 h-11`}
+                />
+                {humanBad ? (
+                  <p className="mt-1.5 text-sm font-medium text-deep" role="alert">
+                    Enter seconds as a number under a day, or leave it blank.
                   </p>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      </main>
-    </Shell>
+                ) : null}
+              </div>
+            </div>
+            <p className="text-sm leading-relaxed text-muted">
+              We make no claim about time saved. The manual side stays blank until a real desk is timed on the same notes.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 border-t border-line pt-5">
+              <Link to="/invoice" className={LINK}>
+                Next: check an invoice
+              </Link>
+              {IS_INTERNAL ? (
+                <button type="button" className={SECONDARY} onClick={() => worksheet(state.lane, state.scope)} disabled={sent}>
+                  {sent ? "On the claim worksheet" : "Send to the claim worksheet (internal)"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </section>
+    </Page>
   );
 }

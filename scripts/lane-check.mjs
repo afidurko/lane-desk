@@ -7,6 +7,24 @@ import { dollarsFromTotal, sequester, sequestrationPercent } from "../src/lib/bo
 import { admit, filterRows, rowsOf } from "../src/lib/book/book.ts";
 import { classifyIssue } from "../src/lib/help/issues.ts";
 import { scanPhysician } from "../src/lib/desk/scan.ts";
+import { notPricedInOffice, NOT_OFFICE_LABEL, NOT_PAID_LABEL, noDollarAmount, payableStatus as pricePayable } from "../src/lib/book/price.ts";
+import { physicianHistory, shows2024 } from "../src/lib/history/physician.ts";
+import { scanNeeds2024Note } from "../src/lib/desk/scan.ts";
+import { BASE_RATE_NOTE, COUNTIES as PACE_COUNTIES, ESRD_2020_NOTE, ESRD_2020_ORIGINAL_CENTS, PACE_YEARS, ESRD_2020_USE, NOT_CHECKED, medicareCents, paceEsrd, paceRate, partD } from "../src/lib/pace/rates.ts";
+import { payableStatus as filterPayable } from "../src/lib/book/filter.ts";
+import { localityPrices } from "../src/lib/pricing/locality.ts";
+import { readFileSync } from "node:fs";
+import { emptyBook as emptyPace, setYear as setPaceYear } from "../src/lib/pace/store.ts";
+import { NEAR_DESCRIPTOR_PHRASES } from "../src/lib/desk/therapy-codes.ts";
+import { SAMPLES as DEMO_SAMPLES, PROOF_NOTES as DEMO_PROOF_NOTES } from "../src/lib/demo/samples.ts";
+import { DEFAULT_LOCALITY as DEFAULT_LOCALITY_FOR_CHECK } from "../src/lib/config/ny.ts";
+import { loadRates, ratesFor } from "../src/lib/pricing/rates.ts";
+import { OFFICIAL as OFFICIAL_PACE } from "../src/lib/pace/official.ts";
+import { money as fmtMoney } from "../src/lib/desk/clock.ts";
+import { claimLineFor, NOT_OFFICE_USE_NOTE } from "../src/lib/book/filter.ts";
+import { NOT_OFFICE_NOTE, quoteCode } from "../src/lib/billing/billing.ts";
+import { shortName, NO_SHORT_NAME } from "../src/lib/config/mode.ts";
+import { indexNational } from "../src/lib/pricing/national.ts";
 
 const failures = [];
 let ran = 0;
@@ -280,6 +298,132 @@ const priorFile = { ...currentFile, year: 2025, conversion: { nonQp: "2", qp: nu
 const scanned = scanPhysician(currentFile, priorFile);
 const moved = scanned.changes.find((row) => row.code === "97110");
 check("scan sees a 97110 change", scanned.card.changed >= 1 && moved?.current === 300 && moved?.prior === 600);
+// Non-facility NA: Book, Filter and the file scan use the same rule as the desk (4,043 codes on the 2026 file).
+const pfs2026 = JSON.parse(readFileSync("public/pfs-2026.json", "utf8"));
+const pfs2025 = JSON.parse(readFileSync("public/pfs-2025.json", "utf8"));
+const naShared = pfs2026.rows.filter((row) => row.m === "" && notPricedInOffice(row) && row.c);
+const deskNa = localityPrices(pfs2026, "13282/99").notOffice;
+check("shared NA rule finds 4,043 base codes on 2026", new Set(naShared.map((row) => row.c)).size === 4043);
+check("shared NA rule matches the desk set exactly", naShared.every((row) => deskNa.has(row.c)) && deskNa.size === new Set(naShared.map((row) => row.c)).size);
+check("NA label wording", NOT_OFFICE_LABEL === "Not priced in the office setting");
+const naRow = { ...therapyRow, c: "15851", nn: 1 };
+const naScan = scanPhysician({ ...currentFile, rows: [naRow] }, { ...priorFile, rows: [{ ...naRow, nn: undefined }] });
+const naMove = naScan.changes.find((row) => row.code === "15851");
+check("scan: NA code has no office price this year", naMove?.current === null && naMove?.currentNotOffice === true && naMove?.prior === 600);
+const realScan = scanPhysician(pfs2026, pfs2025);
+check("scan on real files never prices an NA code", realScan.changes.every((row) => !(row.currentNotOffice && row.current !== null) && !(row.priorNotOffice && row.prior !== null)));
+check("scan on real files flags 15851 as not office-priced in 2026", realScan.changes.some((row) => row.code === "15851" && row.currentNotOffice && row.current === null));
+// Filter "Use" step (Add to claim): a code with no office price stays unpriced. Never the typed Rest of NY therapy price, never an office price.
+const use11004 = claimLineFor({ code: "11004", modifier: "", name: "", cents: null, notOffice: true }, "Physician", 2026);
+check("Filter Use: 11004 says Not priced in the office setting", use11004.message?.includes(NOT_OFFICE_LABEL) && use11004.line.note.startsWith(NOT_OFFICE_LABEL));
+check("Filter Use: 11004 adds no charge and no allowed amount", use11004.line.chargeCents === null && use11004.line.allowedCents === null);
+check("Filter Use: note matches the claim worksheet's NA note", NOT_OFFICE_USE_NOTE === NOT_OFFICE_NOTE);
+const sneaky = claimLineFor({ code: "11004", modifier: "", name: "", cents: 2827, notOffice: true }, "Physician", 2026);
+check("Filter Use: an NA row never carries an amount, even if one is passed", sneaky.line.chargeCents === null && sneaky.line.allowedCents === null);
+const naCodes = [...new Set(naShared.map((row) => row.c))];
+check("Filter Use: all 4,043 NA codes add no amount", naCodes.length === 4043 && naCodes.every((code) => { const u = claimLineFor({ code, modifier: "", name: "", cents: null, notOffice: true }, "Physician", 2026); return u.line.allowedCents === null && u.line.chargeCents === null; }));
+const naBooks = { physician: pfs2026, ambulance: null, lab: null, dme: null };
+check("Claim worksheet quote: 11004 has no allowed amount and the NA note", (() => { const q = quoteCode(naBooks, "11004", ""); return q.allowedCents === null && q.note === NOT_OFFICE_NOTE; })());
+check("Claim worksheet quote: every 2026 NA code has no allowed amount", naCodes.every((code) => quoteCode(naBooks, code, "").allowedCents === null));
+const use97110 = claimLineFor({ code: "97110", modifier: "", name: "", cents: 2827, notOffice: false }, "Physician", 2026);
+check("Filter Use: a priced code keeps its file amount", use97110.line.allowedCents === 2827 && use97110.message === null);
+// Short names (CPT text): internal shows them, public shows the code number only and ships none.
+check("shortName: internal keeps the CMS short name", shortName("Dbrdmt skin xtrnl gent&per", "internal") === "Dbrdmt skin xtrnl gent&per");
+check("shortName: public shows no short name", shortName("Dbrdmt skin xtrnl gent&per", "public") === "" && !/Dbrdmt/.test(NO_SHORT_NAME));
+const publicNational = JSON.parse(readFileSync("public/pfs-national-2026.json", "utf8"));
+check("public national file carries no short-name field", publicNational.rows.every((row) => !("d" in row) && !("n" in row)));
+check("public national file has no 11004 short name text", !readFileSync("public/pfs-national-2026.json", "utf8").includes("Dbrdmt skin xtrnl gent&per"));
+check("public national index: 11004 has an empty name", indexNational(publicNational).rows.get("11004")?.n === "");
+check("internal 2026 file still has the 11004 short name", pfs2026.rows.some((row) => row.c === "11004" && row.d === "Dbrdmt skin xtrnl gent&per"));
+// Shared no-dollar rule: non-payable status or CMS non-facility NA gets no amount (Filter, Book, desk scan, /history).
+check("shared rule: Filter's payableStatus is the same function", filterPayable === pricePayable);
+check("shared rule: status B, N, I, X get no amount in either setting", ["B", "N", "I", "X", "C", "E", "M", "P"].every((s) => noDollarAmount({ s }, "nf") && noDollarAmount({ s }, "fac")));
+check("shared rule: an A code with NA has no office amount but keeps facility", noDollarAmount({ s: "A", nn: 1 }, "nf") && !noDollarAmount({ s: "A", nn: 1 }, "fac"));
+check("shared rule: NOT_PAID_LABEL wording", NOT_PAID_LABEL === "Medicare does not pay this code separately");
+const national = JSON.parse(readFileSync("public/pfs-national-2026.json", "utf8"));
+const nonPaidNational = national.rows.filter((row) => !pricePayable(row.s) && row.tn > 0);
+check("Book: every non-payable national 2026 code with a CMS total gets no amount (was 152 priced)", nonPaidNational.length >= 152 && nonPaidNational.every((row) => noDollarAmount(row, "nf") && noDollarAmount(row, "fac")));
+check("Book: 22526 (N) and 97010 (B) get no amount", ["22526", "97010"].every((code) => national.rows.filter((row) => row.c === code).every((row) => noDollarAmount(row, "nf"))));
+check("Book NY: 99243 (I) gets no amount on any year file", [2020, 2021, 2022, 2023, 2024, 2025, 2026].every((year) => JSON.parse(readFileSync(`public/pfs-${year}.json`, "utf8")).rows.filter((row) => row.c === "99243").every((row) => noDollarAmount(row, "nf") && noDollarAmount(row, "fac"))));
+const allYears = [2020, 2021, 2022, 2023, 2024, 2025, 2026].map((year) => JSON.parse(readFileSync(`public/pfs-${year}.json`, "utf8")));
+const unpaidScan = [];
+for (let i = 1; i < allYears.length; i += 1) unpaidScan.push(...scanPhysician(allYears[i], allYears[i - 1]).changes);
+check("scan 2021-2026: no non-payable side ever shows an amount", unpaidScan.every((row) => !(row.currentNotPaid && row.current !== null) && !(row.priorNotPaid && row.prior !== null)));
+check("scan: the 8 reported status-change codes show no amount on the unpaid side", ["99358", "99359", "96202", "96203", "74263", "G9037", "G9038", "77417"].every((code) => unpaidScan.filter((row) => row.code === code).some((row) => (row.currentNotPaid && row.current === null) || (row.priorNotPaid && row.prior === null))));
+check("scan: 2024 note shows when a physician scan includes 2024", scanNeeds2024Note([{ schedule: "Physician", year: 2025, priorYear: 2024 }]) && !scanNeeds2024Note([{ schedule: "Physician", year: 2026, priorYear: 2025 }]));
+const shipped = JSON.parse(readFileSync("public/history/physician.json", "utf8"));
+const rebuilt = physicianHistory(allYears);
+check("/history: 3,362 physician rows", shipped.length === 3362 && rebuilt.moves.length === 3362);
+check("/history: shipped rows match a rebuild from the year files (amounts and years)", shipped.every((row, i) => { const m = rebuilt.moves[i]; return m && m.c === row.c && m.from === row.from && m.fc === row.fc && m.to === row.to && m.tc === row.tc && m.d === row.d; }));
+const deskUnpriced = (file, code) => file.rows.some((row) => row.c === code && row.m === "" && noDollarAmount(row, "nf"));
+check("/history: no row has an endpoint the desk leaves unpriced", shipped.every((row) => !deskUnpriced(allYears[row.from - 2020], row.c) && !deskUnpriced(allYears[row.to - 2020], row.c)));
+check("/history: 32445 (no office price) has no office amount", !shipped.some((row) => row.c === "32445"));
+check("/history: without the rule it would be the old 7,444 rows", physicianHistory(allYears, { ignoreNoDollarRule: true }).moves.length === 7444);
+check("/history: rows showing 2024 get the note (43 rows)", shipped.filter(shows2024).length === 43 && shows2024({ from: 2024, to: 2026 }) && !shows2024({ from: 2020, to: 2026 }));
+check("/history page renders the 2024 note", readFileSync("src/components/lookup/history-page.tsx", "utf8").includes("<Note2024 />"));
+// Desk locality: every NY area drives the price. loadRates (the desk's loader) runs against the real files with a stubbed fetch.
+{
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const path = String(url).replace(/^.*\//, "");
+    return { ok: true, json: async () => JSON.parse(readFileSync(`public/${path}`, "utf8")) };
+  };
+  const pfs = JSON.parse(readFileSync("public/pfs-2026.json", "utf8"));
+  const row = pfs.rows.find((r) => r.c === "97110" && r.m === "");
+  const areas = { "13282/99": 2827, "13202/01": 3243, "13202/02": 3290, "13202/03": 3111, "13292/04": 3266 };
+  const seen = [];
+  for (const [key, cents] of Object.entries(areas)) {
+    const [mac, number] = key.split("/");
+    const place = pfs.localities.find((l) => l.mac === mac && l.number === number);
+    const fromFile = Math.round(Math.round((row.w * place.work + row.pn * place.pe + row.mp * place.mp) * Number(pfs.conversion.nonQp) * 100 + 1e-9));
+    const set = await loadRates(key);
+    const lane = runLane("Did therapeutic exercise, 15 minutes.", null, null, set.rates);
+    const got = Math.round(lane.allowed * 100);
+    seen.push(got);
+    check(`desk locality ${key}: 97110 priced at ${cents} from the file, with its own scope`, set.key === key && fromFile === cents && got === cents && new RegExp(`MAC ${mac}, locality ${number}`).test(set.scope), `${got} vs ${fromFile}`);
+    check(`desk locality ${key}: a set loaded for another area is never used`, ratesFor(set, key) === set && Object.keys(areas).filter((k) => k !== key).every((other) => ratesFor(set, other) === null) && ratesFor(null, key) === null);
+  }
+  check("desk locality: the 5 NY areas give 5 different 97110 amounts", new Set(seen).size === 5, seen.join(","));
+  check("desk page prices only with the set for the locality on screen", /const ready = ratesFor\(rateSet, locality\)/.test(readFileSync("src/components/desk/desk-page.tsx", "utf8")) && /disabled=\{!ready/.test(readFileSync("src/components/desk/desk-page.tsx", "utf8")));
+  globalThis.fetch = realFetch;
+}
+// Shield 3: public sample and Proof notes use plain wording only, so they code the same in a public build,
+// where near-descriptor matchers are stripped; and no sample prints a code beside a name.
+check("near-descriptor matchers are listed (25 codes, 29 phrases)", NEAR_DESCRIPTOR_PHRASES.length === 29 && NEAR_DESCRIPTOR_PHRASES.includes("therapeutic exercise") && NEAR_DESCRIPTOR_PHRASES.includes("group therapeutic procedures"));
+check("no sample or Proof note relies on a near-descriptor matcher", [...DEMO_SAMPLES.map((x) => x.note), ...DEMO_PROOF_NOTES].every((n) => !NEAR_DESCRIPTOR_PHRASES.some((p) => n.toLowerCase().includes(p))), [...DEMO_SAMPLES.map((x) => x.note), ...DEMO_PROOF_NOTES].filter((n) => NEAR_DESCRIPTOR_PHRASES.some((p) => n.toLowerCase().includes(p))).join(" | "));
+check("no sample prints a code number beside a service name", DEMO_SAMPLES.every((x) => !/\(\d{5}\)/.test(x.note)));
+check("the full-day sample still codes 97110 x3 + 97116 x1", JSON.stringify(review(DEMO_SAMPLES.find((x) => x.id === "day").note).lines.map((l) => [l.code, l.units])) === JSON.stringify([["97110", 3], ["97116", 1]]));
+// Shield 1-2, 4-10: public wording and internal-only strings.
+{
+  const src = (f) => readFileSync(f, "utf8");
+  const inv = src("src/components/lookup/invoice-check.tsx");
+  check("Shield 1: invoice match reads 'Matches reference (YEAR Medicare file)'", inv.includes("`Matches reference (${line.year} Medicare file)${cut}`") && !inv.includes("Matches the ${line.year} file"));
+  check("Shield 2: invoice gap reads 'Flagged for review: over/under reference by $X · reference $Y' with the comma formatter", inv.includes('`Flagged for review: ${gap > 0 ? "over" : "under"} reference by ${money(Math.abs(gap) / 100)} · reference ${money(file.cents / 100)}${cut}`'));
+  check("Shield 4: /why description is the national reference price", src("src/routes/why.tsx").includes("shows the national Medicare reference price for therapy codes."));
+  check("Shield 5-7: /compete, /ny, /ops descriptions are 'Internal screen.' in public", ["compete", "ny", "ops"].every((r) => /content: IS_INTERNAL \? "[^"]+" : "Internal screen\."/.test(src(`src/routes/${r}.tsx`))));
+  check("Shield 8-9: schedule, DEFAULT_LOCALITY and INTERNAL_SCOPE come from internal-only.ts, folded on the build constant", /setting: INTERNAL_SCHEDULE_SETTING \|\| PUBLIC_SCOPE\.label/.test(src("src/lib/desk/schedule.ts")) && /DEFAULT_LOCALITY = INTERNAL_DEFAULT_LOCALITY/.test(src("src/lib/config/ny.ts")) && /label: INTERNAL_SCOPE_LABEL/.test(src("src/lib/config/mode.ts")) && !/13282/.test(src("src/lib/config/ny.ts").replace(/\/\*[\s\S]*?\*\//g, "")) && /const KEEP: boolean = typeof __DEMO_MODE__ !== "undefined"/.test(src("src/lib/config/internal-only.ts")));
+  check("Shield 9: internal values still load under node (checks)", DEFAULT_LOCALITY_FOR_CHECK.key === "13282/99");
+  check("Shield 10: teams says 'Verify the rate against the loaded Medicare file.'", src("src/lib/desk/teams.ts").includes("Verify the rate against the loaded Medicare file.") && !src("src/lib/desk/teams.ts").includes("loaded Rest of New York file"));
+  const proofPublic = JSON.parse(src("public/proof.json"));
+  const proofInternal = JSON.parse(src("public/proof-internal.json"));
+  check("Shield 11: proof.json is 2026 only; the 2020-2026 national proof is in proof-internal.json", proofPublic.years.map((y) => y.year).join() === "2026" && !/RVU2[0-5]/.test(JSON.stringify(proofPublic)) && proofInternal.national.years.map((y) => y.year).join() === "2020,2021,2022,2023,2024,2025,2026" && proofInternal.national.totals.mismatches === 0);
+  check("Shield 12: check:output bans Rest of New York, 13282 and RVU24", /const BANNED = \["Rest of New York", "13282", "RVU24"\]/.test(src("scripts/check-public-output.mjs")));
+}
+// PACE month: every figure comes from the CMS index files via src/lib/pace/official.ts (build-pace-rates.py --check compares with the sqlite files).
+check("PACE: 2026 New York County PACE rate is $1,983.61 from the 2026 PACE ratebook", paceRate("New York", 2026, false)?.cents === 198361 && /CountyRate2026PACE\.csv/.test(paceRate("New York", 2026, false)?.source ?? ""));
+check("PACE: 2026 NY PACE ESRD is $12,051.55 from the PACE file, never the MA $11,414.68", paceEsrd(2026)?.cents === 1205155 && medicareCents("Erie", 2026, true) === 1205155 && !readFileSync("src/lib/pace/official.ts", "utf8").includes("1141468"));
+check("PACE: 2020 ESRD uses the revised $8,651.11 (one switch)", ESRD_2020_USE === "revised" && paceEsrd(2020)?.cents === 865111 && /revised/i.test(paceEsrd(2020)?.source ?? ""));
+check("PACE: Part D 2026 national bid $239.27 and base premium $38.99", partD(2026)?.bid.cents === 23927 && partD(2026)?.premium.cents === 3899);
+check("PACE: Cattaraugus 2026 now sourced ($1,263.49)", paceRate("Cattaraugus", 2026, false)?.cents === 126349);
+check("PACE: no Medicare Advantage county table in official.ts", !("ma" in OFFICIAL_PACE) && !/Medicare Advantage/.test(readFileSync("src/components/pace/pace-page.tsx", "utf8")));
+check("money: thousands commas", fmtMoney(12051.55) === "$12,051.55" && fmtMoney(1234567.8) === "$1,234,567.80" && fmtMoney(999.999) === "$1,000.00" && fmtMoney(0) === "$0.00" && fmtMoney(-1500) === "-$1,500.00");
+check("PACE: all 62 New York counties are listed (Bronx, Queens, St. Lawrence among them)", PACE_COUNTIES.length === 62 && new Set(PACE_COUNTIES).size === 62 && ["Bronx", "Queens", "Richmond", "Suffolk", "Nassau", "Westchester", "Onondaga", "St. Lawrence"].every((c) => PACE_COUNTIES.includes(c)));
+check("PACE: every county x 2020-2026 is priced from that year's PACE file or reads not checked", PACE_YEARS.join() === "2020,2021,2022,2023,2024,2025,2026" && PACE_YEARS.every((y) => PACE_COUNTIES.every((c) => { const r = paceRate(c, y, false); return r === null || new RegExp(`CountyRate${y}PACE`).test(r.source); })), `${PACE_COUNTIES.length * PACE_YEARS.length} cells`);
+check("PACE: year switching changes the book year; years outside 2020-2026 are refused", setPaceYear(emptyPace(), 2020).year === 2020 && setPaceYear(emptyPace(), 2023).year === 2023 && setPaceYear(emptyPace(), 2019).year === 2026 && setPaceYear(emptyPace(), 2027).year === 2026 && paceRate("Bronx", 2020, false)?.cents !== paceRate("Bronx", 2026, false)?.cents);
+check("PACE: 2020 ESRD note says revised Oct 2, 2020 and the original $8,234.99, from the data layer", ESRD_2020_ORIGINAL_CENTS === 823499 && /revised .*Oct 2, 2020/.test(ESRD_2020_NOTE) && ESRD_2020_NOTE.includes("$8,234.99") && !/8,?234\.99|823499/.test(readFileSync("src/components/pace/pace-page.tsx", "utf8")), ESRD_2020_NOTE);
+check("PACE: a year not in the files is unpriced, never estimated", paceRate("New York", 2019, false) === null && partD(2019) === null && medicareCents("New York", 2019, false) === null);
+check("PACE: wording for unpriced, base rates and national Part D", NOT_CHECKED === "not yet checked against CMS" && /before CMS adjusts/.test(BASE_RATE_NOTE) && /national averages, not New York rates/.test(readFileSync("src/components/pace/pace-page.tsx", "utf8")));
+check("PACE: screen file has no dollar amounts typed in", !/\b(198361|1205155|23927|3899|865111)\b|\$\d/.test(readFileSync("src/components/pace/pace-page.tsx", "utf8")));
 const vague = classifyIssue("Hello there");
 check("help asks when it is unclear", vague.kind === "ask");
 

@@ -1,0 +1,210 @@
+ok   [desktop] / loads, no sideways scroll — overflow 0px
+ok   [desktop] / has one h1 — 1
+ok   [desktop] / has at most one primary action — 1
+ok   [desktop] /desk loads, no sideways scroll — overflow 0px
+ok   [desktop] /desk has one h1 — 1
+ok   [desktop] /desk has at most one primary action — 1
+ok   [desktop] /invoice loads, no sideways scroll — overflow 0px
+ok   [desktop] /invoice has one h1 — 1
+ok   [desktop] /invoice has at most one primary action — 1
+ok   [desktop] /code loads, no sideways scroll — overflow 0px
+ok   [desktop] /code has one h1 — 1
+ok   [desktop] /code has at most one primary action — 0
+ok   [desktop] /proof loads, no sideways scroll — overflow 0px
+ok   [desktop] /proof has one h1 — 1
+ok   [desktop] /proof has at most one primary action — 1
+ok   [desktop] /about loads, no sideways scroll — overflow 0px
+ok   [desktop] /about has one h1 — 1
+ok   [desktop] /about has at most one primary action — 1
+ok   [desktop] /pricing loads, no sideways scroll — overflow 0px
+ok   [desktop] /pricing has one h1 — 1
+ok   [desktop] /pricing has at most one primary action — 1
+ok   [desktop] /request loads, no sideways scroll — overflow 0px
+ok   [desktop] /request has one h1 — 1
+ok   [desktop] /request has at most one primary action — 1
+ok   [desktop] / direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /desk direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /invoice direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /code direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /proof direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /about direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /pricing direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] /request direct load and refresh both return 200 with a heading — 200 / 200
+ok   [desktop] 404 page: HTTP status is 404 — 404
+ok   [desktop] 404 page: says Not Found and gives a plain-words message
+ok   [desktop] 404 page: does not repeat the requested path or query
+ok   [desktop] 404 page: same header, nav and footer wording as other screens
+ok   [desktop] 404 page: one h1 and one primary action
+ok   [desktop] 404 page: links to Try a note, Check an invoice, Request a pilot — Try a note=/desk|Check an invoice=/invoice|Request a pilot=/request
+ok   [desktop] 404 page: no sideways scroll — overflow 0px
+ok   [desktop] 404 page (public): no internal-only link — 0
+ok   [desktop] 404 page: no console errors
+ok   [desktop] 404 page: the link home works — http://127.0.0.1:8081/
+ok   [desktop] public build does not serve /pfs-2020.json — 404
+ok   [desktop] public build does not serve /pfs-2026.json — 404
+ok   [desktop] public build does not serve /years/physician/9.json — 404
+ok   [desktop] public build does not serve /clfs-2026.json — 404
+ok   [desktop] public build does not serve /afs-2026.json — 404
+ok   [desktop] public build does not serve /dme-2026.json — 404
+ok   [desktop] public build does not serve /ny-medicaid.json — 404
+ok   [desktop] public build does not serve /found-rates.json — 404
+ok   [desktop] public build does not serve /gap-rates.json — 404
+ok   [desktop] public build does not serve /history/summary.json — 404
+ok   [desktop] public build does not serve /history/physician.json — 404
+ok   [desktop] no dead links (8 distinct on-site links)
+ok   [desktop] first Tab is the skip link
+ok   [desktop] a focused control shows an outline — solid 2px
+ok   [desktop] desk idle state is explained
+ok   [desktop] desk shows 97110
+ok   [desktop] desk price comes with the disclaimer
+ok   [desktop] desk timing label is verbatim
+ok   [desktop] desk manual side is not timed
+ok   [desktop] desk shows seconds, not ms
+ok   [desktop] desk refuses an identifier
+ok   [desktop] desk two lines get a total
+ok   [desktop] therapy day prices 97110 at 3 units, not 6 — 97110 Code number only 3 1 full rate, 2 reduced $73.48 / 97116 Code number only 1 0 full rate, 1 reduced $22.21
+ok   [desktop] therapy day total is $95.69
+ok   [desktop] therapy day says the reduction was applied and shows the split
+ok   [desktop] a single unit shows no reduction
+ok   [desktop] invoice idle state is explained
+ok   [desktop] invoice finds one match and one miss
+ok   [desktop] invoice carries the disclaimer
+ok   [desktop] invoice labels the therapy reduction on line two
+ok   [desktop] invoice: a non-facility NA code is not priced and not called a mismatch
+ok   [desktop] invoice refuses an identifier
+ok   [desktop] code shows a 2026 price and the disclaimer
+ok   [desktop] code shows no other year in public
+ok   [desktop] code 11004 (non-facility NA): the Medicare years list shows no dollar amount, only 'not priced in the office setting' — 2026 Not priced in the office setting
+ok   [desktop] code 97026 is priced — national $6.68
+ok   [desktop] about says prices use the year-end release
+ok   [desktop] proof headline is about prices
+ok   [desktop] proof timing label verbatim
+ok   [desktop] proof manual side blank
+ok   [desktop] request form has plan select plus four inputs only — 5
+ok   [desktop] request has no textarea
+ok   [desktop] request validates empty form
+ok   [desktop] request shows a summary, plan carried over
+ok   [desktop] request wrote nothing to the browser's storage
+ok   [desktop] pricing says list shape, not a quote
+ok   [desktop] pricing has no card button without env
+ok   [desktop] public mode never requests held-back files
+ok   [desktop] /billing is closed in public
+ok   [desktop] /ny is closed in public
+ok   [desktop] /ops is closed in public
+ok   [desktop] /book is closed in public
+ok   [desktop] /pace is closed in public
+ok   [desktop] /history is closed in public
+ok   [desktop] /filter is closed in public
+ok   [desktop] /book (public) renders no CMS short name
+ok   [desktop] /filter (public) renders no CMS short name
+ok   [desktop] Code (public): 11004 shows the code number only, no short name
+ok   [desktop] public national file carries no short names
+ok   [desktop] Code (public): no 2024 note, since 2024 is not shown
+ok   [desktop] public header shows no internal tab
+ok   [desktop] no console errors
+ok   [phone] / loads, no sideways scroll — overflow 0px
+ok   [phone] / has one h1 — 1
+ok   [phone] / has at most one primary action — 1
+ok   [phone] /desk loads, no sideways scroll — overflow 0px
+ok   [phone] /desk has one h1 — 1
+ok   [phone] /desk has at most one primary action — 1
+ok   [phone] /invoice loads, no sideways scroll — overflow 0px
+ok   [phone] /invoice has one h1 — 1
+ok   [phone] /invoice has at most one primary action — 1
+ok   [phone] /code loads, no sideways scroll — overflow 0px
+ok   [phone] /code has one h1 — 1
+ok   [phone] /code has at most one primary action — 0
+ok   [phone] /proof loads, no sideways scroll — overflow 0px
+ok   [phone] /proof has one h1 — 1
+ok   [phone] /proof has at most one primary action — 1
+ok   [phone] /about loads, no sideways scroll — overflow 0px
+ok   [phone] /about has one h1 — 1
+ok   [phone] /about has at most one primary action — 1
+ok   [phone] /pricing loads, no sideways scroll — overflow 0px
+ok   [phone] /pricing has one h1 — 1
+ok   [phone] /pricing has at most one primary action — 1
+ok   [phone] /request loads, no sideways scroll — overflow 0px
+ok   [phone] /request has one h1 — 1
+ok   [phone] /request has at most one primary action — 1
+ok   [phone] / direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /desk direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /invoice direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /code direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /proof direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /about direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /pricing direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] /request direct load and refresh both return 200 with a heading — 200 / 200
+ok   [phone] 404 page: HTTP status is 404 — 404
+ok   [phone] 404 page: says Not Found and gives a plain-words message
+ok   [phone] 404 page: does not repeat the requested path or query
+ok   [phone] 404 page: same header, nav and footer wording as other screens
+ok   [phone] 404 page: one h1 and one primary action
+ok   [phone] 404 page: links to Try a note, Check an invoice, Request a pilot — Try a note=/desk|Check an invoice=/invoice|Request a pilot=/request
+ok   [phone] 404 page: no sideways scroll — overflow 0px
+ok   [phone] 404 page (public): no internal-only link — 0
+ok   [phone] 404 page: no console errors
+ok   [phone] 404 page: the link home works — http://127.0.0.1:8081/
+ok   [phone] public build does not serve /pfs-2020.json — 404
+ok   [phone] public build does not serve /pfs-2026.json — 404
+ok   [phone] public build does not serve /years/physician/9.json — 404
+ok   [phone] public build does not serve /clfs-2026.json — 404
+ok   [phone] public build does not serve /afs-2026.json — 404
+ok   [phone] public build does not serve /dme-2026.json — 404
+ok   [phone] public build does not serve /ny-medicaid.json — 404
+ok   [phone] public build does not serve /found-rates.json — 404
+ok   [phone] public build does not serve /gap-rates.json — 404
+ok   [phone] public build does not serve /history/summary.json — 404
+ok   [phone] public build does not serve /history/physician.json — 404
+ok   [phone] no dead links (8 distinct on-site links)
+ok   [phone] first Tab is the skip link
+ok   [phone] a focused control shows an outline — solid 2px
+ok   [phone] desk idle state is explained
+ok   [phone] desk shows 97110
+ok   [phone] desk price comes with the disclaimer
+ok   [phone] desk timing label is verbatim
+ok   [phone] desk manual side is not timed
+ok   [phone] desk shows seconds, not ms
+ok   [phone] desk refuses an identifier
+ok   [phone] desk two lines get a total
+ok   [phone] therapy day prices 97110 at 3 units, not 6 — 97110 Code number only 3 1 full rate, 2 reduced $73.48 / 97116 Code number only 1 0 full rate, 1 reduced $22.21
+ok   [phone] therapy day total is $95.69
+ok   [phone] therapy day says the reduction was applied and shows the split
+ok   [phone] a single unit shows no reduction
+ok   [phone] invoice idle state is explained
+ok   [phone] invoice finds one match and one miss
+ok   [phone] invoice carries the disclaimer
+ok   [phone] invoice labels the therapy reduction on line two
+ok   [phone] invoice: a non-facility NA code is not priced and not called a mismatch
+ok   [phone] invoice refuses an identifier
+ok   [phone] code shows a 2026 price and the disclaimer
+ok   [phone] code shows no other year in public
+ok   [phone] code 11004 (non-facility NA): the Medicare years list shows no dollar amount, only 'not priced in the office setting' — 2026 Not priced in the office setting
+ok   [phone] code 97026 is priced — national $6.68
+ok   [phone] about says prices use the year-end release
+ok   [phone] proof headline is about prices
+ok   [phone] proof timing label verbatim
+ok   [phone] proof manual side blank
+ok   [phone] request form has plan select plus four inputs only — 5
+ok   [phone] request has no textarea
+ok   [phone] request validates empty form
+ok   [phone] request shows a summary, plan carried over
+ok   [phone] request wrote nothing to the browser's storage
+ok   [phone] pricing says list shape, not a quote
+ok   [phone] pricing has no card button without env
+ok   [phone] public mode never requests held-back files
+ok   [phone] /billing is closed in public
+ok   [phone] /ny is closed in public
+ok   [phone] /ops is closed in public
+ok   [phone] /book is closed in public
+ok   [phone] /pace is closed in public
+ok   [phone] /history is closed in public
+ok   [phone] /filter is closed in public
+ok   [phone] /book (public) renders no CMS short name
+ok   [phone] /filter (public) renders no CMS short name
+ok   [phone] Code (public): 11004 shows the code number only, no short name
+ok   [phone] public national file carries no short names
+ok   [phone] Code (public): no 2024 note, since 2024 is not shown
+ok   [phone] public header shows no internal tab
+ok   [phone] no console errors
+
+E2E PASS

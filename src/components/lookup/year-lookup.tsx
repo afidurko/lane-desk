@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
+import { IS_INTERNAL, PUBLIC_SCOPE, shortName, visibleYears } from "@/lib/config/mode";
+import { loadNational } from "@/lib/pricing/national";
+import { NOTE_2024 } from "@/lib/pricing/release-2024";
 
 export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
@@ -12,7 +15,12 @@ export const FAMILIES = [
 ] as const;
 
 export type Family = (typeof FAMILIES)[number]["id"];
-export type Row = { n: string; a: Record<string, number | null>; s?: string };
+export type Row = {
+  n: string;
+  a: Record<string, number | null>;
+  s?: string;
+  /** Years CMS gives no office price (non-facility NA). */ o?: number[];
+};
 
 const cache = new Map<string, Record<string, Row>>();
 
@@ -33,9 +41,19 @@ export function loadShard(family: Family, prefix: string) {
   });
 }
 
+/** Public mode: one national 2026 physician row, nothing else. */
+async function findNational(clean: string) {
+  const national = await loadNational();
+  const row = national.rows.get(clean);
+  if (!row) return [];
+  const shown: Row = { n: shortName(row.n), a: row.a, s: row.s, ...(row.nn ? { o: [national.year] } : {}) };
+  return [{ family: "physician" as Family, label: PUBLIC_SCOPE.label, row: shown }];
+}
+
 export async function findAcross(code: string) {
   const clean = code.trim().toUpperCase();
   if (!CODE.test(clean)) return [];
+  if (!IS_INTERNAL) return findNational(clean);
   const hits: { family: Family; label: string; row: Row }[] = [];
   let failed = 0;
   let tried = 0;
@@ -56,6 +74,7 @@ export async function findAcross(code: string) {
 const onceCache = new Map<string, Record<string, OnceRow[]>>();
 
 export function loadOnce(prefix: string) {
+  if (!IS_INTERNAL) return Promise.resolve({} as Record<string, OnceRow[]>);
   const hit = onceCache.get(prefix);
   if (hit) return Promise.resolve(hit);
   return fetch(`/once/${prefix}.json`).then(async (response) => {
@@ -114,38 +133,67 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
   if (state === "bad") return <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p>;
   if (state === "loading") return <p className="text-sm text-muted">Loading every year for {code.trim().toUpperCase()}.</p>;
   if (state === "down") return <p className="text-sm font-medium text-deep">The year file did not load. Try the code again.</p>;
-  if (state === "miss" || !row) return <p className="text-sm font-medium text-deep">That code is not on this schedule for 2020 through 2026.</p>;
+  if (state === "miss" || !row)
+    return <p className="text-sm font-medium text-deep">That code is not on this schedule for 2020 through 2026.</p>;
 
   return (
     <div>
       <p className="font-display text-3xl text-ink">{code.trim().toUpperCase()}</p>
-      {row.n ? <p className="mt-1 text-sm leading-relaxed text-muted">{row.n}</p> : null}
-      <YearPrices row={row} />
+      {shortName(row.n) ? <p className="mt-1 text-sm leading-relaxed text-muted">{shortName(row.n)}</p> : null}
+      <YearPrices row={row} family={family} />
     </div>
   );
 }
 
-export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
+/** Shown next to any 2024 physician price. Text only: no price data changes. */
+
+export function Note2024() {
   return (
+    <p className="mt-3 rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note" data-note-2024>
+      {NOTE_2024}
+    </p>
+  );
+}
+
+export function YearPrices({ row, mark, family }: { row: Row; mark?: number | null; family?: Family }) {
+  const show2024 = (family ?? "physician") === "physician" && visibleYears(YEARS).includes(2024) && typeof row.a["2024"] === "number";
+  return (
+    <>
     <ol className="mt-3 grid grid-cols-2 gap-2">
-      {YEARS.map((year) => {
+      {visibleYears(YEARS).map((year) => {
         const cents = row.a[String(year)];
         const older = row.a[String(year - 1)];
-        const changed = typeof cents === "number" && typeof older === "number" && cents !== older;
+        const changed = IS_INTERNAL && typeof cents === "number" && typeof older === "number" && cents !== older;
         const marked = mark === year;
         return (
-          <li key={year} className={marked ? "rounded-xl border border-teal bg-paper-2 px-3 py-2" : "rounded-xl border border-line px-3 py-2"}>
-            <span className="block text-xs text-muted">{year}{marked ? " · on the invoice" : ""}</span>
+          <li
+            key={year}
+            className={marked ? "rounded-xl border border-teal bg-paper-2 px-3 py-2" : "rounded-xl border border-line px-3 py-2"}
+          >
+            <span className="block text-xs text-muted">
+              {year}
+              {marked ? " · on the invoice" : ""}
+            </span>
             <span className="mt-0.5 block text-base font-medium text-ink tabular-nums">
-              {typeof cents === "number" ? money(cents / 100) : cents === null ? "No amount" : "Not on file"}
+              {typeof cents === "number"
+                ? money(cents / 100)
+                : row.o?.includes(year)
+                  ? "Not priced in the office setting"
+                  : cents === null
+                    ? "No amount"
+                    : "Not on file"}
             </span>
             {changed ? (
-              <span className="text-xs text-teal">{cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}</span>
+              <span className="text-xs text-teal">
+                {cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}
+              </span>
             ) : null}
           </li>
         );
       })}
     </ol>
+    {show2024 ? <Note2024 /> : null}
+    </>
   );
 }
 
@@ -203,13 +251,15 @@ export function YearLookup() {
         {state === "idle" ? <p className="text-sm text-muted">Type a code. The schedule is chosen for you.</p> : null}
         {state === "bad" ? <p className="text-sm text-muted">Use a full code, such as 97110 or A0428.</p> : null}
         {state === "loading" ? <p className="text-sm text-muted">Checking every schedule.</p> : null}
-        {state === "miss" ? <p className="text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
+        {state === "miss" ? (
+          <p className="text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p>
+        ) : null}
         {state === "down" ? <p className="text-sm font-medium text-deep">The year files did not load. Type the code again.</p> : null}
         {hits.map((hit) => (
           <section key={hit.family} className="mt-4">
             <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
-            {hit.row.n && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{hit.row.n}</p> : null}
-            <YearPrices row={hit.row} />
+            {shortName(hit.row.n) && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{shortName(hit.row.n)}</p> : null}
+            <YearPrices row={hit.row} family={hit.family} />
           </section>
         ))}
       </div>

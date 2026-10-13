@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   appNameFromHost,
-  createHeadInjector,
+  createHeadInjector as createHeadInjectorRaw,
   grokXCreatorHeadTags,
-  injectGrokPwaHead,
+  injectGrokPwaHead as injectGrokPwaHeadRaw,
   isDocumentPath,
   isInstallQuery,
   publicAppHost,
@@ -22,6 +22,14 @@ import { renderInstallPage } from "./grok-pwa-plugin.mjs";
 const blank = mkdtempSync(join(tmpdir(), "grok-pwa-blank-"));
 
 const TEMPLATE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+// These tests describe the injector's own behavior. Without a cwd it reads the checkout it runs in
+// (src/lib/og/site.json and the public/og.jpg card), which in this repo carry Lane's real title and card, so a test that
+// passes no cwd would depend on the repo's branding. They get an empty workspace instead. A test that passes its own cwd keeps it.
+const EMPTY_WORKSPACE = mkdtempSync(join(tmpdir(), "grok-pwa-empty-"));
+const withEmptyWorkspace = (ctx = {}) => (ctx.cwd === undefined ? { cwd: EMPTY_WORKSPACE, ...ctx } : ctx);
+const injectGrokPwaHead = (html, ctx = {}) => injectGrokPwaHeadRaw(html, withEmptyWorkspace(ctx));
+const createHeadInjector = (ctx = {}) => createHeadInjectorRaw(withEmptyWorkspace(ctx));
 
 test("injects before </head>", () => {
   const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>");
@@ -524,19 +532,17 @@ test("renders the manifest with the per-app name", () => {
   assert.equal(manifest.icons[0].src, "/__grok/icon-180.png");
 });
 
-// Tripwires: the deployed-app path only works if Nitro scans server/ — an
-// accidental edit that drops serverDir or the middleware file would otherwise
-// fail silently (published apps would just render the app for ?install=1).
-test("vite config keeps the nitro serverDir wiring", () => {
+// This repo has no server/ folder (no PWA install page or manifest middleware on deploys), so the Nitro setting must not
+// point at one: a serverDir that does not exist is a config that names something absent.
+test("vite config does not point Nitro at a folder that is missing, and keeps the Vercel preset", () => {
   const viteConfig = readFileSync(join(TEMPLATE_ROOT, "vite.config.ts"), "utf8");
-  assert.match(viteConfig, /serverDir:\s*"\.\/server"/);
+  assert.match(viteConfig, /preset:\s*"vercel"/);
   assert.match(viteConfig, /grokPwaPlugin\(\)/);
+  const dir = viteConfig.match(/serverDir:\s*"([^"]+)"/)?.[1];
+  if (dir !== undefined) assert.ok(existsSync(join(TEMPLATE_ROOT, dir)), `serverDir ${dir} does not exist`);
 });
 
-test("nitro middleware and its bundled assets exist", () => {
-  const middleware = readFileSync(join(TEMPLATE_ROOT, "server/middleware/grok-pwa.ts"), "utf8");
-  assert.match(middleware, /install-page\.html\?raw/);
-  assert.match(middleware, /virtual:grok-og-identity/);
+test("the install page and its bundled assets exist", () => {
   readFileSync(join(TEMPLATE_ROOT, "scripts/install-page.html"));
   readFileSync(join(TEMPLATE_ROOT, "public/__grok/icon-180.png"));
   readFileSync(join(TEMPLATE_ROOT, "public/__grok/install/styles.css"));

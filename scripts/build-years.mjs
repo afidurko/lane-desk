@@ -9,12 +9,14 @@ function bucket() {
   return {};
 }
 
-function put(map, code, year, cents, name, status) {
+function put(map, code, year, cents, name, status, noOffice = false) {
   const key = code.trim().toUpperCase();
   if (!map[key]) map[key] = { n: "", a: {} };
   if (name && (!map[key].n || year === 2026)) map[key].n = name.slice(0, 90);
   if (status) map[key].s = status;
   map[key].a[String(year)] = cents;
+  // o: the years CMS marks non-facility NA (no office price). The amount is left empty for those years.
+  if (noOffice) (map[key].o ??= []).push(year);
 }
 
 const physician = bucket();
@@ -25,8 +27,9 @@ for (const year of YEARS) {
     if (row.m !== "") continue;
     const conversion = conversionFor(row, "nonQp", file);
     const payable = row.s === "A" || row.s === "R" || row.s === "T";
-    const dollars = payable && conversion && place ? localityDollars(row, "nf", place, conversion) : 0;
-    put(physician, row.c, year, dollars > 0 ? Math.round(dollars * 100) : null, row.d, row.s);
+    const noOffice = payable && row.nn === 1;
+    const dollars = payable && !noOffice && conversion && place ? localityDollars(row, "nf", place, conversion) : 0;
+    put(physician, row.c, year, dollars > 0 ? Math.round(dollars * 100) : null, row.d, row.s, noOffice);
   }
 }
 
@@ -79,4 +82,13 @@ if (sample !== 2827) {
   console.error("97110 2026 was", sample);
   process.exit(1);
 }
-console.log(JSON.stringify({ files, physician: Object.keys(physician).length, ambulance: Object.keys(ambulance).length, lab: Object.keys(lab).length, dme: Object.keys(dme).length, sample }));
+console.log(
+  JSON.stringify({
+    files,
+    physician: Object.keys(physician).length,
+    ambulance: Object.keys(ambulance).length,
+    lab: Object.keys(lab).length,
+    dme: Object.keys(dme).length,
+    sample,
+  }),
+);

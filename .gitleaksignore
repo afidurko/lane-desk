@@ -1,0 +1,4 @@
+# Historical finding only: the burned preview OAuth client secret, removed from the code in the Andrea F1 fix.
+# It stays in history until the F3 history rewrite. It MUST be rotated at the broker (docs/HANDOFF.md).
+# Any other or new finding still fails CI and the pre-commit hook.
+4a180f7b399499ceed8f248732c41eec0555e37b:src/lib/auth/preview.ts:generic-api-key:20

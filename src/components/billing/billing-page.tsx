@@ -1,9 +1,10 @@
+import { Note2024 } from "@/components/lookup/year-lookup";
 import { useEffect, useState, type FormEvent } from "react";
 import { Shell } from "@/components/landing/shell";
 import type { AmbulanceFile } from "@/lib/book/ambulance";
 import type { DmeFile, LabFile } from "@/lib/book/other";
-import { sequester, sequestrationPercent, type PfsFile } from "@/lib/book/price";
-import { centsFromDollars, checkClaim, checkClaimNumber, checkClient, checkNote, claimTotals, quoteCode, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
+import { NOT_OFFICE_LABEL, sequester, sequestrationPercent, type PfsFile } from "@/lib/book/price";
+import { NOT_OFFICE_NOTE, centsFromDollars, checkClaim, checkClaimNumber, checkClient, checkNote, allowedByLine, claimTotals, quoteCode, reducedUnitsOf, withReduction, type Books, type Claim, type Client, type Line } from "@/lib/billing/billing";
 import { buildPacket, nextGap, packetJson } from "@/lib/billing/packet";
 import { claimAlerts } from "@/lib/billing/verify";
 import { readSubmitter, writeSubmitter, type Submitter } from "@/lib/billing/submitter";
@@ -58,7 +59,10 @@ export function BillingPage() {
   const fileYear = fileYearOf(claim?.dos ?? dos);
   const today = todayIso();
   const alerts = claim ? claimAlerts(claim, books, today, ny, claim.county) : [];
-  const totals = claim ? claimTotals(claim.lines) : null;
+  const day = claim ? withReduction(claim.lines, books, claim.payer ?? "medicare") : [];
+  const allowedTotals = allowedByLine(day);
+  const reducedUnits = reducedUnitsOf(day);
+  const totals = claim ? claimTotals(day) : null;
   const percent = claim ? sequestrationPercent(claim.dos) : null;
   const cut = totals?.allowedCents !== null && totals?.allowedCents !== undefined && percent !== null ? sequester(totals.allowedCents / 100, percent) : null;
   const gap = nextGap(claim, client, submitter, alerts.length);
@@ -171,6 +175,7 @@ export function BillingPage() {
       units: count,
       chargeCents,
       allowedCents: fileCents,
+      ...((claim.payer ?? "medicare") === "medicare" && federal.mppr ? { mppr: federal.mppr } : {}),
       schedule: selected.schedule,
       note: selected.note,
       otherCents: other.allowedCents,
@@ -215,7 +220,7 @@ export function BillingPage() {
     setClaims((current) => current.map((item) => (item.id === claim.id ? { ...item, status } : item)));
   }
 
-  function useFileAmount(lineId: string, cents: number) {
+  function applyFileAmount(lineId: string, cents: number) {
     if (!claim || claim.status === "ready") return;
     setClaims((current) =>
       current.map((item) =>
@@ -266,7 +271,7 @@ export function BillingPage() {
         line.modifier,
         line.units,
         moneyOrBlank(line.chargeCents, line.units),
-        moneyOrBlank(line.allowedCents, line.units),
+        totalOrBlank(allowedTotals[line.id] ?? null),
         line.schedule,
         line.otherCents == null ? "" : money((line.otherCents * line.units) / 100),
         line.note,
@@ -306,6 +311,7 @@ export function BillingPage() {
         <p className="mt-4 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink">
           <span className="font-medium">{gap.title}.</span> {gap.detail} Pricing from the {books.physician?.year ?? fileYear} files.
         </p>
+        {(books.physician?.year ?? fileYear) === 2024 ? <Note2024 /> : null}
         {claim && claim.status === "draft" ? (
           <button type="button" onClick={runFixes} className="mt-3 h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
             Run the safe fixes
@@ -565,7 +571,7 @@ export function BillingPage() {
                   <li key={line.id} className={mismatch ? "rounded-2xl border border-alert bg-alert-wash px-4 py-3" : hit ? "rounded-2xl border border-wait bg-wait-wash px-4 py-3" : "rounded-2xl border border-teal bg-wash px-4 py-3"}>
                     <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? ` ${line.modifier}` : ""} · {line.units} · {line.schedule}</p>
                     <p className="mt-1 text-sm text-muted">{line.note}</p>
-                    <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {moneyOrBlank(line.allowedCents, line.units) || "none on the selected file"}.</p>
+                    <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {line.note === NOT_OFFICE_NOTE ? NOT_OFFICE_LABEL : totalOrBlank(allowedTotals[line.id] ?? null) || "none on the selected file"}.{reducedUnits[line.id] > 0 ? ` Therapy multiple-procedure reduction applied to ${reducedUnits[line.id]} ${reducedUnits[line.id] === 1 ? "unit" : "units"}.` : ""}</p>
                     {hit ? <p className="mt-2 text-sm font-medium text-ink" role="alert">{hit.check.reason}{hit.check.expectedCents === null ? " No amount was guessed." : ""}</p> : null}
                     <p className="mt-1 text-sm text-muted">Other payer, {line.otherSchedule ?? "not compared"}: {line.otherCents == null ? "no amount" : money((line.otherCents * line.units) / 100)}.</p>
                     {line.dispute ? <p className="mt-1 text-sm font-medium text-alert">Dispute. {line.dispute}</p> : null}
@@ -574,6 +580,11 @@ export function BillingPage() {
                 })
               )}
             </ul>
+            {Object.values(reducedUnits).some((count) => count > 0) ? (
+              <p className="mt-4 rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note">
+                <strong className="font-medium">Multiple-procedure payment reduction applied.</strong> Medicare pays the full rate on the therapy unit with the highest practice-expense value and cuts the practice-expense part by half on every other therapy unit on this claim.
+              </p>
+            ) : null}
             {totals ? (
               <p className="mt-4 text-sm text-ink">
                 Worksheet charge {totals.chargeCents === null ? "not entered" : money(totals.chargeCents / 100)}. Selected allowed {totals.allowedCents === null ? "none" : money(totals.allowedCents / 100)}.
@@ -591,7 +602,6 @@ export function BillingPage() {
             </div>
             {(() => {
               const packet = buildPacket(claim, client, submitter, books, today);
-              const shown = alerts;
               return (
                 <section className="mt-6 rounded-2xl border border-line bg-paper p-4">
                   <p className="text-xs font-medium tracking-widest text-teal uppercase">{packet.ready ? "Ready for review" : "Not complete"}</p>
@@ -599,12 +609,12 @@ export function BillingPage() {
                   <p className="mt-2 text-sm text-muted">{packet.locality}. {packet.next}</p>
                   {alerts.length > 0 ? (
                     <ul className="mt-3 space-y-2">
-                      {alerts.map((item) => (
-                        <li key={item.line.id} className="rounded-xl border border-deep px-3 py-2 text-sm">
+                      {alerts.map((item, index) => (
+                        <li key={`${item.line.id}-${index}`} className="rounded-xl border border-deep px-3 py-2 text-sm">
                           <p className="font-medium text-deep">High alert · {item.line.code}</p>
                           <p className="mt-1 text-ink">{item.check.reason} Expected {item.check.expectedCode} at {item.check.expectedCents === null ? "no loaded amount" : money(item.check.expectedCents / 100)}.</p>
                           {item.check.expectedCents !== null && claim.status === "draft" && claim.lines.some((line) => line.id === item.line.id) ? (
-                            <button type="button" onClick={() => useFileAmount(item.line.id, item.check.expectedCents as number)} className="mt-2 h-10 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">
+                            <button type="button" onClick={() => applyFileAmount(item.line.id, item.check.expectedCents as number)} className="mt-2 h-10 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">
                               Use the file amount
                             </button>
                           ) : null}
@@ -658,6 +668,10 @@ function todayIso() {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function totalOrBlank(cents: number | null) {
+  return cents === null ? "" : money(cents / 100);
 }
 
 function moneyOrBlank(cents: number | null, units: number) {

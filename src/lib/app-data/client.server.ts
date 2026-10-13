@@ -278,7 +278,9 @@ function tokenIdentityKey(token: string): string {
             .digest("base64url");
         }
       }
-    } catch {}
+    } catch {
+      // A token that will not decode falls through to hashing the raw token below.
+    }
   }
   return createHash("sha256").update(token).digest("base64url");
 }

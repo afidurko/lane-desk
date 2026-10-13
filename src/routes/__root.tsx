@@ -1,7 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
-import { NotFound } from "@/components/landing/not-found";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { NotFoundPage } from "@/components/pages/not-found-page";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Lane";
@@ -15,9 +15,8 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Lane codes a de-identified encounter and prices the allowed amount, timed against the manual desk. The chart stays.",
+          "Lane reads a de-identified therapy note, names the code, and shows the Medicare reference price. Not a payment. Not an EHR. New York only.",
       },
-      { name: "robots", content: "noindex, nofollow" },
       { name: "theme-color", content: "#2F5D56" },
     ],
     links: [
@@ -33,7 +32,7 @@ export const Route = createRootRoute({
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
     ],
   }),
-  notFoundComponent: NotFound,
+  notFoundComponent: NotFoundPage,
   component: () => (
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>

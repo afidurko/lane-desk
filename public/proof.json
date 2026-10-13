@@ -1,0 +1,25 @@
+{
+  "generated": "2026-10-13",
+  "what": "National Medicare physician fee schedule, non-facility, non-QP. Each price the app shows was recomputed from the file's component RVUs and the file's conversion factor.",
+  "years": [
+    {
+      "year": 2026,
+      "release": "RVU26D",
+      "conversionFactor": "33.4009",
+      "codesChecked": 8599,
+      "codesPriced": 3702,
+      "codesNotOffice": 4043,
+      "therapyReductionCodes": 51,
+      "mismatches": 0,
+      "firstMismatches": []
+    }
+  ],
+  "negativeControlCaught": true,
+  "publicFileMismatches": 0,
+  "totals": {
+    "years": 1,
+    "codesChecked": 8599,
+    "mismatches": 0,
+    "codesNotOffice": 4043
+  }
+}

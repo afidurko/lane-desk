@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { AmbulanceFile } from "@/lib/book/ambulance";
 import type { DmeFile, LabFile } from "@/lib/book/other";
-import { sequestrationLabel } from "@/lib/book/price";
+import { Note2024 } from "@/components/lookup/year-lookup";
+import { NOT_OFFICE_LABEL, NOT_PAID_LABEL, sequestrationLabel } from "@/lib/book/price";
 import type { PfsFile } from "@/lib/book/price";
 import { claimGuards } from "@/lib/billing/guard";
 import { nextGap } from "@/lib/billing/packet";
 import { readBilling } from "@/lib/billing/store";
 import { readSubmitter } from "@/lib/billing/submitter";
 import { money } from "@/lib/desk/clock";
-import { scanAmbulance, scanDme, scanLab, scanPhysician, type ScanCard, type ScanChange } from "@/lib/desk/scan";
+import { scanAmbulance, scanDme, scanLab, scanNeeds2024Note, scanPhysician, type ScanCard, type ScanChange } from "@/lib/desk/scan";
 
 type ClaimRow = { id: string; title: string; detail: string };
 
@@ -20,7 +21,9 @@ function todayIso() {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function cents(value: number | null) {
+function cents(value: number | null, notOffice?: boolean, notPaid?: boolean) {
+  if (notPaid) return NOT_PAID_LABEL;
+  if (notOffice) return NOT_OFFICE_LABEL;
   return value === null ? "Not on that file" : money(value / 100);
 }
 
@@ -97,6 +100,7 @@ export function DeskScan() {
           </article>
         ))}
       </div>
+      {scanNeeds2024Note(cards) ? <Note2024 /> : null}
       <div className="mt-4 flex flex-wrap gap-2">
         {(["All", "Physician", "Ambulance", "Lab", "DME"] as const).map((item) => (
           <button
@@ -133,8 +137,8 @@ export function DeskScan() {
                       <span className="mt-1 block text-muted">{row.name}</span>
                     </td>
                     <td className="px-3 py-3 text-ink">{row.schedule}</td>
-                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.prior)}</td>
-                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.current)}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.prior, row.priorNotOffice, row.priorNotPaid)}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.current, row.currentNotOffice, row.currentNotPaid)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -5,8 +5,8 @@ export const Route = createFileRoute("/code")({
   component: CodePage,
   head: () => ({
     meta: [
-      { title: "Lane — One code" },
-      { name: "description", content: "One code, what the file calls it, and the Rest of New York amount for each year from 2020 through 2026." },
+      { title: "Lane — Look up a code" },
+      { name: "description", content: "One code, what the CMS file calls it, and its Medicare reference price. Not a payment." },
     ],
   }),
 });

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import { Shell } from "@/components/landing/shell";
+import { Empty, FIELD, LINK, Page, ReferenceNote, SECONDARY } from "@/components/ui";
+import { IS_INTERNAL, NO_SHORT_NAME } from "@/lib/config/mode";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 import { describeCode } from "@/lib/lookup/describe";
+import { loadMppr } from "@/lib/pricing/books";
+import type { MpprInfo } from "@/lib/pricing/national";
 import { previousUse, pricedYears } from "@/lib/lookup/reason";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { type OnceRow } from "@/lib/lookup/once";
@@ -57,39 +60,66 @@ export function CodePage() {
     };
   }, [text]);
 
+  const clean = text.trim().toUpperCase();
   return (
-    <Shell>
-      <main className="mx-auto max-w-xl px-5 py-10">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Price team</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-ink">One code. Every year.</h1>
-        <label className="mt-6 block text-sm font-medium text-ink" htmlFor="one-code">
-          Code
-          <input
-            id="one-code"
-            value={text}
-            onChange={(event) => setText(event.target.value.toUpperCase())}
-            placeholder="97110"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            className="mt-1.5 h-14 w-full rounded-2xl border border-line bg-paper-2 px-4 font-display text-2xl text-ink"
-          />
-        </label>
-        {state === "idle" ? <p className="mt-4 text-sm text-muted">Type a code, like 97110. The name and the price for each year show up here.</p> : null}
-        {state === "bad" ? <p className="mt-4 text-sm text-muted">Type the whole code, like 97110.</p> : null}
-        {state === "loading" ? <p className="mt-4 text-sm text-muted">Loading the file description and every year.</p> : null}
-        {state === "miss" ? <p className="mt-4 text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
-        {state === "down" ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The page is still here. Type the code again.</p> : null}
-        {hits.map((hit) => (
-          <article key={hit.family} className="mt-8">
-            <p className="font-display text-4xl text-ink tabular-nums">{text.trim().toUpperCase()}</p>
-            <p className="mt-1 text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
-            <h2 className="mt-4 text-sm font-medium text-ink">What it is</h2>
-            <p className="mt-1 text-lg text-ink">{hit.row.n || "The file has no short name for this code."}</p>
-            <h2 className="mt-4 text-sm font-medium text-ink">Description</h2>
-            <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
-            <h2 className="mt-4 text-sm font-medium text-ink">Years and amounts</h2>
-            <YearPrices row={hit.row} />
-            <PriorNote row={hit.row} />
+    <Page
+      kicker="Look up a code"
+      title="What a code is, and its Medicare reference price"
+      lede="Type one billing code. You get the name on the Medicare fee file and the reference price for it. The price comes from the loaded file and nothing is typed in by hand."
+    >
+      <label className="block text-sm font-medium text-ink" htmlFor="one-code">
+        Code
+        <input
+          id="one-code"
+          value={text}
+          onChange={(event) => setText(event.target.value.toUpperCase())}
+          placeholder="Five characters, such as 97110"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={5}
+          aria-describedby="code-state"
+          className={`${FIELD} h-14 font-display text-2xl`}
+        />
+      </label>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
+        <span>Try</span>
+        {["97110", "97140", "99213"].map((code) => (
+          <button
+            key={code}
+            type="button"
+            onClick={() => setText(code)}
+            className="h-11 rounded-full border border-muted bg-paper-2 px-4 text-sm font-medium text-ink hover:border-teal"
+          >
+            {code}
+          </button>
+        ))}
+      </div>
+      <div id="code-state" className="mt-5" aria-live="polite">
+        {state === "idle" ? <Empty>Type a code, or pick one above. The reference price appears here.</Empty> : null}
+        {state === "bad" ? <p className="text-sm text-muted">A code is five characters, such as 97110 or A0428.</p> : null}
+        {state === "loading" ? <p className="text-sm text-muted">Loading the fee file.</p> : null}
+        {state === "miss" ? <p className="text-sm font-medium text-deep">{clean} is not on the loaded fee file.</p> : null}
+        {state === "down" ? (
+          <p className="text-sm font-medium text-deep" role="alert">
+            The fee file did not load. Type the code again, or reload the page.
+          </p>
+        ) : null}
+      </div>
+      {hits.map((hit) => (
+        <article key={hit.family} className="mt-4 rounded-2xl border border-line bg-paper-2 p-5">
+          <p className="font-display text-4xl text-ink tabular-nums">{clean}</p>
+          <p className="mt-1 text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
+          <h2 className="mt-4 text-sm font-medium text-ink">What it is</h2>
+          <p className="mt-1 text-lg text-ink">{IS_INTERNAL ? hit.row.n || "The file has no short name for this code." : NO_SHORT_NAME}</p>
+          <h2 className="mt-4 text-sm font-medium text-ink">About this price</h2>
+          <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
+          <h2 className="mt-4 text-sm font-medium text-ink">{IS_INTERNAL ? "Years and amounts" : "Reference price, 2026"}</h2>
+          <YearPrices row={hit.row} family={hit.family} />
+          <ReferenceNote />
+          {IS_INTERNAL ? <PriorNote row={hit.row} /> : null}
+          {IS_INTERNAL ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => {
                 const cents = hit.row.a[String(year)];
@@ -98,73 +128,64 @@ export function CodePage() {
                   <button
                     key={year}
                     type="button"
-                    className="h-11 rounded-full border border-line px-3 text-sm text-ink"
-                    onClick={() => {
+                    className={SECONDARY}
+                    onClick={async () => {
+                      // A therapy code carries its reduction values so the worksheet can apply the cut across the claim.
+                      const info = (await loadMppr(year).catch(() => ({}) as Record<string, MpprInfo>))[clean];
                       addToOpenClaim({
-                        code: text.trim().toUpperCase(),
+                        code: clean,
                         modifier: "",
                         units: 1,
                         chargeCents: cents,
                         allowedCents: cents,
+                        ...(info && info.fullCents === cents ? { mppr: { pe: info.pe, reducedCents: info.reducedCents } } : {}),
                         schedule: `${hit.label}, ${year}`,
-                        note: hit.row.n || text.trim().toUpperCase(),
+                        note: hit.row.n || clean,
                         year,
                       });
-                      setNote(`${year} ${money(cents / 100)} is on the claim. Nothing is sent.`);
+                      setNote(`${year} ${money(cents / 100)} is on the claim worksheet.`);
                     }}
                   >
-                    Use {year}
+                    Use {year} (internal)
                   </button>
                 );
               })}
             </div>
-          </article>
-        ))}
-        {once.length > 0 ? (
-          <section className="mt-8">
-            <h2 className="text-sm font-medium text-ink">This period only</h2>
-            <ul className="mt-3 space-y-3">
-              {once.map((row) => (
-                <li key={`${row.s}-${row.t}`} className="rounded-2xl border border-line px-4 py-3">
-                  <p className="text-xs font-medium tracking-widest text-teal uppercase">{row.s}</p>
-                  <p className="mt-1 text-sm text-muted">{row.n}</p>
-                  <p className="mt-1 text-base font-medium text-ink tabular-nums">{money(row.c / 100)}</p>
-                  <p className="text-xs text-muted">{row.t}</p>
-                  <button
-                    type="button"
-                    className="mt-2 h-11 rounded-full border border-line px-3 text-sm text-ink"
-                    onClick={() => {
-                      const year = Number(row.t.match(/20\d{2}/)?.[0] ?? "2026");
-                      addToOpenClaim({
-                        code: text.trim().toUpperCase(),
-                        modifier: "",
-                        units: 1,
-                        chargeCents: row.c,
-                        allowedCents: row.c,
-                        schedule: `${row.s}, ${row.t}`,
-                        note: row.n,
-                        year: year >= 2020 && year <= 2026 ? year : 2026,
-                      });
-                      setNote(`${row.s} ${money(row.c / 100)} is on the claim. Nothing is sent.`);
-                    }}
-                  >
-                    Use this amount
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-        {note ? (
-          <p className="mt-4 text-sm text-ink" role="status">
-            {note}{" "}
-            <Link to="/billing" className="font-medium text-teal">
-              Open the claim.
-            </Link>
-          </p>
-        ) : null}
-      </main>
-    </Shell>
+          ) : null}
+        </article>
+      ))}
+      {IS_INTERNAL && once.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-medium text-ink">This period only</h2>
+          <ul className="mt-3 space-y-3">
+            {once.map((row) => (
+              <li key={`${row.s}-${row.t}`} className="rounded-2xl border border-line bg-paper-2 px-4 py-3">
+                <p className="text-xs font-medium tracking-widest text-teal uppercase">{row.s}</p>
+                <p className="mt-1 text-sm text-muted">{row.n}</p>
+                <p className="mt-1 text-base font-medium text-ink tabular-nums">{money(row.c / 100)}</p>
+                <p className="text-xs text-muted">{row.t}</p>
+              </li>
+            ))}
+          </ul>
+          <ReferenceNote scope={false} />
+        </section>
+      ) : null}
+      {note ? (
+        <p className="mt-4 text-sm text-ink" role="status">
+          {note}{" "}
+          <Link to="/billing" className={LINK}>
+            Open the worksheet.
+          </Link>
+        </p>
+      ) : null}
+      {hits.length > 0 ? (
+        <p className="mt-8 border-t border-line pt-5">
+          <Link to="/invoice" className={LINK}>
+            Next: check an invoice line against this price
+          </Link>
+        </p>
+      ) : null}
+    </Page>
   );
 }
 

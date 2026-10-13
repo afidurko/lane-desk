@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TeamPage } from "@/components/team/team-page";
+import { closedScreen, lazyScreen, publicNotFound } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/team")({
-  component: TeamPage,
+  beforeLoad: publicNotFound,
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/team/team-page").then((m) => ({ default: m.TeamPage })))
+    : closedScreen("Team"),
   head: () => ({
     meta: [
       { title: "Lane — Team" },

@@ -1,4 +1,4 @@
-import { validDiagnosis, validNpi, type Books, type Claim, type Client } from "@/lib/billing/billing";
+import { allowedByLine, validDiagnosis, validNpi, withReduction, type Books, type Claim, type Client } from "@/lib/billing/billing";
 import { claimGuards } from "@/lib/billing/guard";
 import { submitterReady, type Submitter } from "@/lib/billing/submitter";
 
@@ -18,7 +18,14 @@ export type Packet = {
     pos: string;
     diagnosis: string;
     claimNumber: string;
-    lines: { code: string; modifier: string; units: number; chargeCents: number | null; allowedCents: number | null }[];
+    lines: {
+      code: string;
+      modifier: string;
+      units: number;
+      chargeCents: number | null;
+      allowedCents: number | null;
+      allowedTotalCents: number | null;
+    }[];
   };
   next: string;
 };
@@ -57,6 +64,7 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
   }
 
   const ready = missing.length === 0;
+  const allowedTotals = allowedByLine(books?.physician?.rows ? withReduction(claim.lines, books, claim.payer ?? "medicare") : claim.lines);
   const payer = claim.payer === "medicaid" ? "NY Medicaid" : "Medicare Part B";
   const cms1500: Cms1500 = {
     box1: payer,
@@ -100,6 +108,7 @@ export function buildPacket(claim: Claim, client: Client | null | undefined, sub
         units: line.units,
         chargeCents: line.chargeCents,
         allowedCents: line.allowedCents,
+        allowedTotalCents: allowedTotals[line.id] ?? null,
       })),
     },
     next: ready

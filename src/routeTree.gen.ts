@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as ClaimRouteImport } from './routes/claim'
@@ -24,13 +25,23 @@ import { Route as OperateRouteImport } from './routes/operate'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PaceRouteImport } from './routes/pace'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ProofRouteImport } from './routes/proof'
+import { Route as RequestRouteImport } from './routes/request'
 import { Route as RunRouteImport } from './routes/run'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as WhyRouteImport } from './routes/why'
+import { Route as ApiBillingCheckoutRouteImport } from './routes/api/billing.checkout'
+import { Route as ApiBillingPortalRouteImport } from './routes/api/billing.portal'
+import { Route as ApiBillingStatusRouteImport } from './routes/api/billing.status'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BillingRoute = BillingRouteImport.update({
@@ -103,6 +114,16 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProofRoute = ProofRouteImport.update({
+  id: '/proof',
+  path: '/proof',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestRoute = RequestRouteImport.update({
+  id: '/request',
+  path: '/request',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RunRoute = RunRouteImport.update({
   id: '/run',
   path: '/run',
@@ -118,9 +139,25 @@ const WhyRoute = WhyRouteImport.update({
   path: '/why',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingCheckoutRoute = ApiBillingCheckoutRouteImport.update({
+  id: '/api/billing/checkout',
+  path: '/api/billing/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingPortalRoute = ApiBillingPortalRouteImport.update({
+  id: '/api/billing/portal',
+  path: '/api/billing/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingStatusRoute = ApiBillingStatusRouteImport.update({
+  id: '/api/billing/status',
+  path: '/api/billing/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
   '/claim': typeof ClaimRoute
@@ -135,12 +172,18 @@ export interface FileRoutesByFullPath {
   '/ops': typeof OpsRoute
   '/pace': typeof PaceRoute
   '/pricing': typeof PricingRoute
+  '/proof': typeof ProofRoute
+  '/request': typeof RequestRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
   '/why': typeof WhyRoute
+  '/api/billing/checkout': typeof ApiBillingCheckoutRoute
+  '/api/billing/portal': typeof ApiBillingPortalRoute
+  '/api/billing/status': typeof ApiBillingStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
   '/claim': typeof ClaimRoute
@@ -155,13 +198,19 @@ export interface FileRoutesByTo {
   '/ops': typeof OpsRoute
   '/pace': typeof PaceRoute
   '/pricing': typeof PricingRoute
+  '/proof': typeof ProofRoute
+  '/request': typeof RequestRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
   '/why': typeof WhyRoute
+  '/api/billing/checkout': typeof ApiBillingCheckoutRoute
+  '/api/billing/portal': typeof ApiBillingPortalRoute
+  '/api/billing/status': typeof ApiBillingStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
   '/claim': typeof ClaimRoute
@@ -176,14 +225,20 @@ export interface FileRoutesById {
   '/ops': typeof OpsRoute
   '/pace': typeof PaceRoute
   '/pricing': typeof PricingRoute
+  '/proof': typeof ProofRoute
+  '/request': typeof RequestRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
   '/why': typeof WhyRoute
+  '/api/billing/checkout': typeof ApiBillingCheckoutRoute
+  '/api/billing/portal': typeof ApiBillingPortalRoute
+  '/api/billing/status': typeof ApiBillingStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/billing'
     | '/book'
     | '/claim'
@@ -198,12 +253,18 @@ export interface FileRouteTypes {
     | '/ops'
     | '/pace'
     | '/pricing'
+    | '/proof'
+    | '/request'
     | '/run'
     | '/team'
     | '/why'
+    | '/api/billing/checkout'
+    | '/api/billing/portal'
+    | '/api/billing/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/billing'
     | '/book'
     | '/claim'
@@ -218,12 +279,18 @@ export interface FileRouteTypes {
     | '/ops'
     | '/pace'
     | '/pricing'
+    | '/proof'
+    | '/request'
     | '/run'
     | '/team'
     | '/why'
+    | '/api/billing/checkout'
+    | '/api/billing/portal'
+    | '/api/billing/status'
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/billing'
     | '/book'
     | '/claim'
@@ -238,13 +305,19 @@ export interface FileRouteTypes {
     | '/ops'
     | '/pace'
     | '/pricing'
+    | '/proof'
+    | '/request'
     | '/run'
     | '/team'
     | '/why'
+    | '/api/billing/checkout'
+    | '/api/billing/portal'
+    | '/api/billing/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   BillingRoute: typeof BillingRoute
   BookRoute: typeof BookRoute
   ClaimRoute: typeof ClaimRoute
@@ -259,9 +332,14 @@ export interface RootRouteChildren {
   OpsRoute: typeof OpsRoute
   PaceRoute: typeof PaceRoute
   PricingRoute: typeof PricingRoute
+  ProofRoute: typeof ProofRoute
+  RequestRoute: typeof RequestRoute
   RunRoute: typeof RunRoute
   TeamRoute: typeof TeamRoute
   WhyRoute: typeof WhyRoute
+  ApiBillingCheckoutRoute: typeof ApiBillingCheckoutRoute
+  ApiBillingPortalRoute: typeof ApiBillingPortalRoute
+  ApiBillingStatusRoute: typeof ApiBillingStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/billing': {
@@ -371,6 +456,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/proof': {
+      id: '/proof'
+      path: '/proof'
+      fullPath: '/proof'
+      preLoaderRoute: typeof ProofRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/request': {
+      id: '/request'
+      path: '/request'
+      fullPath: '/request'
+      preLoaderRoute: typeof RequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/run': {
       id: '/run'
       path: '/run'
@@ -392,11 +491,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WhyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/checkout': {
+      id: '/api/billing/checkout'
+      path: '/api/billing/checkout'
+      fullPath: '/api/billing/checkout'
+      preLoaderRoute: typeof ApiBillingCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/portal': {
+      id: '/api/billing/portal'
+      path: '/api/billing/portal'
+      fullPath: '/api/billing/portal'
+      preLoaderRoute: typeof ApiBillingPortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/status': {
+      id: '/api/billing/status'
+      path: '/api/billing/status'
+      fullPath: '/api/billing/status'
+      preLoaderRoute: typeof ApiBillingStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   BillingRoute: BillingRoute,
   BookRoute: BookRoute,
   ClaimRoute: ClaimRoute,
@@ -411,9 +532,14 @@ const rootRouteChildren: RootRouteChildren = {
   OpsRoute: OpsRoute,
   PaceRoute: PaceRoute,
   PricingRoute: PricingRoute,
+  ProofRoute: ProofRoute,
+  RequestRoute: RequestRoute,
   RunRoute: RunRoute,
   TeamRoute: TeamRoute,
   WhyRoute: WhyRoute,
+  ApiBillingCheckoutRoute: ApiBillingCheckoutRoute,
+  ApiBillingPortalRoute: ApiBillingPortalRoute,
+  ApiBillingStatusRoute: ApiBillingStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

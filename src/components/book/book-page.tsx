@@ -1,3 +1,5 @@
+import { shortName } from "@/lib/config/mode";
+import { nyLocalities, localityName } from "@/lib/config/ny";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { GapRates } from "@/components/book/gap-rates";
@@ -12,6 +14,11 @@ import { readAdded, writeAdded } from "@/lib/book/store";
 import {
   conversionFor,
   localityDollars,
+  NOT_OFFICE_LABEL,
+  noDollarAmount,
+  NOT_PAID_LABEL,
+  payableStatus,
+  notPricedInOffice,
   sequester,
   sequestrationLabel,
   sequestrationPercent,
@@ -19,7 +26,7 @@ import {
   type PfsFile,
   type PfsRow,
 } from "@/lib/book/price";
-import { YearList } from "@/components/lookup/year-lookup";
+import { Note2024, YearList } from "@/components/lookup/year-lookup";
 import { money } from "@/lib/desk/clock";
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
@@ -123,7 +130,7 @@ export function BookPage() {
       .filter((row) => {
         if (modifier === "blank" && row.m !== "") return false;
         if (modifier === "only" && row.m === "") return false;
-        return row.c.toLowerCase().includes(text) || row.d.toLowerCase().includes(text);
+        return row.c.toLowerCase().includes(text) || shortName(row.d).toLowerCase().includes(text);
       })
       .slice(0, 40);
   }, [physician, query, modifier]);
@@ -136,6 +143,7 @@ export function BookPage() {
 
   function priceOf(row: PfsRow) {
     if (!physician) return null;
+    if (noDollarAmount(row, setting)) return null;
     const mode = physician.conversion.qp ? clinician : "nonQp";
     const conversion = conversionFor(row, mode, physician);
     if (!conversion) return null;
@@ -220,6 +228,7 @@ export function BookPage() {
         </div>
         {failed ? <p className="mt-3 text-sm font-medium text-deep">That file did not load.</p> : null}
         {!file && !failed ? <p className="mt-3 text-sm text-muted">Loading the {year} file.</p> : null}
+        {family === "physician" && year === 2024 ? <Note2024 /> : null}
 
         {physician ? (
           <>
@@ -245,10 +254,10 @@ export function BookPage() {
               <label className="text-sm font-medium text-ink sm:col-span-2">
                 Where was the service
                 <select value={locality} onChange={(event) => setLocality(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
-                  <option value="national">National, GPCI 1.000</option>
-                  {physician.localities.map((item) => (
+                  <option value="national">National reference, GPCI 1.000</option>
+                  {nyLocalities(physician.localities).map((item) => (
                     <option key={`${item.mac}-${item.number}`} value={`${item.mac}/${item.number}`}>
-                      {item.mac} {item.state ? `${item.state} ` : ""}{item.number} {item.name}
+                      {item.mac} NY {item.number} {localityName(item)}
                       {item.mac === "13282" && item.number === "99" ? " — Olean, 14760" : ""}
                     </option>
                   ))}
@@ -281,8 +290,8 @@ export function BookPage() {
                       <li key={`${row.c}-${row.m}`} className="border-t border-line first:border-t-0">
                         <button type="button" onClick={() => setSelected(row)} className={active ? "w-full bg-paper-2 px-4 py-3 text-left" : "w-full px-4 py-3 text-left hover:bg-paper-2"}>
                           <span className="font-medium text-ink tabular-nums">{row.c}{row.m ? `-${row.m}` : ""}</span>
-                          <span className="mt-1 block text-sm text-ink">{row.d}</span>
-                          <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {value === null ? "No national amount" : money(value)}</span>
+                          <span className="mt-1 block text-sm text-ink">{shortName(row.d)}</span>
+                          <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {!payableStatus(row.s) ? NOT_PAID_LABEL : setting === "nf" && notPricedInOffice(row) ? NOT_OFFICE_LABEL : value === null ? "No national amount" : money(value)}</span>
                         </button>
                       </li>
                     );
@@ -293,7 +302,7 @@ export function BookPage() {
                 {shown && allowed !== null && cut ? (
                   <>
                     <p className="text-xs font-medium tracking-widest text-teal uppercase">{year} {STATUS[shown.s] ?? shown.s}</p>
-                    <h2 className="mt-2 font-display text-3xl text-ink">{shown.c}{shown.m ? ` ${shown.m}` : ""} {shown.d}</h2>
+                    <h2 className="mt-2 font-display text-3xl text-ink">{shown.c}{shown.m ? ` ${shown.m}` : ""} {shortName(shown.d)}</h2>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div><dt className="text-xs tracking-widest text-muted uppercase">Fee schedule</dt><dd className="mt-1 font-medium text-ink tabular-nums">{money(allowed)}</dd></div>
                       <div><dt className="text-xs tracking-widest text-muted uppercase">Work / PE / MP</dt><dd className="mt-1 text-ink tabular-nums">{shown.w} / {setting === "nf" ? shown.pn : shown.pf} / {shown.mp}</dd></div>
@@ -308,7 +317,11 @@ export function BookPage() {
                   <p className="text-sm leading-relaxed text-muted">
                     {shown?.s === "J"
                       ? `${anesthesiaNote(physician, shown, place)} Payment is base units plus time, times that factor. This book does not invent the time.`
-                      : shown
+                      : shown && !payableStatus(shown.s)
+                        ? `${NOT_PAID_LABEL}. ${shown.c} is status ${shown.s}, so there is no separate amount.`
+                      : shown && setting === "nf" && notPricedInOffice(shown)
+                        ? `${NOT_OFFICE_LABEL}. CMS marks ${shown.c} non-facility NA (rarely or never done in the office), so there is no office price.`
+                        : shown
                         ? `${shown.c} has no amount on this setting.`
                         : "Select a code. Contractor-priced and excluded codes stay blank."}
                   </p>

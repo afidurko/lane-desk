@@ -1,0 +1,100 @@
+/**
+ * DEMO_MODE decides which prices a visitor can see.
+ *
+ *   public   (default)  National 2026 Medicare physician amounts only. No Rest of New York
+ *                       figures, no lab (CLFS) data, no billing worksheet, no internal tabs.
+ *   internal            Everything the desk has: Rest of NY, 2020-2026, lab, worksheet, files.
+ *
+ * Set VITE_DEMO_MODE=internal to turn internal on. Anything else, or nothing, is public.
+ * Rest of NY figures stay internal until Shield, Andrea and Aaron clear them.
+ */
+import { INTERNAL_SCOPE_LABEL } from "@/lib/config/internal-only";
+
+export type DemoMode = "public" | "internal";
+
+export function resolveMode(raw: string | undefined | null): DemoMode {
+  return String(raw ?? "")
+    .trim()
+    .toLowerCase() === "internal"
+    ? "internal"
+    : "public";
+}
+
+/** Set by vite.config.ts at build time. Undefined when this file runs under plain node (checks and scripts). */
+declare const __DEMO_MODE__: string | undefined;
+
+const fromNode = typeof process !== "undefined" ? process.env.VITE_DEMO_MODE : undefined;
+
+// Written as one conditional on the build-time constant so the bundler can drop the branch a public build never takes.
+export const IS_INTERNAL: boolean =
+  typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : resolveMode(fromNode) === "internal";
+export const DEMO_MODE: DemoMode = IS_INTERNAL ? "internal" : "public";
+
+/**
+ * Rest of New York dollar amounts typed into the source (the therapy table) are only kept in an internal build.
+ * Under plain node (checks) they are kept, because the checks test them.
+ */
+export const KEEP_TYPED_NY_AMOUNTS: boolean = typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : true;
+
+/**
+ * The typed therapy names (src/lib/desk/therapy-names.ts) are only kept in an internal build: many match CMS short
+ * descriptions (CPT text). Under plain node (checks) they are kept, because the coder checks read them.
+ */
+export const KEEP_TYPED_NAMES: boolean = typeof __DEMO_MODE__ !== "undefined" ? __DEMO_MODE__ === "internal" : true;
+
+/** The one sentence that sits next to every price. Do not reword it. */
+export const REFERENCE_NOTE = "Medicare reference price, not a payment";
+
+/** Lane covers New York only. Public mode still shows the national reference price, not a New York locality. */
+export const PUBLIC_SCOPE = {
+  year: 2026,
+  label: "Medicare national, non-facility, 2026",
+  short: "National, 2026",
+} as const;
+
+/** Internal scope label, from internal-only.ts. Empty in a public build so the string is not bundled. */
+export const INTERNAL_SCOPE: { label: string } = { label: INTERNAL_SCOPE_LABEL };
+
+export function scopeLabel(mode: DemoMode = DEMO_MODE) {
+  return mode === "internal" ? INTERNAL_SCOPE.label : PUBLIC_SCOPE.label;
+}
+
+/** Years a price screen may show. Public shows 2026 only. */
+export function visibleYears(all: readonly number[], mode: DemoMode = DEMO_MODE) {
+  return mode === "internal" ? all : all.filter((year) => year === PUBLIC_SCOPE.year);
+}
+
+/** Files that must never be in a public build. Used by the prune step and its test. */
+export const NEVER_PUBLIC = [
+  /^clfs-\d{4}\.json$/, // CLFS lab files: AMA license pending
+  /^years\/lab\//,
+];
+
+/** Rest of NY and other internal-only data. Removed from a public build. */
+export const INTERNAL_ONLY = [
+  /^afs-\d{4}\.json$/,
+  /^dme-\d{4}\.json$/,
+  /^pfs-20\d\d\.json$/, // every full physician file, with its locality table. The public build keeps pfs-national-2026.json only.
+  /^years\//,
+  /^once\//,
+  /^ny-medicaid\.json$/,
+  /^ny-more\.json$/,
+  /^found-rates\.json$/,
+  /^gap-rates\.json$/,
+  /^medicare-other\.json$/,
+  /^team-findings\.json$/,
+  /^file-status\.json$/,
+  /^proof-internal\.json$/,
+  /^history\//, // Rest of New York year-over-year changes, includes lab
+];
+
+/**
+ * CMS short descriptions (the "d" field of the fee files) are CPT text under the AMA license.
+ * The internal build shows them. A public build shows the code number only, and ships no file that carries them.
+ */
+export function shortName(text: string | null | undefined, mode: DemoMode = DEMO_MODE): string {
+  return mode === "internal" ? (text ?? "") : "";
+}
+
+/** Said in place of a short name in a public build. */
+export const NO_SHORT_NAME = "Code number only. CPT descriptions are not shown in this demo.";

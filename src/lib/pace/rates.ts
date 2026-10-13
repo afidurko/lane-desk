@@ -1,79 +1,74 @@
-/** Medicare county amounts from the CMS 2026 MA rate book, CountyRate2026PACE.csv. Not a Medicaid rate. */
+import { OFFICIAL as official } from "@/lib/pace/official";
+import { money } from "@/lib/desk/clock";
+
+/**
+ * PACE month figures, all read from src/lib/pace/official.ts, which scripts/build-pace-rates.py writes from the
+ * checked CMS index files (pace_history.sqlite for PACE; ma_partd_ny.sqlite for Part D). No amount is typed here.
+ * Internal only: this module is imported by the PACE screen alone, and a public build ships only its gate stub.
+ * A county or year that is not in those files has no amount and is marked NOT_CHECKED. Nothing is estimated.
+ */
+
+export type Sourced = { cents: number; source: string; year: number };
+
+export const NOT_CHECKED = "not yet checked against CMS";
 
 export const RATE_SOURCE =
-  "CMS 2026 MA rate book, CountyRate2026PACE.csv. These are the Parts A and B monthly amounts for PACE plans. Cattaraugus and Allegany are both $1,263.49. ESRD is the dialysis rate in that file. It replaces the county amount. A Medicaid PACE rate is not public.";
+  "PACE rates are the CMS PACE ratebook (not the regular Medicare Advantage rates). Each amount names its CMS file and year. A Medicaid PACE rate is not public.";
 
-export const MEDICARE_AB: { county: string; year: number; cents: number }[] = [
-  { county: "Cattaraugus", year: 2026, cents: 126349 },
-  { county: "Allegany", year: 2026, cents: 126349 },
-  { county: "Albany", year: 2026, cents: 139641 },
-  { county: "Bronx", year: 2026, cents: 192715 },
-  { county: "Broome", year: 2026, cents: 139641 },
-  { county: "Cayuga", year: 2026, cents: 139641 },
-  { county: "Chautauqua", year: 2026, cents: 126349 },
-  { county: "Chemung", year: 2026, cents: 126349 },
-  { county: "Chenango", year: 2026, cents: 126349 },
-  { county: "Clinton", year: 2026, cents: 129815 },
-  { county: "Columbia", year: 2026, cents: 127963 },
-  { county: "Cortland", year: 2026, cents: 126349 },
-  { county: "Delaware", year: 2026, cents: 137708 },
-  { county: "Dutchess", year: 2026, cents: 139641 },
-  { county: "Erie", year: 2026, cents: 139641 },
-  { county: "Essex", year: 2026, cents: 132872 },
-  { county: "Franklin", year: 2026, cents: 126349 },
-  { county: "Fulton", year: 2026, cents: 126349 },
-  { county: "Genesee", year: 2026, cents: 139641 },
-  { county: "Greene", year: 2026, cents: 127347 },
-  { county: "Hamilton", year: 2026, cents: 126349 },
-  { county: "Herkimer", year: 2026, cents: 139641 },
-  { county: "Jefferson", year: 2026, cents: 128304 },
-  { county: "Kings", year: 2026, cents: 180485 },
-  { county: "Lewis", year: 2026, cents: 126349 },
-  { county: "Livingston", year: 2026, cents: 139641 },
-  { county: "Madison", year: 2026, cents: 139641 },
-  { county: "Monroe", year: 2026, cents: 139641 },
-  { county: "Montgomery", year: 2026, cents: 139641 },
-  { county: "Nassau", year: 2026, cents: 168992 },
-  { county: "New York", year: 2026, cents: 198361 },
-  { county: "Niagara", year: 2026, cents: 139641 },
-  { county: "Oneida", year: 2026, cents: 139641 },
-  { county: "Onondaga", year: 2026, cents: 139641 },
-  { county: "Ontario", year: 2026, cents: 139641 },
-  { county: "Orange", year: 2026, cents: 145179 },
-  { county: "Orleans", year: 2026, cents: 139641 },
-  { county: "Oswego", year: 2026, cents: 139641 },
-  { county: "Otsego", year: 2026, cents: 135667 },
-  { county: "Putnam", year: 2026, cents: 154701 },
-  { county: "Queens", year: 2026, cents: 173142 },
-  { county: "Rensselaer", year: 2026, cents: 139641 },
-  { county: "Richmond", year: 2026, cents: 186574 },
-  { county: "Rockland", year: 2026, cents: 155438 },
-  { county: "Saratoga", year: 2026, cents: 139641 },
-  { county: "Schenectady", year: 2026, cents: 139641 },
-  { county: "Schoharie", year: 2026, cents: 139641 },
-  { county: "Schuyler", year: 2026, cents: 128236 },
-  { county: "Seneca", year: 2026, cents: 126349 },
-  { county: "St. Lawrence", year: 2026, cents: 126349 },
-  { county: "Steuben", year: 2026, cents: 126349 },
-  { county: "Suffolk", year: 2026, cents: 158842 },
-  { county: "Sullivan", year: 2026, cents: 128206 },
-  { county: "Tioga", year: 2026, cents: 139641 },
-  { county: "Tompkins", year: 2026, cents: 126349 },
-  { county: "Ulster", year: 2026, cents: 134389 },
-  { county: "Warren", year: 2026, cents: 126349 },
-  { county: "Washington", year: 2026, cents: 126349 },
-  { county: "Wayne", year: 2026, cents: 139641 },
-  { county: "Westchester", year: 2026, cents: 158081 },
-  { county: "Wyoming", year: 2026, cents: 126349 },
-  { county: "Yates", year: 2026, cents: 126349 },
-];
+/** All 62 New York counties in the PACE ratebook, from official.ts. */
+export const COUNTIES: readonly string[] = official.counties;
 
-export const ESRD_CENTS = { 2026: 1205155 } as const;
-export const PART_D_BID = { 2026: 23927 } as const;
+/** Years the screen offers. Each reads that year's PACE file. */
+export const PACE_YEARS: readonly number[] = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
-export const COUNTIES = ["Cattaraugus", "Allegany", "Albany", "Bronx", "Broome", "Cayuga", "Chautauqua", "Chemung", "Chenango", "Clinton", "Columbia", "Cortland", "Delaware", "Dutchess", "Erie", "Essex", "Franklin", "Fulton", "Genesee", "Greene", "Hamilton", "Herkimer", "Jefferson", "Kings", "Lewis", "Livingston", "Madison", "Monroe", "Montgomery", "Nassau", "New York", "Niagara", "Oneida", "Onondaga", "Ontario", "Orange", "Orleans", "Oswego", "Otsego", "Putnam", "Queens", "Rensselaer", "Richmond", "Rockland", "Saratoga", "Schenectady", "Schoharie", "Schuyler", "Seneca", "St. Lawrence", "Steuben", "Suffolk", "Sullivan", "Tioga", "Tompkins", "Ulster", "Warren", "Washington", "Wayne", "Westchester", "Wyoming", "Yates"] as const;
+export function isPaceYear(year: number) {
+  return PACE_YEARS.includes(year);
+}
 
+type Table = Record<string, Record<string, { cents: number; source: string }>>;
+
+function pick(table: Table, year: number, county: string): Sourced | null {
+  const row = table[String(year)]?.[county];
+  return row ? { cents: row.cents, source: row.source, year } : null;
+}
+
+/**
+ * 2020 NY PACE ESRD: CMS revised it on 2020-10-02 ($8,651.11; the original was $8,234.99). This one value picks which
+ * the screen and month total use. Flip to "original" if Takeover decides so.
+ */
+export const ESRD_2020_USE: "revised" | "original" = "revised";
+/** The original (pre-revision) 2020 NY PACE ESRD rate, read from the 2020 PACE ratebook in official.ts. */
+export const ESRD_2020_ORIGINAL_CENTS: number | null = Object.values((official.paceEsrd as Table)["2020"] ?? {})[0]?.cents ?? null;
+export const ESRD_2020_NOTE =
+  ESRD_2020_USE === "revised"
+    ? `CMS revised the 2020 PACE ESRD rate on Oct 2, 2020. This screen uses the revised rate. The original was ${ESRD_2020_ORIGINAL_CENTS === null ? `unpriced, ${NOT_CHECKED}` : money(ESRD_2020_ORIGINAL_CENTS / 100)}.`
+    : `CMS revised the 2020 PACE ESRD rate on Oct 2, 2020. This screen uses the original rate.`;
+
+function esrdTable(year: number): Table {
+  return (year === 2020 && ESRD_2020_USE === "revised" ? official.paceEsrdRevised : official.paceEsrd) as Table;
+}
+
+/** PACE Parts A/B monthly base county rate (risk), or the PACE ESRD rate. ESRD comes from the PACE ratebook only, never the MA file. */
+export function paceRate(county: string, year: number, esrd: boolean): Sourced | null {
+  return pick(esrd ? esrdTable(year) : (official.pace as Table), year, county);
+}
+
+/** NY PACE ESRD rate for the year (the same on every NY county row), from the PACE ratebook only. */
+export function paceEsrd(year: number): Sourced | null {
+  const rows = esrdTable(year)[String(year)];
+  const first = rows ? Object.values(rows)[0] : undefined;
+  return first ? { cents: first.cents, source: first.source, year } : null;
+}
+
+export const BASE_RATE_NOTE =
+  "These are base county rates, before CMS adjusts them for each person's health (risk score) and frailty.";
+
+export function partD(year: number): { bid: Sourced; premium: Sourced } | null {
+  const row = (official.partD as Record<string, { bidCents: number; premiumCents: number; source: string }>)[String(year)];
+  return row ? { bid: { cents: row.bidCents, source: row.source, year }, premium: { cents: row.premiumCents, source: row.source, year } } : null;
+}
+
+/** The Medicare amount the month total uses: the PACE county rate, or the PACE ESRD rate. Null when not in the files. */
 export function medicareCents(county: string, year: number, esrd: boolean) {
-  if (esrd) return ESRD_CENTS[year as keyof typeof ESRD_CENTS] ?? null;
-  return MEDICARE_AB.find((row) => row.county === county && row.year === year)?.cents ?? null;
+  return paceRate(county, year, esrd)?.cents ?? null;
 }

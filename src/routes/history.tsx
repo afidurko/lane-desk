@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HistoryPage } from "@/components/lookup/history-page";
+import { closedScreen, lazyScreen, publicNotFound } from "@/components/gate";
+import { IS_INTERNAL } from "@/lib/config/mode";
 
 export const Route = createFileRoute("/history")({
-  component: HistoryPage,
+  beforeLoad: publicNotFound,
+  component: IS_INTERNAL
+    ? lazyScreen(() => import("@/components/lookup/history-page").then((m) => ({ default: m.HistoryPage })))
+    : closedScreen("Codes that changed"),
   head: () => ({
     meta: [
       { title: "Lane — Codes that changed" },
-      { name: "description", content: "Rest of New York amounts from the first loaded year to the last, for physician, ambulance, lab, and equipment codes." },
+      { name: "description", content: "Internal: amounts from the first loaded year to the last." },
     ],
   }),
 });

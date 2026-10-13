@@ -38,6 +38,7 @@ export function addToOpenClaim(input: {
   units: number;
   chargeCents: number | null;
   allowedCents: number | null;
+  mppr?: { pe: number; reducedCents: number };
   schedule: string;
   note: string;
   year: number;
@@ -76,6 +77,7 @@ export function addToOpenClaim(input: {
     units: input.units,
     chargeCents: input.chargeCents,
     allowedCents: input.allowedCents,
+    ...(input.mppr ? { mppr: input.mppr } : {}),
     schedule: input.schedule,
     note: input.note,
   };

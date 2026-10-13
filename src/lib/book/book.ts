@@ -1,3 +1,4 @@
+import { money } from "@/lib/desk/clock";
 import { SERVICES } from "@/lib/desk/schedule";
 import { screen } from "@/lib/security/mesh";
 
@@ -143,7 +144,7 @@ export function admit(input: {
   if (sourced.stop || sourced.text.trim().length < 12) return { ok: false, reason: "Add a source. A row without one is not kept." };
   const loaded = CMS_ROWS.find((row) => row.scheduleId === schedule.id && row.code === code);
   if (loaded && loaded.unitDollars !== unitDollars) {
-    return { ok: false, reason: `${code} is already on the loaded schedule at $${loaded.unitDollars.toFixed(2)}.` };
+    return { ok: false, reason: `${code} is already on the loaded schedule at ${money(loaded.unitDollars)}.` };
   }
   if (loaded) return { ok: false, reason: `${code} is already on the loaded schedule.` };
   if (input.added.some((row) => row.scheduleId === schedule.id && row.year === year && row.code === code)) {

@@ -1,0 +1,5 @@
+FAIL no held-back file is in the static output — afs-2020.json, afs-2021.json, afs-2022.json, afs-2023.json, afs-2024.
+FAIL no year shards, period shards or lab files
+FAIL the only price file is pfs-national-2026.json — afs-2020.json, afs-2021.json, afs-2022.json, afs-2023.json, afs-2
+FAIL no NY locality therapy amount (242 distinct values, 5 localities) in 107 built scripts — static/assets/billing-pa
+{"staticFiles":162,"failCount":4}

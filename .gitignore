@@ -5,3 +5,7 @@ attachments
 screenshots
 .env
 .env.*
+.vercel
+.output
+.nitro
+dist

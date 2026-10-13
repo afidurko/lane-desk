@@ -1,3 +1,6 @@
+import { KEEP_TYPED_NY_AMOUNTS } from "@/lib/config/mode";
+import { applyMppr } from "@/lib/pricing/mppr";
+import type { MpprInfo } from "@/lib/pricing/national";
 import { screen } from "@/lib/security/mesh";
 import { offBook, SCHEDULE, SERVICES, serviceOf } from "@/lib/desk/schedule";
 
@@ -9,7 +12,8 @@ Gait and balance. No new pain reported.
 Plan: continue therapeutic exercise next session.`;
 
 export const CODE = "97110";
-export const UNIT_DOLLARS = 28.27;
+/** Typed Rest of NY 2026 figure for 97110. Zero in a public build. */
+export const UNIT_DOLLARS = KEEP_TYPED_NY_AMOUNTS ? 28.27 : 0;
 
 const UNIT_WORD: Record<string, number> = {
   zero: 0,
@@ -31,6 +35,10 @@ export type Line = {
   span: string;
   units: number;
   allowed: number;
+  /** Therapy multiple-procedure payment reduction. Set on every therapy line; reducedUnits > 0 means a cut was applied. */
+  mppr?: { fullUnits: number; reducedUnits: number };
+  /** CMS gives no office (non-facility) price for this code. */
+  notOffice?: boolean;
 };
 
 export type Review = {
@@ -124,7 +132,15 @@ export function linesOf(note: string, rates?: Record<string, number>): Line[] | 
   const lines: Line[] = [];
   for (const code of codes) {
     const group = hits.filter((hit) => hit.code === code);
-    const counts = group.map((hit) => countIn(hit.span.includes("\n") ? note : hit.span));
+    // One count per line of the note. A line that names a service and also writes its code (two hits) counts once.
+    const seenLines = new Set<number>();
+    const counts: ReturnType<typeof countIn>[] = [];
+    for (const hit of group) {
+      const lineStart = hit.span.includes("\n") ? hit.index : note.lastIndexOf("\n", hit.index - 1) + 1;
+      if (seenLines.has(lineStart)) continue;
+      seenLines.add(lineStart);
+      counts.push(countIn(hit.span.includes("\n") ? note : hit.span));
+    }
     if (counts.includes("bad")) return "units";
     const numbered = counts.filter((item): item is number => typeof item === "number");
     let units: number | null;
@@ -149,7 +165,10 @@ const EXPLICIT = /\b(\d{5}|[A-Z]\d{4})\b/gi;
 /** Codes written in the note that are not already on a prose hit. Priced only if a rate was passed in. */
 export function explicitLines(note: string, already: string[], rates: Record<string, number>): Line[] {
   const found = note.match(EXPLICIT) ?? [];
-  const codes = [...new Set(found.map((token) => token.toUpperCase()))].filter((code) => !already.includes(code) && rates[code] != null);
+  const extras = EXTRAS.get(rates);
+  const codes = [...new Set(found.map((token) => token.toUpperCase()))].filter(
+    (code) => !already.includes(code) && (rates[code] != null || extras?.notOffice.has(code)),
+  );
   return codes.map((code) => ({
     code,
     name: serviceOf(code)?.name ?? "Loaded fee file",
@@ -171,8 +190,17 @@ export function review(note: string, rates?: Record<string, number>): Review {
   const lines = linesOf(text, rates);
   if (lines === "split") return { gate: "split", text, ...blank };
   if (lines === "units") return { gate: "units", text, ...blank };
-  const extra = rates && lines !== "none" ? explicitLines(text, lines.map((line) => line.code), rates) : rates ? explicitLines(text, [], rates) : [];
-  const priced = lines === "none" ? extra : [...lines, ...extra];
+  const extra =
+    rates && lines !== "none"
+      ? explicitLines(
+          text,
+          lines.map((line) => line.code),
+          rates,
+        )
+      : rates
+        ? explicitLines(text, [], rates)
+        : [];
+  const priced = priceLines(lines === "none" ? extra : [...lines, ...extra], rates);
   if (priced.length === 0) return { gate: "wrong-type", text, ...blank };
   return { gate: "ok", text, patches, units: priced[0]?.units ?? null, lines: priced };
 }
@@ -193,15 +221,54 @@ export function spanOf(note: string, code = CODE) {
   return match ? match[0].replace(/\s+/g, " ") : "";
 }
 
+/**
+ * A rate map built straight from a loaded fee file. When a map is marked this way, a code
+ * missing from it prices at zero. It never falls back to the typed-in Rest of New York table.
+ */
+const FROM_FILE = new WeakSet<object>();
+
+/** What else a loaded file says about its codes: the therapy reduction values and the codes with no office price. */
+export type PriceExtras = { mppr: Record<string, MpprInfo>; notOffice: ReadonlySet<string> };
+const EXTRAS = new WeakMap<object, PriceExtras>();
+
+export function fromFile(rates: Record<string, number>, extras?: PriceExtras) {
+  FROM_FILE.add(rates);
+  if (extras) EXTRAS.set(rates, extras);
+  return rates;
+}
+
+/**
+ * Prices a day's lines together. Codes with no office price are left at zero and marked. Therapy lines get the
+ * multiple-procedure payment reduction across the whole list, not line by line.
+ */
+export function priceLines(lines: Line[], rates?: Record<string, number>): Line[] {
+  const extras = rates ? EXTRAS.get(rates) : undefined;
+  if (!extras) return lines;
+  const out = lines.map((line) => (extras.notOffice.has(line.code) ? { ...line, allowed: 0, notOffice: true } : line));
+  const at = out.flatMap((line, index) => (extras.mppr[line.code] && !line.notOffice ? [index] : []));
+  if (at.length === 0) return out;
+  const results = applyMppr(at.map((index) => ({ ...extras.mppr[out[index].code], units: out[index].units })));
+  at.forEach((index, k) => {
+    const { fullUnits, reducedUnits, cents } = results[k];
+    out[index] = { ...out[index], allowed: cents / 100, mppr: { fullUnits, reducedUnits } };
+  });
+  return out;
+}
+
 export function allowedOf(units: number, code = CODE, rates?: Record<string, number>) {
   const service = serviceOf(code);
-  if (service && !service.separate) return 0;
-  const dollars = rates?.[code] ?? service?.unitDollars ?? UNIT_DOLLARS;
+  const fromFileMap = rates !== undefined && FROM_FILE.has(rates);
+  // A loaded file decides what is payable. The typed table's "not separate" flag only applies to the typed table.
+  if (service && !service.separate && !fromFileMap) return 0;
+  const fallback = fromFileMap ? 0 : (service?.unitDollars ?? UNIT_DOLLARS);
+  const dollars = rates?.[code] ?? fallback;
   return Math.round(units * dollars * 100) / 100;
 }
 
 export function money(amount: number) {
-  return `$${amount.toFixed(2)}`;
+  const fixed = Math.abs(amount).toFixed(2);
+  const [whole, cents] = fixed.split(".");
+  return `${amount < 0 && Number(fixed) !== 0 ? "-" : ""}$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${cents}`;
 }
 
 export const SCHEDULE_LABEL = `${SCHEDULE.name}, ${SCHEDULE.setting}, ${SCHEDULE.asOf}`;

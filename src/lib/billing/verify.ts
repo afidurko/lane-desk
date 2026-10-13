@@ -1,4 +1,4 @@
-import { quoteCode, type Books, type Claim, type Line } from "@/lib/billing/billing";
+import { allowedByLine, quoteCode, withReduction, type Books, type Claim, type Line } from "@/lib/billing/billing";
 import { claimGuards, lineForGuard } from "@/lib/billing/guard";
 import { quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
 
@@ -9,9 +9,38 @@ export type Check = {
   expectedCents: number | null;
 };
 
-export function checkLine(line: Line, books: Books, payer: "medicare" | "medicaid" = "medicare", ny: NyMedicaidFile | null = null, county?: string): Check {
+/**
+ * Pass the other lines on the same claim (siblings) so the therapy reduction can rank the units.
+ * Without them a line is checked alone, which is right for any line that is not therapy.
+ * Optional county is used for New York Medicaid county fees.
+ */
+export function checkLine(
+  line: Line,
+  books: Books,
+  payer: "medicare" | "medicaid" = "medicare",
+  ny: NyMedicaidFile | null = null,
+  siblings: readonly Line[] = [line],
+  county?: string,
+): Check {
   if (payer === "medicaid") return checkMedicaid(line, ny, county);
   const quoted = quoteCode(books, line.code, line.modifier);
+  if (quoted.mppr && quoted.allowedCents !== null && line.chargeCents !== null) {
+    const day = withReduction(siblings.some((item) => item.id === line.id) ? siblings : [...siblings, line], books, payer);
+    const expectedTotal = allowedByLine(day)[line.id];
+    if (expectedTotal !== null && expectedTotal !== undefined) {
+      const chargeTotal = line.chargeCents * line.units;
+      const perUnit = Math.round(expectedTotal / Math.max(1, line.units));
+      if (Math.abs(chargeTotal - expectedTotal) > Math.max(1, line.units)) {
+        return {
+          level: "high",
+          reason: "Charge does not match the Rest of New York allowed amount after the therapy multiple-procedure reduction.",
+          expectedCode: line.code,
+          expectedCents: perUnit,
+        };
+      }
+      return { level: "clear", reason: "Matches the loaded file, with the therapy multiple-procedure reduction.", expectedCode: line.code, expectedCents: perUnit };
+    }
+  }
   if (quoted.schedule === "Physician file, not priced") {
     return { level: "high", reason: quoted.note || "This code is not separately payable.", expectedCode: line.code, expectedCents: null };
   }
@@ -72,7 +101,7 @@ function checkMedicaid(line: Line, ny: NyMedicaidFile | null, county?: string): 
 
 export function claimAlerts(claim: Claim, books: Books, today = "", ny: NyMedicaidFile | null = null, county?: string) {
   const payer = claim.payer ?? "medicare";
-  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books, payer, ny, county) })).filter((item) => item.check.level === "high");
+  const amount = claim.lines.map((line) => ({ line, check: checkLine(line, books, payer, ny, claim.lines, county) })).filter((item) => item.check.level === "high");
   const guards = claimGuards(claim, books, today).map((guard, index) => ({
     line: lineForGuard(claim, guard, index),
     check: {

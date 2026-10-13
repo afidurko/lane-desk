@@ -2,23 +2,35 @@
   "name": "app-builder-workspace",
   "private": true,
   "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "type": "module",
   "overrides": {
     "nf3": "0.3.17"
   },
   "scripts": {
     "dev": "node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
-    "build": "node scripts/with-app-env.mjs vite build && npm run db:migrate",
+    "build": "node scripts/with-app-env.mjs vite build && npm run db:migrate && npm run prune:public",
     "db:migrate": "node scripts/migrate.mjs",
+    "build:internal": "LANE_INTERNAL_BUILD=1 VITE_DEMO_MODE=internal npm run build",
+    "hooks:install": "git config core.hooksPath scripts/hooks && echo pre-commit gitleaks hook installed",
     "build:dev": "node scripts/with-app-env.mjs vite build --mode development",
     "preview": "node scripts/with-app-env.mjs vite preview",
     "preview:restart": "node scripts/preview.mjs restart",
     "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
     "check:auth": "node scripts/check-auth-invariant.mjs",
-    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
+    "test": "node --test 'scripts/**/*.test.mjs' && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prune:public": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/prune-public.mjs",
+    "proof": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs",
+    "check": "node scripts/build-national.mjs --check && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/lane-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/billing-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/sim-check.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-regression.mjs && VITE_DEMO_MODE=internal node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/self-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/demo-check.mjs && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/price-proof.mjs --check && node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/build-history.mjs --check && python3 scripts/build-pace-rates.py --check",
+    "check:key": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/answer-key-compare.mjs",
+    "e2e": "node scripts/e2e-demo.mjs",
+    "check:ny2020": "node --experimental-sqlite --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-ny-2020.mjs",
+    "check:output": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-public-output.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",

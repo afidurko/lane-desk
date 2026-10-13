@@ -1,0 +1,144 @@
+{
+  "generated": "2026-10-13",
+  "what": "Rest of New York, MAC 13282, locality 99. Year files the Code screen reads, and the therapy table used by the note coder.",
+  "years": [
+    {
+      "year": 2020,
+      "locality": "13282/99",
+      "codesChecked": 7341,
+      "mismatches": 0
+    },
+    {
+      "year": 2021,
+      "locality": "13282/99",
+      "codesChecked": 7351,
+      "mismatches": 0
+    },
+    {
+      "year": 2022,
+      "locality": "13282/99",
+      "codesChecked": 7378,
+      "mismatches": 0
+    },
+    {
+      "year": 2023,
+      "locality": "13282/99",
+      "codesChecked": 8077,
+      "mismatches": 0
+    },
+    {
+      "year": 2024,
+      "locality": "13282/99",
+      "codesChecked": 8144,
+      "mismatches": 0
+    },
+    {
+      "year": 2025,
+      "locality": "13282/99",
+      "codesChecked": 8186,
+      "mismatches": 0
+    },
+    {
+      "year": 2026,
+      "locality": "13282/99",
+      "codesChecked": 8599,
+      "mismatches": 0
+    }
+  ],
+  "national": {
+    "generated": "2026-10-13",
+    "what": "National Medicare physician fee schedule, non-facility, non-QP. Each price the app shows was recomputed from the file's component RVUs and the file's conversion factor.",
+    "years": [
+      {
+        "year": 2020,
+        "release": "RVU20D",
+        "conversionFactor": "36.0896",
+        "codesChecked": 7341,
+        "codesPriced": 3215,
+        "codesNotOffice": 4007,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      },
+      {
+        "year": 2021,
+        "release": "RVU21D",
+        "conversionFactor": "34.8931",
+        "codesChecked": 7351,
+        "codesPriced": 3230,
+        "codesNotOffice": 4003,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      },
+      {
+        "year": 2022,
+        "release": "RVU22D",
+        "conversionFactor": "34.6062",
+        "codesChecked": 7378,
+        "codesPriced": 3243,
+        "codesNotOffice": 4017,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      },
+      {
+        "year": 2023,
+        "release": "RVU23D",
+        "conversionFactor": "33.8872",
+        "codesChecked": 8077,
+        "codesPriced": 3253,
+        "codesNotOffice": 4014,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      },
+      {
+        "year": 2024,
+        "release": "RVU24D",
+        "conversionFactor": "33.2875",
+        "codesChecked": 8144,
+        "codesPriced": 3287,
+        "codesNotOffice": 4035,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      },
+      {
+        "year": 2025,
+        "release": "RVU25D",
+        "conversionFactor": "32.3465",
+        "codesChecked": 8186,
+        "codesPriced": 3326,
+        "codesNotOffice": 4030,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      },
+      {
+        "year": 2026,
+        "release": "RVU26D",
+        "conversionFactor": "33.4009",
+        "codesChecked": 8599,
+        "codesPriced": 3702,
+        "codesNotOffice": 4043,
+        "therapyReductionCodes": 51,
+        "mismatches": 0,
+        "firstMismatches": []
+      }
+    ],
+    "negativeControlCaught": true,
+    "publicFileMismatches": 0,
+    "totals": {
+      "years": 7,
+      "codesChecked": 55076,
+      "mismatches": 0,
+      "codesNotOffice": 28149
+    }
+  },
+  "therapyTable": {
+    "codes": 61,
+    "mismatches": 0,
+    "codes_off": []
+  }
+}
