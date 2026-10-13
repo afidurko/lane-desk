@@ -12,11 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as BookRouteImport } from './routes/book'
+import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as CodeRouteImport } from './routes/code'
 import { Route as CompeteRouteImport } from './routes/compete'
 import { Route as DeskRouteImport } from './routes/desk'
 import { Route as FilterRouteImport } from './routes/filter'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as InvoiceRouteImport } from './routes/invoice'
 import { Route as NyRouteImport } from './routes/ny'
 import { Route as OperateRouteImport } from './routes/operate'
 import { Route as OpsRouteImport } from './routes/ops'
@@ -39,6 +41,11 @@ const BillingRoute = BillingRouteImport.update({
 const BookRoute = BookRouteImport.update({
   id: '/book',
   path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClaimRoute = ClaimRouteImport.update({
+  id: '/claim',
+  path: '/claim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CodeRoute = CodeRouteImport.update({
@@ -64,6 +71,11 @@ const FilterRoute = FilterRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvoiceRoute = InvoiceRouteImport.update({
+  id: '/invoice',
+  path: '/invoice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NyRoute = NyRouteImport.update({
@@ -111,11 +123,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
+  '/claim': typeof ClaimRoute
   '/code': typeof CodeRoute
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
   '/filter': typeof FilterRoute
   '/history': typeof HistoryRoute
+  '/invoice': typeof InvoiceRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
@@ -129,11 +143,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
+  '/claim': typeof ClaimRoute
   '/code': typeof CodeRoute
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
   '/filter': typeof FilterRoute
   '/history': typeof HistoryRoute
+  '/invoice': typeof InvoiceRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
@@ -148,11 +164,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
+  '/claim': typeof ClaimRoute
   '/code': typeof CodeRoute
   '/compete': typeof CompeteRoute
   '/desk': typeof DeskRoute
   '/filter': typeof FilterRoute
   '/history': typeof HistoryRoute
+  '/invoice': typeof InvoiceRoute
   '/ny': typeof NyRoute
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
@@ -168,11 +186,13 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/book'
+    | '/claim'
     | '/code'
     | '/compete'
     | '/desk'
     | '/filter'
     | '/history'
+    | '/invoice'
     | '/ny'
     | '/operate'
     | '/ops'
@@ -186,11 +206,13 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/book'
+    | '/claim'
     | '/code'
     | '/compete'
     | '/desk'
     | '/filter'
     | '/history'
+    | '/invoice'
     | '/ny'
     | '/operate'
     | '/ops'
@@ -204,11 +226,13 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/book'
+    | '/claim'
     | '/code'
     | '/compete'
     | '/desk'
     | '/filter'
     | '/history'
+    | '/invoice'
     | '/ny'
     | '/operate'
     | '/ops'
@@ -223,11 +247,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BillingRoute: typeof BillingRoute
   BookRoute: typeof BookRoute
+  ClaimRoute: typeof ClaimRoute
   CodeRoute: typeof CodeRoute
   CompeteRoute: typeof CompeteRoute
   DeskRoute: typeof DeskRoute
   FilterRoute: typeof FilterRoute
   HistoryRoute: typeof HistoryRoute
+  InvoiceRoute: typeof InvoiceRoute
   NyRoute: typeof NyRoute
   OperateRoute: typeof OperateRoute
   OpsRoute: typeof OpsRoute
@@ -259,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/book'
       fullPath: '/book'
       preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claim': {
+      id: '/claim'
+      path: '/claim'
+      fullPath: '/claim'
+      preLoaderRoute: typeof ClaimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/code': {
@@ -294,6 +327,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invoice': {
+      id: '/invoice'
+      path: '/invoice'
+      fullPath: '/invoice'
+      preLoaderRoute: typeof InvoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ny': {
@@ -359,11 +399,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BillingRoute: BillingRoute,
   BookRoute: BookRoute,
+  ClaimRoute: ClaimRoute,
   CodeRoute: CodeRoute,
   CompeteRoute: CompeteRoute,
   DeskRoute: DeskRoute,
   FilterRoute: FilterRoute,
   HistoryRoute: HistoryRoute,
+  InvoiceRoute: InvoiceRoute,
   NyRoute: NyRoute,
   OperateRoute: OperateRoute,
   OpsRoute: OpsRoute,

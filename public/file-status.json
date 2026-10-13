@@ -1,5 +1,5 @@
 {
-  "built": "2026-10-11",
+  "built": "2026-10-12",
   "place": "Rest of New York, locality 99, MAC 13282, Olean 14760",
   "note": "Status only. No rate in this file is a price. Dollars stay in the schedule files. A daily repository job checks that these files are still present. It does not download a new schedule and it does not submit a claim.",
   "files": [
@@ -7,7 +7,7 @@
       "id": "pfs",
       "name": "Physician fee schedule",
       "cadence": "Annual, with quarterly corrections",
-      "loaded": "2020–2026. 2026 file is RVU26D, 19,453 rows.",
+      "loaded": "2020\u20132026. 2026 file is RVU26D, 19,453 rows.",
       "source": "CMS rvu26d PPRRVU file. Non-facility and facility totals are the file totals times the conversion factor in that file.",
       "rows": 19453,
       "status": "current",
@@ -18,7 +18,7 @@
       "id": "afs",
       "name": "Ambulance",
       "cadence": "Annual",
-      "loaded": "2020–2026. 2026 public use file, 1,308 rows.",
+      "loaded": "2020\u20132026. 2026 public use file, 1,308 rows.",
       "source": "CMS Ambulance Fee Schedule public use file, calendar year 2026. Amounts are the published file amounts for carrier locality 99.",
       "rows": 1308,
       "status": "current",
@@ -29,7 +29,7 @@
       "id": "clfs",
       "name": "Clinical laboratory",
       "cadence": "Quarterly",
-      "loaded": "Fourth quarter, 2020–2026. 2026 release 2026CLABQ4, 2,243 rows.",
+      "loaded": "Fourth quarter, 2020\u20132026. 2026 release 2026CLABQ4, 2,243 rows.",
       "source": "CMS clinical laboratory fee schedule, 2026 fourth quarter. The rate is the amount in the file. Coverage is not implied.",
       "rows": 2243,
       "status": "current",
@@ -40,12 +40,12 @@
       "id": "dme",
       "name": "DMEPOS",
       "cadence": "Quarterly",
-      "loaded": "October files, 2021–2026. 2026 release DME26-D, 3,538 New York rows.",
+      "loaded": "October files, 2021\u20132026. 2026 release DME26-D, 3,538 New York rows.",
       "source": "CMS DMEPOS fee schedule, October 2026. New York non-rural and New York rural. ZIP 14760 is on the 2026 fourth-quarter rural ZIP list.",
       "rows": 3538,
       "status": "current",
       "next": "January 2027",
-      "detail": "The 2020 fee file was not in that year’s zip. The October 2026 New York rural file is loaded."
+      "detail": "The 2020 fee file was not in that year\u2019s zip. The October 2026 New York rural file is loaded."
     },
     {
       "id": "asp",
@@ -84,23 +84,100 @@
       "id": "ipps",
       "name": "Inpatient PPS",
       "cadence": "Fiscal year",
-      "loaded": "FY 2026. 772 weight rows.",
-      "source": "CMS-1833-F Table 5 and Tables 1A and 1B. Weights are the 10 percent cap applied weight.",
-      "rows": 772,
+      "loaded": "FY 2021 through FY 2027. The 2027 correction notice has 766 weight rows.",
+      "source": "CMS-1849-CN Table 5 and Tables 1A and 1B, effective October 1, 2026. Weights are the 10 percent cap applied weight.",
+      "rows": 766,
       "status": "current",
-      "next": "FY 2027",
-      "detail": "National amounts are loaded. They are not wage-adjusted for a specific hospital."
+      "next": "FY 2028",
+      "detail": "National amounts effective October 1, 2026 are loaded. They are not wage-adjusted for a specific hospital."
+    },
+    {
+      "id": "snf",
+      "name": "Skilled nursing PPS",
+      "cadence": "Fiscal year",
+      "loaded": "FY 2024 through FY 2027 PDPM component rates. 26 rural rows and 26 urban rows in the current file.",
+      "source": "CMS-1843-F Tables 5 and 6. Components on one row are not added together.",
+      "rows": 52,
+      "status": "current",
+      "next": "FY 2028",
+      "detail": "Not wage-adjusted. A dash in the file is stored as no amount."
+    },
+    {
+      "id": "irf",
+      "name": "Inpatient rehabilitation",
+      "cadence": "Fiscal year",
+      "loaded": "FY 2020 and FY 2024 through FY 2027. The 2027 file has 100 groups.",
+      "source": "CMS-1845-CN relative weight file.",
+      "rows": 100,
+      "status": "current",
+      "next": "FY 2028",
+      "detail": "A tier weight is not a dollar. The conversion factor is not in the file."
+    },
+    {
+      "id": "ipf",
+      "name": "Inpatient psychiatric",
+      "cadence": "Fiscal year",
+      "loaded": "FY 2027 federal per diem $912.13, ECT $688.38, and the comorbidity factors.",
+      "source": "FY 2027 IPF PPS final addendum.",
+      "rows": 1,
+      "status": "current",
+      "next": "FY 2028",
+      "detail": "Not wage-adjusted. A comorbidity factor is not a dollar."
+    },
+    {
+      "id": "ltch",
+      "name": "Long-term care hospital",
+      "cadence": "Fiscal year",
+      "loaded": "FY 2027 standard federal rate $52,126.94 and 740 Table 11 weights.",
+      "source": "CMS-1849-CN Table 1E and CMS-1849-F Table 11.",
+      "rows": 740,
+      "status": "current",
+      "next": "FY 2028",
+      "detail": "A published weight of 0.0000 is not stored. Not wage-adjusted for one hospital."
+    },
+    {
+      "id": "hh-pps",
+      "name": "Home health PPS",
+      "cadence": "Calendar year",
+      "loaded": "CY 2020 through CY 2026. The 2026 file has 432 groups.",
+      "source": "CY 2026 final home health case-mix weight file.",
+      "rows": 432,
+      "status": "current",
+      "next": "CY 2027",
+      "detail": "The weight is not a dollar."
+    },
+    {
+      "id": "fqhc",
+      "name": "FQHC PPS",
+      "cadence": "Calendar year",
+      "loaded": "CY 2026 national base rate, $207.72.",
+      "source": "MM14309.",
+      "rows": 1,
+      "status": "current",
+      "next": "CY 2027",
+      "detail": "Before the geographic adjustment factor."
+    },
+    {
+      "id": "hospice-cap",
+      "name": "Medicare hospice cap",
+      "cadence": "Fiscal year",
+      "loaded": "FY 2027 national per-day rates, cap $36,174.75, and rural New York wage index 0.9122.",
+      "source": "R13976CP Tables 1 and 2, CMS-1851-F, and the FY 2027 final hospice wage index.",
+      "rows": 1,
+      "status": "current",
+      "next": "FY 2028",
+      "detail": "National per-day rates are not wage-adjusted. The index is not a payment. The New York non-residential Medicaid sheet ended September 30, 2026."
     },
     {
       "id": "ny-medicaid",
       "name": "NY Medicaid fee-for-service",
       "cadence": "As the Department posts",
-      "loaded": "Physician 8,410 rows. Lab file LAB 6.2024, 1,070 rows. Transport file dated 4/5/26, 2,318 rows. More schedules, 5,583 rows.",
+      "loaded": "Physician 8,410 rows. Lab fee schedule effective October 1, 2026, 1,077 rows. Transport file dated 4/5/26, 2,318 rows. More schedules, 5,583 rows.",
       "source": "eMedNY fee-for-service schedules. These are not managed-care plan rates, and they are not Medicare.",
-      "rows": 17381,
+      "rows": 17388,
       "status": "current",
       "next": "Next posted file",
-      "detail": "Managed-care plan rates are not loaded. The lab file is the June 2024 post, not a 2026 file."
+      "detail": "Managed-care plan rates are not loaded. The laboratory workbook is the fee schedule effective October 1, 2026."
     },
     {
       "id": "nadac",
@@ -120,9 +197,9 @@
       "loaded": "October 1, 2025 through September 30, 2026. Rural counties including Cattaraugus. 88 rows.",
       "source": "New York Medicaid certified hospice rate sheet. The total includes the worker recruitment and retention add-on.",
       "rows": 88,
-      "status": "current",
-      "next": "FY 2027",
-      "detail": "The fiscal year in force on October 11, 2026 is loaded."
+      "status": "due",
+      "next": "When the October 1, 2026 sheet is posted",
+      "detail": "The loaded sheet ended September 30, 2026. The next non-residential sheet is not posted. Amounts were not guessed."
     },
     {
       "id": "apg",
@@ -137,7 +214,7 @@
     },
     {
       "id": "wc-dental",
-      "name": "Workers’ compensation dental",
+      "name": "Workers\u2019 compensation dental",
       "cadence": "As the Board posts",
       "loaded": "Effective November 13, 2025. 577 rows.",
       "source": "Official New York Workers' Compensation Dental Fee Schedule. This is not Medicaid and not no-fault.",
@@ -148,25 +225,25 @@
     },
     {
       "id": "wc-dme",
-      "name": "Workers’ compensation equipment",
+      "name": "Workers\u2019 compensation equipment",
       "cadence": "As the Board posts",
       "loaded": "Effective June 28, 2024. 1,736 rows with a dollar in the file.",
       "source": "Official New York Workers' Compensation Durable Medical Equipment Fee Schedule, corrected August 28, 2024.",
       "rows": 1736,
       "status": "current",
       "next": "Next Board file",
-      "detail": "Rows with no dollar in the file are not stored. Physician and therapy workers’ compensation schedules are sold and are not here."
+      "detail": "Rows with no dollar in the file are not stored. Physician and therapy workers\u2019 compensation schedules are sold and are not here."
     },
     {
       "id": "personal-care",
-      "name": "Personal care, Cattaraugus",
+      "name": "Personal care, Olean and Allegany",
       "cadence": "As the Department posts",
-      "loaded": "2025 file. Cattaraugus County is not in it.",
-      "source": "2025 Personal Care Rates. Erie, Chautauqua, and Wyoming are the nearest counties that are listed.",
-      "rows": 10,
-      "status": "gap",
-      "next": "When Cattaraugus is posted",
-      "detail": "Do not use a neighboring county rate for Olean."
+      "loaded": "January 1, 2024. Willcare in Cattaraugus. Jan and Bev’s Home Care and Willcare in Allegany.",
+      "source": "CY 2024 personal care rates page. Olean is in Cattaraugus County.",
+      "rows": 3,
+      "status": "due",
+      "next": "When a later public sheet lists these counties",
+      "detail": "A printed zero is not stored. 2025 rates for other counties are not used for Olean or Allegany."
     },
     {
       "id": "ny-rehab",

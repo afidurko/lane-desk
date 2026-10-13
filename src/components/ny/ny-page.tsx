@@ -5,8 +5,9 @@ import type { DmeFile, LabFile } from "@/lib/book/other";
 import type { PfsFile } from "@/lib/book/price";
 import { quoteCode, type Books } from "@/lib/billing/billing";
 import { money } from "@/lib/desk/clock";
-import { countiesOf, NY, quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
+import { NY, quoteNy, type NyMedicaidFile } from "@/lib/ny/medicaid";
 import { extraLabel, quotesMore, type MoreFile } from "@/lib/ny/more";
+import { LOCAL_AS_OF, LOCAL_CARE } from "@/lib/ny/local";
 
 const empty: Books = { physician: null, ambulance: null, lab: null, dme: null };
 
@@ -42,14 +43,35 @@ export function NyPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">New York</p>
+        <p className="text-xs font-medium tracking-widest text-teal uppercase">New York team</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Federal Medicare for Rest of New York, beside the New York Medicaid fee.
+          Olean and Allegany.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          {NY.place} is in {NY.county} County. Medicare uses {NY.medicare}. Medicaid uses the eMedNY fee-for-service file for that county when the code is transportation, and the statewide physician or lab file otherwise. A managed-care plan rate is not in these files. PACE capitation is not either.
+          These personal care rates are set for this desk. {LOCAL_AS_OF}. Olean is Cattaraugus County. Other New York counties are not used.
         </p>
-        <form className="mt-8 grid gap-3 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+          {LOCAL_CARE.map((place) => (
+            <article key={place.place} className="rounded-2xl border border-line p-5">
+              <p className="text-xs font-medium tracking-widest text-teal uppercase">{place.county} County</p>
+              <h2 className="mt-1 font-display text-3xl text-ink">{place.place}</h2>
+              {place.agencies.map((agency) => (
+                <div key={agency.name} className="mt-4">
+                  <p className="text-sm font-medium text-ink">{agency.name}</p>
+                  <ul className="mt-2 divide-y divide-line">
+                    {agency.rates.map((rate) => (
+                      <li key={rate.level} className="flex items-baseline justify-between gap-3 py-2 text-sm text-ink">
+                        <span>{rate.level}</span>
+                        <span className="tabular-nums">{money(rate.cents / 100)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </article>
+          ))}
+        </div>
+        <form className="mt-10 grid gap-3 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
           <label className="text-sm font-medium text-ink">
             Code
             <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
@@ -57,8 +79,8 @@ export function NyPage() {
           <label className="text-sm font-medium text-ink">
             Medicaid county
             <select value={county} onChange={(event) => setCounty(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
-              {(ny ? countiesOf(ny) : [NY.county]).map((item) => (
-                <option key={item} value={item}>{item}{item === NY.county ? " — Olean" : ""}</option>
+              {LOCAL_CARE.map((place) => (
+                <option key={place.countyCode} value={place.countyCode}>{place.place}</option>
               ))}
             </select>
           </label>
@@ -99,7 +121,7 @@ export function NyPage() {
           )}
         </ul>
         <p className="mt-6 max-w-2xl text-sm leading-relaxed text-muted">
-          97110 is on the Medicare Rest of New York file. It is not in the eMedNY physician sections, and it is not in these other workbooks. The rehabilitation manual is a January 2026 policy PDF with no dollar table. Clinic, personal care, home health, hospice, chiropractic, and assisted living manuals are posted, and those pages had no fee workbook.
+          97110 is on the Medicare Rest of New York file. It is not in the eMedNY physician sections. The personal care amounts above are the ones this desk uses.
         </p>
       </main>
     </Shell>

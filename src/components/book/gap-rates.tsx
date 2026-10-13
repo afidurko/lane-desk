@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/desk/clock";
+import { LOCAL_AS_OF, LOCAL_CARE } from "@/lib/ny/local";
 
 type Drug = { ndc: string; name: string; perUnit: string; unit: string; kind: string };
 type Fee = { c: string; name: string; cents: number | null };
@@ -12,10 +13,12 @@ type GapFile = {
 };
 
 type CareRate = { level: string; cents: number };
+type LocalPlace = { place: string; county: string; agencies: { name: string; rates: CareRate[] }[] };
 type FoundFile = {
   apg: { asOf: string; source: string; rows: { c: string; name: string; cents: number; units: number | null }[] };
   alp: { asOf: string; facility: string; source: string; rows: { rug: string; name: string; code: string; cents: number | null }[] };
   personalCare: { asOf: string; source: string; rows: { name: string; county: string; rates: CareRate[] }[] };
+  localCare?: { asOf: string; source: string; places: LocalPlace[] };
   homeHealth: { asOf: string; source: string; rows: { code: string; name: string; cents: number }[] };
 };
 
@@ -57,11 +60,34 @@ export function GapRates() {
 
   return (
     <section className="mt-10">
-      <h2 className="font-display text-3xl text-ink">Rates that were missing</h2>
+      <h2 className="font-display text-3xl text-ink">Olean and Allegany</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-        Drug acquisition cost, workers’ compensation dental and equipment, and the rural New York Medicaid hospice sheet. These are not Medicare physician prices, and they are not a claim.
+        Personal care from the January 1, 2024 public sheet. Olean is in Cattaraugus County. A zero on that sheet is not shown.
       </p>
       {failed ? <p className="mt-3 text-sm font-medium text-deep">The file did not load.</p> : null}
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        {(LOCAL_CARE).map((place) => (
+          <article key={place.place} className="rounded-2xl border border-line p-5">
+            <p className="text-xs font-medium tracking-widest text-teal uppercase">{place.county} County</p>
+            <h3 className="mt-1 font-display text-3xl text-ink">{place.place}</h3>
+            <p className="mt-1 text-sm text-muted">{LOCAL_AS_OF}</p>
+            {place.agencies.map((agency) => (
+              <div key={agency.name} className="mt-4">
+                <p className="text-sm font-medium text-ink">{agency.name}</p>
+                <ul className="mt-2 divide-y divide-line">
+                  {agency.rates.map((rate) => (
+                    <li key={rate.level} className="flex items-baseline justify-between gap-3 py-2 text-sm text-ink">
+                      <span>{rate.level}</span>
+                      <span className="tabular-nums">{money(rate.cents / 100)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </article>
+        ))}
+      </div>
+      <p className="mt-3 max-w-2xl text-sm text-muted">The 2025 public sheet does not list Olean or Allegany. It lists other counties, and those rates are not used here.</p>
 
       <div className="mt-5 rounded-2xl border border-line p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -109,19 +135,6 @@ export function GapRates() {
             <li key={row.code} className="flex items-baseline justify-between gap-3 text-sm text-ink">
               <span className="min-w-0">{row.code} {row.name}</span>
               <span className="shrink-0 tabular-nums">{money(row.cents / 100)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-line p-5">
-        <h3 className="font-display text-2xl text-ink">Personal care, nearby counties</h3>
-        <p className="mt-2 text-sm text-muted">January 1, 2025. Cattaraugus is not in the posted file. These are the Erie, Chautauqua, and Wyoming agencies that are.</p>
-        <ul className="mt-4 space-y-3">
-          {(found?.personalCare.rows ?? []).map((row) => (
-            <li key={row.name + row.county} className="text-sm text-ink">
-              <span className="font-medium">{row.name}</span> · {row.county}
-              <span className="mt-1 block text-muted">{row.rates.map((rate) => `${rate.level} ${money(rate.cents / 100)}`).join(" · ")}</span>
             </li>
           ))}
         </ul>

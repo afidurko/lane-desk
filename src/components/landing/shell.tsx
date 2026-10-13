@@ -4,25 +4,16 @@ import { Menu, X } from "lucide-react";
 import { HelpChat } from "@/components/help/help-chat";
 
 export const NAV = [
-  { href: "/pace", label: "PACE" },
-  { href: "/", label: "Invoice" },
-  { href: "/code", label: "Code" },
-  { href: "/billing", label: "Claim" },
-  { href: "/ops", label: "Files" },
-  { href: "/history", label: "History" },
+  { href: "/", label: "Teams" },
+  { href: "/code", label: "Price" },
+  { href: "/ny", label: "New York" },
+  { href: "/billing", label: "Review" },
 ] as const;
 
-const PRIMARY = [
-  { href: "/pace", label: "PACE" },
-  { href: "/", label: "Invoice" },
-  { href: "/code", label: "Code" },
-  { href: "/billing", label: "Claim" },
-] as const;
-
-const LAYERS = [
-  { to: "/", n: "1", label: "Invoice" },
-  { to: "/code", n: "2", label: "Code" },
-  { to: "/billing", n: "3", label: "Claim" },
+const MORE = [
+  { href: "/history", label: "What changed" },
+  { href: "/pace", label: "Monthly program" },
+  { href: "/ops", label: "File dates" },
 ] as const;
 
 export function Mark() {
@@ -54,42 +45,23 @@ export function Shell({ children }: { children: ReactNode }) {
             <Mark />
             <span className="font-display text-xl tracking-tight">Lane</span>
           </Link>
-          <p className="hidden text-sm text-muted sm:block">Olean, NY 14760 · Rest of NY · 13282 / 99</p>
-          <nav className="hidden items-center gap-5 lg:flex" aria-label="Primary">
-            {PRIMARY.map((item) => {
-              const current = path === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  aria-current={current ? "page" : undefined}
-                  className={
-                    current
-                      ? "text-sm font-medium text-ink"
-                      : "text-sm text-muted transition-colors duration-200 hover:text-ink"
-                  }
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <p className="text-sm text-muted">Olean, New York</p>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="grid size-11 place-items-center rounded-full border border-line text-ink lg:hidden"
+              className="grid size-11 place-items-center rounded-full border border-line text-ink"
               aria-expanded={open}
               aria-controls="mobile-nav"
               onClick={() => setOpen((value) => !value)}
             >
-              <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+              <span className="sr-only">{open ? "Close menu" : "More pages"}</span>
               {open ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
         {open ? (
-          <nav id="mobile-nav" className="border-t border-line px-5 py-2 lg:hidden" aria-label="Mobile">
-            {NAV.map((item) => (
+          <nav id="mobile-nav" className="border-t border-line px-5 py-2" aria-label="More">
+            {MORE.map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
@@ -104,21 +76,20 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
       <nav className="border-b border-line" aria-label="Steps">
         <ol className="mx-auto flex max-w-6xl gap-2 px-5 py-3">
-          {LAYERS.map((layer) => {
-            const current = path === layer.to;
+          {NAV.map((item) => {
+            const current = path === item.href;
             return (
-              <li key={layer.to} className="min-w-0 flex-1">
+              <li key={item.href} className="min-w-0 flex-1">
                 <Link
-                  to={layer.to}
+                  to={item.href}
                   aria-current={current ? "page" : undefined}
                   className={
                     current
-                      ? "flex h-11 items-center justify-center gap-2 rounded-full bg-teal px-3 text-sm font-medium text-teal-ink"
-                      : "flex h-11 items-center justify-center gap-2 rounded-full border border-line bg-paper-2 px-3 text-sm text-ink"
+                      ? "flex h-11 items-center justify-center rounded-full bg-teal px-3 text-sm font-medium text-teal-ink"
+                      : "flex h-11 items-center justify-center rounded-full border border-line bg-paper-2 px-3 text-sm text-ink"
                   }
                 >
-                  <span className="tabular-nums">{layer.n}</span>
-                  <span className="truncate">{layer.label}</span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               </li>
             );
@@ -135,11 +106,11 @@ export function Shell({ children }: { children: ReactNode }) {
               Lane
             </p>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-              Paste a line. See the year’s amount. Nothing is sent.
+              Four teams take a bill from intake to review. Nothing is sent.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Footer">
-            {NAV.map((item) => (
+            {[...NAV, ...MORE].map((item) => (
               <Link key={item.href} to={item.href} className="text-muted hover:text-ink">
                 {item.label}
               </Link>

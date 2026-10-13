@@ -289,12 +289,12 @@ export function BillingPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760 · claims</p>
+        <p className="text-xs font-medium tracking-widest text-teal uppercase">Review team</p>
         <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Ready for a person to review.
+          What does not match.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-          The lines from the invoice sit here. This page does not send a claim.
+          These are the lines Intake saved. Review marks a charge that does not match the file. A person decides. Nothing is sent.
         </p>
         <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
           <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
@@ -532,15 +532,20 @@ export function BillingPage() {
               {claim.lines.length === 0 ? (
                 <li className="text-sm text-muted">No lines yet.</li>
               ) : (
-                claim.lines.map((line) => (
-                  <li key={line.id} className="rounded-2xl border border-line px-4 py-3">
+                claim.lines.map((line) => {
+                  const hit = alerts.find((item) => item.line.id === line.id);
+                  const mismatch = Boolean(hit && hit.check.expectedCents !== null && line.chargeCents !== null);
+                  return (
+                  <li key={line.id} className={mismatch ? "rounded-2xl border border-alert bg-alert-wash px-4 py-3" : hit ? "rounded-2xl border border-wait bg-wait-wash px-4 py-3" : "rounded-2xl border border-teal bg-wash px-4 py-3"}>
                     <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? ` ${line.modifier}` : ""} · {line.units} · {line.schedule}</p>
                     <p className="mt-1 text-sm text-muted">{line.note}</p>
                     <p className="mt-1 text-sm text-ink">Charge {moneyOrBlank(line.chargeCents, line.units) || "not entered"}. Allowed {moneyOrBlank(line.allowedCents, line.units) || "none on the selected file"}.</p>
+                    {hit ? <p className="mt-2 text-sm font-medium text-ink" role="alert">{hit.check.reason}{hit.check.expectedCents === null ? " No amount was guessed." : ""}</p> : null}
                     <p className="mt-1 text-sm text-muted">Other payer, {line.otherSchedule ?? "not compared"}: {line.otherCents == null ? "no amount" : money((line.otherCents * line.units) / 100)}.</p>
-                    {line.dispute ? <p className="mt-1 text-sm font-medium text-deep">Dispute. {line.dispute}</p> : null}
+                    {line.dispute ? <p className="mt-1 text-sm font-medium text-alert">Dispute. {line.dispute}</p> : null}
                   </li>
-                ))
+                  );
+                })
               )}
             </ul>
             {totals ? (

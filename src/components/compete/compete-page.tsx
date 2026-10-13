@@ -8,7 +8,7 @@ const LOADED = [
   { name: "DMEPOS", span: "2021–2026", count: "New York rural and non-rural", note: "2020 fee file was not in that year’s zip" },
   { name: "Hospital outpatient", span: "October 2026", count: "Addendum B", note: "Only October through December 2026" },
   { name: "Ambulatory surgical center", span: "October 2026", count: "Addendum AA and BB", note: "Only October through December 2026" },
-  { name: "Inpatient PPS", span: "FY 2026", count: "Weights and national amounts", note: "Not wage-adjusted" },
+  { name: "Inpatient PPS", span: "FY 2027", count: "Weights and national amounts", note: "Not wage-adjusted" },
   { name: "Part B drug ASP", span: "October 2026", count: "Quarterly", note: "Only October through December 2026" },
   { name: "NY Medicaid fee-for-service", span: "As posted", count: "Physician, lab, transport, dental, DME, and others", note: "Managed-care plan rates are not loaded" },
   { name: "NADAC", span: "Week of October 7, 2026", count: "About 30,000 rows", note: "Acquisition cost, not a pharmacy payment" },

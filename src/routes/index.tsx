@@ -5,11 +5,10 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
   head: () => ({
     meta: [
-      { title: "Lane — Paste a Part B line" },
+      { title: "Lane — Four teams" },
       {
         name: "description",
-        content:
-          "A de-identified encounter goes in. A code and an allowed amount come out, timed against the manual coding and fee-schedule desk. The chart stays.",
+        content: "Intake, Price, New York, and Review. A bill is checked for Olean. Nothing is sent.",
       },
     ],
   }),

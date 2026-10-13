@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { GapRates } from "@/components/book/gap-rates";
 import { OtherRates } from "@/components/book/other-rates";
+import { InstitutionRates } from "@/components/book/institution-rates";
 import { Shell } from "@/components/landing/shell";
 import { AMBULANCE_NAMES, ambulancePlaces, type AmbulanceFile, type AmbulanceRow } from "@/lib/book/ambulance";
 import { admit, SCHEDULES, scheduleOf, type AddedRow } from "@/lib/book/book";
@@ -355,6 +356,7 @@ export function BookPage() {
         {dme ? <DmeList rows={dme.rows} query={query} onQuery={setQuery} source={dme.source} percent={percent} side={dmeSide} onSide={setDmeSide} /> : null}
 
         <OtherRates />
+        <InstitutionRates />
         <GapRates />
 
         <section className="mt-10 grid items-start gap-6 lg:grid-cols-2">

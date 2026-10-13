@@ -4,9 +4,9 @@ import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
 import { dailyBridge } from "../src/lib/team/bridge.ts";
-import { rankBrief } from "../src/lib/team/rank.ts";
+import { rankBrief, rankInvoice, rankMemory } from "../src/lib/team/rank.ts";
 import { previousUse, reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
-import { readInvoiceLines } from "../src/lib/lookup/check.ts";
+import { readInvoiceLines, payBucket, paymentAlert } from "../src/lib/lookup/check.ts";
 import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
 import { buildPacket, nextGap, packetJson } from "../src/lib/billing/packet.ts";
@@ -89,6 +89,12 @@ const told = describeCode("Physician", { n: "Therapeutic exercises", s: "A", a: 
 check("a code description names the file wording and both years", told.includes("Therapeutic exercises") && told.includes("$28.27") && told.includes("$30.47") && told.includes("down"));
 const sheet = readInvoiceLines("CPT,DOS,Charge\n97110,2026-03-01,30.00");
 check("a spreadsheet header is not a line", sheet.length === 1 && sheet[0].code === "97110" && sheet[0].billedCents === 3000 && sheet[0].year === 2026);
+const columns = readInvoiceLines("Code,Date,Allowed,Charge\n97110,3/1/2026,28.27,\"$30.00\"");
+check("the charge column is the billed amount, not the allowed column", columns.length === 1 && columns[0].billedCents === 3000 && columns[0].year === 2026);
+check("a matching charge is in the match group, and a missing year needs a person", payBucket({ year: 2026, billedCents: 2827 }, 2827) === "match" && payBucket({ year: null, billedCents: 2827 }, 2827) === "look" && payBucket({ year: 2026, billedCents: 3000 }, 2827) === "off");
+const mismatch = paymentAlert({ code: "97110", year: 2026, billedCents: 3000, fileCents: 2827 });
+const unknown = paymentAlert({ code: "97160", year: 2026, billedCents: 5000, fileCents: null });
+check("a mismatch names both amounts and an unknown code invents nothing", mismatch.kind === "off" && mismatch.reason.includes("$28.27") && mismatch.reason.includes("$30.00") && unknown.kind === "look" && !unknown.reason.includes("$"));
 check("a 2026 line can use a file from that year", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2026)?.c === 13823);
 check("a 2024 line does not use a 2026-only file", pickOnce([{ s: "Part B drug", t: "October 2026", c: 13823, n: "Hep" }], 2024) === null);
 const openPerson = { id: "1", label: "Participant 1", county: "Cattaraugus", medicare: true, medicaid: true, esrd: false, age55: false, inArea: true, voluntary: true, community: true, loc: "open" };
@@ -101,6 +107,11 @@ check("a Social Security number is refused", blockedText("123-45-6789") !== null
 check("the meeting names every required seat", missingSeats([...SEATS]).length === 0);
 const ranked = rankBrief(["A meeting is missing the driver.", "Participant 1 is not enrolled. 55 or older is not marked.", "Participant 1: No Medicare county rate is loaded."]);
 check("Rank puts enrollment ahead of the meeting", ranked.status === "pass" && ranked.order[0].includes("not enrolled") && ranked.chain[0] === "Screen" && ranked.chain.includes("Rank"));
+const roll = rankInvoice({ look: 1, off: 2, match: 3 });
+check("Rank puts an unpriced invoice line ahead of a match", roll.seat === "Rank" && roll.order[0] === "look" && roll.order[2] === "match");
+check("Rank stops an invoice that asks to submit", rankInvoice({ look: 0, off: 0, match: 1 }, "submit the claim to CMS").status === "stop");
+const memory = rankMemory();
+check("Rank remembers the invoice order and not to invent a rate", memory.seatId === "takeover" && memory.keep.some((line) => line.includes("look, then off, then match")) && memory.keep.some((line) => line.includes("does not invent")));
 check("Rank stops a request to submit", rankBrief([], "submit the claim to CMS").status === "stop");
 const bridged = dailyBridge(
   [
