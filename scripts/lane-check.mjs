@@ -389,7 +389,7 @@ check("/history page renders the 2024 note", readFileSync("src/components/lookup
 }
 // Shield 3: public sample and Proof notes use plain wording only, so they code the same in a public build,
 // where near-descriptor matchers are stripped; and no sample prints a code beside a name.
-check("near-descriptor matchers are listed (11 codes)", NEAR_DESCRIPTOR_PHRASES.length === 14 && NEAR_DESCRIPTOR_PHRASES.includes("therapeutic exercise") && NEAR_DESCRIPTOR_PHRASES.includes("group therapeutic procedures"));
+check("near-descriptor matchers are listed (25 codes, 29 phrases)", NEAR_DESCRIPTOR_PHRASES.length === 29 && NEAR_DESCRIPTOR_PHRASES.includes("therapeutic exercise") && NEAR_DESCRIPTOR_PHRASES.includes("group therapeutic procedures"));
 check("no sample or Proof note relies on a near-descriptor matcher", [...DEMO_SAMPLES.map((x) => x.note), ...DEMO_PROOF_NOTES].every((n) => !NEAR_DESCRIPTOR_PHRASES.some((p) => n.toLowerCase().includes(p))), [...DEMO_SAMPLES.map((x) => x.note), ...DEMO_PROOF_NOTES].filter((n) => NEAR_DESCRIPTOR_PHRASES.some((p) => n.toLowerCase().includes(p))).join(" | "));
 check("no sample prints a code number beside a service name", DEMO_SAMPLES.every((x) => !/\(\d{5}\)/.test(x.note)));
 check("the full-day sample still codes 97110 x3 + 97116 x1", JSON.stringify(review(DEMO_SAMPLES.find((x) => x.id === "day").note).lines.map((l) => [l.code, l.units])) === JSON.stringify([["97110", 3], ["97116", 1]]));

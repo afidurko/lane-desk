@@ -57,3 +57,44 @@ test("F2: .gitleaksignore allows only the one historical finding, by fingerprint
   assert.deepEqual(lines, ["4a180f7b399499ceed8f248732c41eec0555e37b:src/lib/auth/preview.ts:generic-api-key:20"]);
   assert.ok(existsSync(".github/workflows/gitleaks.yml"));
 });
+
+test("lockfile: CI workflows and Vercel install with npm ci, never npm install", () => {
+  for (const wf of ["self-check.yml", "fee-watch.yml"]) {
+    const text = read(`.github/workflows/${wf}`);
+    assert.match(text, /- run: npm ci --no-audit --no-fund/, wf);
+    assert.doesNotMatch(text, /npm install/, wf);
+  }
+  assert.equal(JSON.parse(read("vercel.json")).installCommand, "npm ci --no-audit --no-fund");
+  assert.equal(JSON.parse(read("package-lock.json")).packages[""].engines?.node, ">=22.12.0 <23");
+});
+test("README and HANDOFF document npm ci and hooks:install", () => {
+  assert.match(read("README.md"), /npm ci/);
+  assert.match(read("README.md"), /npm run hooks:install/);
+  assert.match(read("docs/HANDOFF.md"), /npm run hooks:install/);
+});
+
+import { descriptorHits, loadCmsDescriptors2026 } from "./cms-descriptors.mjs";
+test("CMS descriptor matcher: case-insensitive, word-start, truncated long descriptors, no hits inside words", () => {
+  const names = new Set(["whirlpool therapy", "assistive technology assess", "bls"]);
+  assert.deepEqual(descriptorHits('phrases:["Whirlpool Therapy"]', names), ["whirlpool therapy"]);
+  assert.deepEqual(descriptorHits("assistive technology assessment", names), ["assistive technology assess"]);
+  assert.deepEqual(descriptorHits("tables and blsx and xwhirlpool therapy", names), []);
+  assert.deepEqual(descriptorHits("ALS or BLS.", names), ["bls"]);
+});
+test("CMS descriptor loader: skips cleanly with no RVU files; reads codes, not the header", () => {
+  assert.equal(loadCmsDescriptors2026("/nonexistent-cms-dir"), null);
+  const real = loadCmsDescriptors2026();
+  if (real) {
+    assert.ok(real.names.size > 15000);
+    assert.ok(real.names.has("whirlpool therapy"));
+    assert.ok(!real.names.has("description"));
+  }
+});
+test("therapy table: no matcher that ships in every build equals or starts a CMS 2026 short descriptor", () => {
+  const real = loadCmsDescriptors2026();
+  if (!real) return;
+  const src = read("src/lib/desk/therapy-codes.ts");
+  const shipped = [...src.matchAll(/phrases: (?:publicSafe\("\w+", )?(\[[^\]]*\])/g)].flatMap((m) => JSON.parse(m[1]));
+  assert.ok(shipped.length > 50);
+  assert.deepEqual(shipped.filter((p) => descriptorHits(p, real.names).length > 0), []);
+});

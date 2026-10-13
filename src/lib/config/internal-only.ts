@@ -14,9 +14,20 @@ export const INTERNAL_SCOPE_LABEL: string = KEEP ? "Rest of New York, MAC 13282,
 
 export const INTERNAL_SCHEDULE_SETTING: string = KEEP ? "Rest of New York, MAC 13282, locality 99, non-facility, non-QP" : "";
 
-/** Near-descriptor note matchers by code (wording close to a CPT descriptor). Empty in a public build. */
+/**
+ * Note matchers by code whose wording is close to, or equals, a CMS 2026 short descriptor (CPT text, AMA license).
+ * Empty in a public build. check:output fails if any 2026 short descriptor ships.
+ */
 export const NEAR_DESCRIPTOR_BY_CODE: Readonly<Record<string, readonly string[]>> = KEEP
   ? {
+      "92521": ["evaluation of speech fluency"],
+      "92522": ["evaluate speech production"],
+      "92526": ["oral function therapy"],
+      "97018": ["paraffin bath"],
+      "97022": ["whirlpool therapy"],
+      "97026": ["infrared therapy"],
+      "97028": ["ultraviolet therapy"],
+      "97039": ["unlisted modality"],
       "97110": ["therapeutic exercise", "therapeutic exercises"],
       "97112": ["neuromuscular reeducation", "neuromuscular re-education"],
       "97113": ["aquatic therapy", "aquatic exercise"],
@@ -28,5 +39,11 @@ export const NEAR_DESCRIPTOR_BY_CODE: Readonly<Record<string, readonly string[]>
       "97140": ["manual therapy"],
       "97150": ["group therapeutic procedures"],
       "97530": ["therapeutic activities"],
+      "97533": ["sensory integration"],
+      "97545": ["work hardening"],
+      "97546": ["work hardening add-on", "additional work hardening"],
+      "97552": ["group caregiver training"],
+      "97750": ["physical performance test"],
+      "97755": ["assistive technology assessment"],
     }
   : {};

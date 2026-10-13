@@ -58,5 +58,5 @@ export const PROOF_NOTES: readonly string[] = [
   "Synthetic note. Did balance and coordination retraining, 15 minutes.",
   "Synthetic note. Self-care training, one unit.",
   "Synthetic note. Did functional activity practice, 15 minutes.\nExercise for strength and range of motion, 15 minutes.",
-  "Synthetic note. Did group caregiver training.",
+  "Synthetic note. Did training for a group of caregivers.",
 ];
