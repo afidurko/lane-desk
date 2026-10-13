@@ -139,5 +139,10 @@ same("2020 Rest of NY 97110 on the Code screen's year shard is $30.47", JSON.par
 same("2020 Rest of NY therapy reduction table exists (97110 full 30.47)", [localityPrices(f2020, "13282/99").mppr["97110"].fullCents, localityPrices(f2020, "13282/99").mppr["97110"].reducedCents < 3047], [3047, true]);
 same("2020 NA code 11004 is not priced in the office setting", [localityPrices(f2020, "13282/99").rates["11004"], localityPrices(f2020, "13282/99").notOffice.has("11004")], [undefined, true]);
 
+// 2024 note: text only. The loaded figure it names must be the loaded 2024 amount (no price data changed).
+import { EXAMPLE_2024, NOTE_2024 } from "../src/lib/pricing/release-2024.ts";
+same("2024 note example matches the loaded 2024 Rest of NY 97110", JSON.parse(readFileSync("public/years/physician/9.json", "utf8"))["97110"].a["2024"], EXAMPLE_2024.loadedCents);
+same("2024 note names the Jan 1 - Mar 8 window and both figures", [/January 1 through March 8, 2024/.test(NOTE_2024), NOTE_2024.includes("$28.03"), NOTE_2024.includes("$28.49")], [true, true, true]);
+
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);

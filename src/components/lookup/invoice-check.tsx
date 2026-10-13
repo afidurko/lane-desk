@@ -13,7 +13,7 @@ import { pricedYears, reasonLine } from "@/lib/lookup/reason";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { sampleInvoice } from "@/lib/demo/invoice-sample";
 import { screen } from "@/lib/security/mesh";
-import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
+import { findAcross, loadOnce, Note2024, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
 
 type Hit = { family: Family; label: string; row: Row };
 type Checked = CheckLine & {
@@ -264,6 +264,7 @@ export function InvoiceCheck() {
               </p>
             ) : null}
             <ReferenceNote />
+            {rows.some((line) => line.year === 2024 && line.hits.some((hit) => hit.family === "physician")) ? <Note2024 /> : null}
           </div>
         ) : null}
         {labels.map((label) => {
@@ -327,7 +328,7 @@ export function InvoiceCheck() {
                           {open === key ? "Hide the years" : "Show every year"}
                         </button>
                       ) : null}
-                      {open === key && chosen ? <YearPrices row={chosen.row} mark={line.year} /> : null}
+                      {open === key && chosen ? <YearPrices row={chosen.row} mark={line.year} family={chosen.family} /> : null}
                     </li>
                   );
                 })}

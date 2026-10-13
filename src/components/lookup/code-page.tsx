@@ -116,7 +116,7 @@ export function CodePage() {
           <h2 className="mt-4 text-sm font-medium text-ink">About this price</h2>
           <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
           <h2 className="mt-4 text-sm font-medium text-ink">{IS_INTERNAL ? "Years and amounts" : "Reference price, 2026"}</h2>
-          <YearPrices row={hit.row} />
+          <YearPrices row={hit.row} family={hit.family} />
           <ReferenceNote />
           {IS_INTERNAL ? <PriorNote row={hit.row} /> : null}
           {IS_INTERNAL ? (

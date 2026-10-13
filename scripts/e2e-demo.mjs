@@ -71,7 +71,7 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
   t("404 page: the link home works", new URL(lost.url()).pathname === "/" && (await lost.locator("h1").count()) === 1, lost.url());
   await lost.close();
   if (!internal) {
-    for (const held of ["/pfs-2020.json", "/pfs-2026.json", "/years/physician/9.json", "/clfs-2026.json", "/afs-2026.json", "/dme-2026.json", "/ny-medicaid.json", "/found-rates.json", "/gap-rates.json"]) {
+    for (const held of ["/pfs-2020.json", "/pfs-2026.json", "/years/physician/9.json", "/clfs-2026.json", "/afs-2026.json", "/dme-2026.json", "/ny-medicaid.json", "/found-rates.json", "/gap-rates.json", "/history/summary.json", "/history/physician.json"]) {
       const res = await page.request.get(base + held);
       t(`public build does not serve ${held}`, res.status() === 404, `${res.status()}`);
     }
@@ -266,17 +266,46 @@ for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["ph
     await page.goto(base + "/book", { waitUntil: "networkidle" });
     const book = await page.locator("select option").allInnerTexts();
     t("code book lists New York localities only", book.filter((o) => /^\d{5} /.test(o)).every((o) => / NY /.test(o)), `${book.filter((o) => /^\d{5} /.test(o)).length} localities`);
+    // Non-facility NA (CMS "rarely or never done in the office"): Book and Filter say so and never show an office price.
+    await page.getByPlaceholder("97110 or gait").fill("11004");
+    await page.getByText("Not priced in the office setting").first().waitFor();
+    const naBook = await page.locator("main").innerText();
+    t("Book: NA code 11004 says not priced in the office setting", /Not priced in the office setting/.test(naBook));
+    t("Book: NA code 11004 shows no fee schedule amount", !/Fee schedule\s*\$/.test(naBook) && !/Medicare pays\s*\$/.test(naBook));
+    await page.getByLabel("Year").first().selectOption("2024");
+    await page.locator("[data-note-2024]").first().waitFor();
+    t("Book: 2024 shows the year-end release note", /January 1 through March 8, 2024/.test(await page.locator("[data-note-2024]").first().innerText()));
+    await page.goto(base + "/filter", { waitUntil: "networkidle" });
+    await page.getByPlaceholder("knee or A0130").fill("11004");
+    await page.locator("tr", { hasText: "11004" }).first().waitFor();
+    const naFilter = await page.locator("tr", { hasText: "11004" }).first().innerText();
+    t("Filter: NA code 11004 says not priced in the office setting", /Not priced in the office setting/.test(naFilter) && !/\$\d/.test(naFilter), naFilter.replace(/\s+/g, " ").slice(0, 120));
+    await page.getByLabel("Year").first().selectOption("2024");
+    await page.locator("[data-note-2024]").first().waitFor();
+    t("Filter: 2024 shows the year-end release note", (await page.locator("[data-note-2024]").count()) >= 1);
+    await page.goto(base + "/code", { waitUntil: "networkidle" });
+    await page.locator("#one-code").fill("97110");
+    await page.locator("[data-note-2024]").first().waitFor();
+    t("Code (internal): 2024 price carries the year-end release note", /\$28\.03/.test(await page.locator("[data-note-2024]").first().innerText()));
+    for (const path of ["/pace", "/history", "/filter"]) {
+      await page.goto(base + path, { waitUntil: "networkidle" });
+      t(`${path} opens in internal`, !(await page.getByText("is not part of this demo").isVisible().catch(() => false)) && (await page.locator("h1").count()) >= 1);
+    }
   }
 
   // Public mode must not fetch the held-back files.
   if (!internal) {
     const forbidden = requests.filter((path) => /^\/(clfs-|years\/|once\/|ny-|found-rates|gap-rates|medicare-other|afs-|dme-|pfs-20\d\d)/.test(path));
     t("public mode never requests held-back files", forbidden.length === 0, forbidden.join(","));
-    for (const path of ["/billing", "/ny", "/ops", "/book"]) {
+    for (const path of ["/billing", "/ny", "/ops", "/book", "/pace", "/history", "/filter"]) {
       await page.goto(base + path, { waitUntil: "networkidle" });
       t(`${path} is closed in public`, await page.getByText("is not part of this demo").isVisible());
     }
     const nav = await page.locator("header").innerText();
+    await page.goto(base + "/code", { waitUntil: "networkidle" });
+    await page.locator("#one-code").fill("97110");
+    await page.locator("[data-reference-note]").first().waitFor();
+    t("Code (public): no 2024 note, since 2024 is not shown", (await page.locator("[data-note-2024]").count()) === 0);
     t("public header shows no internal tab", !/Claim worksheet|File status|Code book/.test(nav + (await page.locator("footer").innerText())));
   }
   t("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));

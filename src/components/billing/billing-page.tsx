@@ -1,3 +1,4 @@
+import { Note2024 } from "@/components/lookup/year-lookup";
 import { useEffect, useState, type FormEvent } from "react";
 import { Shell } from "@/components/landing/shell";
 import type { AmbulanceFile } from "@/lib/book/ambulance";
@@ -308,6 +309,7 @@ export function BillingPage() {
         <p className="mt-4 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink">
           <span className="font-medium">{gap.title}.</span> {gap.detail} Pricing from the {books.physician?.year ?? fileYear} files.
         </p>
+        {(books.physician?.year ?? fileYear) === 2024 ? <Note2024 /> : null}
         {claim && claim.status === "draft" ? (
           <button type="button" onClick={runFixes} className="mt-3 h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
             Run the safe fixes

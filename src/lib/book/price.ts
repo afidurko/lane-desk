@@ -41,6 +41,17 @@ export type PfsFile = {
   rows: PfsRow[];
 };
 
+/** The words every screen uses for a CMS non-facility NA code. */
+export const NOT_OFFICE_LABEL = "Not priced in the office setting";
+
+/**
+ * Same rule as the desk (locality.ts): a payable code (status A, R or T) with CMS non-facility NA has no office price.
+ * 4,043 base codes on the 2026 file.
+ */
+export function notPricedInOffice(row: Pick<PfsRow, "nn" | "s">) {
+  return Boolean(row.nn) && (row.s === "A" || row.s === "R" || row.s === "T");
+}
+
 export const SEQUESTRATION = {
   percent: 2,
   carc: "253",

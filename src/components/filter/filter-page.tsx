@@ -4,10 +4,10 @@ import { AMBULANCE_NAMES, type AmbulanceFile } from "@/lib/book/ambulance";
 import { isProcedure, isTransport, payableStatus, STATUS_LABEL } from "@/lib/book/filter";
 import { readInterest, writeInterest, type Interest } from "@/lib/book/interest";
 import { type DmeFile, type LabFile } from "@/lib/book/other";
-import { conversionFor, localityDollars, type PfsFile } from "@/lib/book/price";
+import { conversionFor, localityDollars, NOT_OFFICE_LABEL, notPricedInOffice, type PfsFile } from "@/lib/book/price";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
-import { YearList } from "@/components/lookup/year-lookup";
+import { Note2024, YearList } from "@/components/lookup/year-lookup";
 import { Link } from "@tanstack/react-router";
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
@@ -164,6 +164,7 @@ export function FilterPage() {
           </label>
         </div>
 
+        {family === "physician" && year === 2024 ? <Note2024 /> : null}
         <div className="mt-6">
           <YearList family={family} code={query.trim()} quiet />
         </div>
@@ -274,7 +275,9 @@ function buildRows(file: AnyFile | null, family: Family, query: string, preset: 
         const label = STATUS_LABEL[row.s] ?? `Status ${row.s}.`;
         let amount: string | null = null;
         let dollars = 0;
-        if (payableStatus(row.s)) {
+        if (notPricedInOffice(row)) {
+          amount = NOT_OFFICE_LABEL;
+        } else if (payableStatus(row.s)) {
           const conversion = conversionFor(row, "nonQp", file);
           dollars = conversion ? localityDollars(row, "nf", place, conversion) : 0;
           amount = dollars > 0 ? money(dollars) : null;

@@ -1,0 +1,17 @@
+
+> check:output
+> node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/check-public-output.mjs
+
+(node:2135977) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2135977) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ok   config.json: everything not a static file goes to the server function — {"src":"/(.*)","dest":"/__server"}
+ok   server function exists
+ok   static assets folder exists with scripts
+ok   no held-back file is in the static output
+ok   no year shards, period shards or lab files
+ok   the only price file is pfs-national-2026.json — pfs-national-2026.json, proof.json
+ok   national file has no localities and no facility or locality fields — family,release,year,conversion,source,rows
+ok   no NY locality therapy amount (242 distinct values, 5 localities) in 76 built scripts
+{"staticFiles":50,"failCount":0}

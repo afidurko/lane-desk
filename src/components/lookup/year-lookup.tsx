@@ -3,6 +3,7 @@ import { money } from "@/lib/desk/clock";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { IS_INTERNAL, PUBLIC_SCOPE, visibleYears } from "@/lib/config/mode";
 import { loadNational } from "@/lib/pricing/national";
+import { NOTE_2024 } from "@/lib/pricing/release-2024";
 
 export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020] as const;
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
@@ -139,13 +140,25 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
     <div>
       <p className="font-display text-3xl text-ink">{code.trim().toUpperCase()}</p>
       {row.n ? <p className="mt-1 text-sm leading-relaxed text-muted">{row.n}</p> : null}
-      <YearPrices row={row} />
+      <YearPrices row={row} family={family} />
     </div>
   );
 }
 
-export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
+/** Shown next to any 2024 physician price. Text only: no price data changes. */
+
+export function Note2024() {
   return (
+    <p className="mt-3 rounded-xl border border-line bg-wash px-3 py-2 text-sm leading-relaxed text-ink" role="note" data-note-2024>
+      {NOTE_2024}
+    </p>
+  );
+}
+
+export function YearPrices({ row, mark, family }: { row: Row; mark?: number | null; family?: Family }) {
+  const show2024 = (family ?? "physician") === "physician" && visibleYears(YEARS).includes(2024) && typeof row.a["2024"] === "number";
+  return (
+    <>
     <ol className="mt-3 grid grid-cols-2 gap-2">
       {visibleYears(YEARS).map((year) => {
         const cents = row.a[String(year)];
@@ -179,6 +192,8 @@ export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
         );
       })}
     </ol>
+    {show2024 ? <Note2024 /> : null}
+    </>
   );
 }
 
@@ -244,7 +259,7 @@ export function YearLookup() {
           <section key={hit.family} className="mt-4">
             <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
             {hit.row.n && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{hit.row.n}</p> : null}
-            <YearPrices row={hit.row} />
+            <YearPrices row={hit.row} family={hit.family} />
           </section>
         ))}
       </div>

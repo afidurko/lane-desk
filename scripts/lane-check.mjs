@@ -7,6 +7,9 @@ import { dollarsFromTotal, sequester, sequestrationPercent } from "../src/lib/bo
 import { admit, filterRows, rowsOf } from "../src/lib/book/book.ts";
 import { classifyIssue } from "../src/lib/help/issues.ts";
 import { scanPhysician } from "../src/lib/desk/scan.ts";
+import { notPricedInOffice, NOT_OFFICE_LABEL } from "../src/lib/book/price.ts";
+import { localityPrices } from "../src/lib/pricing/locality.ts";
+import { readFileSync } from "node:fs";
 
 const failures = [];
 let ran = 0;
@@ -280,6 +283,21 @@ const priorFile = { ...currentFile, year: 2025, conversion: { nonQp: "2", qp: nu
 const scanned = scanPhysician(currentFile, priorFile);
 const moved = scanned.changes.find((row) => row.code === "97110");
 check("scan sees a 97110 change", scanned.card.changed >= 1 && moved?.current === 300 && moved?.prior === 600);
+// Non-facility NA: Book, Filter and the file scan use the same rule as the desk (4,043 codes on the 2026 file).
+const pfs2026 = JSON.parse(readFileSync("public/pfs-2026.json", "utf8"));
+const pfs2025 = JSON.parse(readFileSync("public/pfs-2025.json", "utf8"));
+const naShared = pfs2026.rows.filter((row) => row.m === "" && notPricedInOffice(row) && row.c);
+const deskNa = localityPrices(pfs2026, "13282/99").notOffice;
+check("shared NA rule finds 4,043 base codes on 2026", new Set(naShared.map((row) => row.c)).size === 4043);
+check("shared NA rule matches the desk set exactly", naShared.every((row) => deskNa.has(row.c)) && deskNa.size === new Set(naShared.map((row) => row.c)).size);
+check("NA label wording", NOT_OFFICE_LABEL === "Not priced in the office setting");
+const naRow = { ...therapyRow, c: "15851", nn: 1 };
+const naScan = scanPhysician({ ...currentFile, rows: [naRow] }, { ...priorFile, rows: [{ ...naRow, nn: undefined }] });
+const naMove = naScan.changes.find((row) => row.code === "15851");
+check("scan: NA code has no office price this year", naMove?.current === null && naMove?.currentNotOffice === true && naMove?.prior === 600);
+const realScan = scanPhysician(pfs2026, pfs2025);
+check("scan on real files never prices an NA code", realScan.changes.every((row) => !(row.currentNotOffice && row.current !== null) && !(row.priorNotOffice && row.prior !== null)));
+check("scan on real files flags 15851 as not office-priced in 2026", realScan.changes.some((row) => row.code === "15851" && row.currentNotOffice && row.current === null));
 const vague = classifyIssue("Hello there");
 check("help asks when it is unclear", vague.kind === "ask");
 

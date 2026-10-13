@@ -12,6 +12,8 @@ import { readAdded, writeAdded } from "@/lib/book/store";
 import {
   conversionFor,
   localityDollars,
+  NOT_OFFICE_LABEL,
+  notPricedInOffice,
   sequester,
   sequestrationLabel,
   sequestrationPercent,
@@ -19,7 +21,7 @@ import {
   type PfsFile,
   type PfsRow,
 } from "@/lib/book/price";
-import { YearList } from "@/components/lookup/year-lookup";
+import { Note2024, YearList } from "@/components/lookup/year-lookup";
 import { money } from "@/lib/desk/clock";
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
@@ -136,6 +138,7 @@ export function BookPage() {
 
   function priceOf(row: PfsRow) {
     if (!physician) return null;
+    if (setting === "nf" && notPricedInOffice(row)) return null;
     const mode = physician.conversion.qp ? clinician : "nonQp";
     const conversion = conversionFor(row, mode, physician);
     if (!conversion) return null;
@@ -220,6 +223,7 @@ export function BookPage() {
         </div>
         {failed ? <p className="mt-3 text-sm font-medium text-deep">That file did not load.</p> : null}
         {!file && !failed ? <p className="mt-3 text-sm text-muted">Loading the {year} file.</p> : null}
+        {family === "physician" && year === 2024 ? <Note2024 /> : null}
 
         {physician ? (
           <>
@@ -282,7 +286,7 @@ export function BookPage() {
                         <button type="button" onClick={() => setSelected(row)} className={active ? "w-full bg-paper-2 px-4 py-3 text-left" : "w-full px-4 py-3 text-left hover:bg-paper-2"}>
                           <span className="font-medium text-ink tabular-nums">{row.c}{row.m ? `-${row.m}` : ""}</span>
                           <span className="mt-1 block text-sm text-ink">{row.d}</span>
-                          <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {value === null ? "No national amount" : money(value)}</span>
+                          <span className="mt-1 block text-xs text-muted">{STATUS[row.s] ?? row.s}. {setting === "nf" && notPricedInOffice(row) ? NOT_OFFICE_LABEL : value === null ? "No national amount" : money(value)}</span>
                         </button>
                       </li>
                     );
@@ -308,7 +312,9 @@ export function BookPage() {
                   <p className="text-sm leading-relaxed text-muted">
                     {shown?.s === "J"
                       ? `${anesthesiaNote(physician, shown, place)} Payment is base units plus time, times that factor. This book does not invent the time.`
-                      : shown
+                      : shown && setting === "nf" && notPricedInOffice(shown)
+                        ? `${NOT_OFFICE_LABEL}. CMS marks ${shown.c} non-facility NA (rarely or never done in the office), so there is no office price.`
+                        : shown
                         ? `${shown.c} has no amount on this setting.`
                         : "Select a code. Contractor-priced and excluded codes stay blank."}
                   </p>

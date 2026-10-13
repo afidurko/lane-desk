@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { AmbulanceFile } from "@/lib/book/ambulance";
 import type { DmeFile, LabFile } from "@/lib/book/other";
-import { sequestrationLabel } from "@/lib/book/price";
+import { NOT_OFFICE_LABEL, sequestrationLabel } from "@/lib/book/price";
 import type { PfsFile } from "@/lib/book/price";
 import { claimGuards } from "@/lib/billing/guard";
 import { nextGap } from "@/lib/billing/packet";
@@ -20,7 +20,8 @@ function todayIso() {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function cents(value: number | null) {
+function cents(value: number | null, notOffice?: boolean) {
+  if (notOffice) return NOT_OFFICE_LABEL;
   return value === null ? "Not on that file" : money(value / 100);
 }
 
@@ -133,8 +134,8 @@ export function DeskScan() {
                       <span className="mt-1 block text-muted">{row.name}</span>
                     </td>
                     <td className="px-3 py-3 text-ink">{row.schedule}</td>
-                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.prior)}</td>
-                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.current)}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.prior, row.priorNotOffice)}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.current, row.currentNotOffice)}</td>
                   </tr>
                 ))}
               </tbody>
