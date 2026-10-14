@@ -3,9 +3,48 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/desk/clock";
 import { selectLines, workpaper } from "@/lib/account/workpaper";
 import { codeCrosswalk, crossNote, repeatedCodes } from "@/lib/lookup/crosswalk";
-import { profileOf, reasonChain, type SheetLine } from "@/lib/lookup/sheet-book";
+import { clientWorkbook, profileOf, reasonChain, type SheetLine } from "@/lib/lookup/sheet-book";
 
-export function AccountantDesk({ lines, note, onDownload }: { lines: SheetLine[]; note: string | null; onDownload: () => void }) {
+const SHEET_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+export function SheetSave({ lines, name, label }: { lines: SheetLine[]; name: string; label: string }) {
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  const signature = lines.map((line) => [line.code, line.modifier, line.date, line.year ?? "", line.units ?? "", line.setting ?? "", line.schedule ?? "", line.lookupCents ?? "", line.billedCents ?? "", line.adminCents ?? "", line.fileCents ?? "", line.otherCents ?? "", line.seqRate ?? "", line.name, line.block ?? "", line.note ?? ""].join(":")).join("|");
+  const fileRef = useRef<File | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const bytes = clientWorkbook(linesRef.current);
+    const file = new File([bytes], name, { type: SHEET_TYPE });
+    const next = URL.createObjectURL(file);
+    fileRef.current = file;
+    setUrl(next);
+    return () => {
+      URL.revokeObjectURL(next);
+      if (fileRef.current === file) fileRef.current = null;
+    };
+  }, [signature, name]);
+  if (!url) return <div className="flex min-h-12 w-full items-center justify-center rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink">{label}</div>;
+  return (
+    <a
+      href={url}
+      download={name}
+      className="press flex min-h-12 w-full items-center justify-center rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink"
+      onClick={(event) => {
+        const file = fileRef.current;
+        if (!file || typeof navigator.share !== "function" || !navigator.canShare?.({ files: [file] })) return;
+        event.preventDefault();
+        void navigator.share({ files: [file], title: name }).catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+        });
+      }}
+    >
+      {label}
+    </a>
+  );
+}
+
+export function AccountantDesk({ lines, downloadName }: { lines: SheetLine[]; downloadName: string }) {
   const [year, setYear] = useState<number | null>(null);
   const [schedule, setSchedule] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
@@ -33,6 +72,8 @@ export function AccountantDesk({ lines, note, onDownload }: { lines: SheetLine[]
   }, [view, shownView]);
   return (
     <section className="mt-2" aria-label="Accountant">
+      <SheetSave lines={lines} name={downloadName} label="Save the spreadsheet" />
+      <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">The file opens on a form. A blank amount stays blank. Nothing is sent.</p>
       <Head>Amounts</Head>
       <div className={visible ? "swap" : "swap swap-off"}>
         <Group>
@@ -119,12 +160,6 @@ export function AccountantDesk({ lines, note, onDownload }: { lines: SheetLine[]
           </ul>
         </Group>
       ) : <p className="px-4 text-[15px] text-ink">Nothing to look at on this view.</p>}
-      <div className="pt-4">
-        <Group>
-          <button type="button" onClick={onDownload} className="flex min-h-12 w-full items-center justify-center text-base font-medium text-teal">Download the spreadsheet</button>
-        </Group>
-        {note ? <p className="px-4 pt-2 text-[13px] text-muted">{note}</p> : null}
-      </div>
       <details className="mt-6">
         <summary className="flex cursor-pointer items-center justify-between px-4 text-[13px] text-muted">
           What Lane did

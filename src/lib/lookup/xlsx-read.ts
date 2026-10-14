@@ -3,8 +3,30 @@ import { scheduleOf } from "@/lib/lookup/schedule-price";
 const CODE = /^(?:\d{5}|\d{4}[A-Z]|[A-Z]\d{4})$/;
 
 export async function workbookText(bytes: Uint8Array) {
-  const grid = await firstSheet(bytes);
-  return sheetToInvoice(grid);
+  const files = await unzipArchive(bytes);
+  const shared = files.get("xl/sharedStrings.xml");
+  const strings = shared ? sharedStrings(new TextDecoder().decode(shared)) : [];
+  const name = laneSource(files) ?? [...files.keys()].find((item) => /^xl\/worksheets\/sheet\d+\.xml$/.test(item));
+  if (!name) throw new Error("The workbook has no sheet.");
+  return sheetToInvoice(sheetGrid(new TextDecoder().decode(files.get(name) ?? new Uint8Array()), strings));
+}
+
+/** Lane's own export opens on the form. The check reads the Source sheet, which still has the client columns. */
+function laneSource(files: Map<string, Uint8Array>) {
+  const book = files.get("xl/workbook.xml");
+  const rels = files.get("xl/_rels/workbook.xml.rels");
+  if (!book || !rels) return null;
+  const bookXml = new TextDecoder().decode(book);
+  const relXml = new TextDecoder().decode(rels);
+  if (!bookXml.includes("name=\"Form\"") || !bookXml.includes("name=\"Source\"")) return null;
+  const named = /<sheet\b[^>]*name="Source"[^>]*r:id="([^"]+)"/.exec(bookXml) ?? /<sheet\b[^>]*r:id="([^"]+)"[^>]*name="Source"/.exec(bookXml);
+  if (!named) return null;
+  const id = named[1];
+  const rel = new RegExp(`<Relationship\\b[^>]*Id="${id}"[^>]*Target="([^"]+)"`).exec(relXml) ?? new RegExp(`<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="${id}"`).exec(relXml);
+  if (!rel) return null;
+  const target = rel[1].replace(/^\//, "");
+  const path = target.startsWith("xl/") ? target : `xl/${target.replace(/^\.\//, "")}`;
+  return files.has(path) ? path : null;
 }
 
 export function sheetToInvoice(grid: string[][]) {
@@ -72,15 +94,6 @@ export function sheetToInvoice(grid: string[][]) {
     lines.push(parts.join(" "));
   }
   return [lines.join("\n"), ...short.map((code) => `SHORT ${code}`)].filter(Boolean).join("\n");
-}
-
-async function firstSheet(bytes: Uint8Array) {
-  const files = await unzipArchive(bytes);
-  const shared = files.get("xl/sharedStrings.xml");
-  const strings = shared ? sharedStrings(new TextDecoder().decode(shared)) : [];
-  const name = [...files.keys()].find((item) => /^xl\/worksheets\/sheet\d+\.xml$/.test(item));
-  if (!name) throw new Error("The workbook has no sheet.");
-  return sheetGrid(new TextDecoder().decode(files.get(name) ?? new Uint8Array()), strings);
 }
 
 function sharedStrings(xml: string) {

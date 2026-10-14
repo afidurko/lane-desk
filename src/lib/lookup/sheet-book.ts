@@ -1,4 +1,4 @@
-import { payLine } from "@/lib/lookup/code-types";
+import { CODE_TYPES, payLine } from "@/lib/lookup/code-types";
 
 /** The client workbook. Column order is the sheet that was sent. A blank cell is not zero. */
 export const CLIENT_COLUMNS = [
@@ -166,7 +166,7 @@ export function rollsFor(lines: SheetLine[]) {
   };
 }
 
-/** Workbook bytes. The first sheet is their layout. The second sheet is the comparison. */
+/** Workbook bytes. The first sheet is the form a person reads. Source keeps the client columns. Report is the comparison. A blank cell is not zero. */
 export function clientWorkbook(lines: SheetLine[]) {
   const report = reportRows(lines);
   const rolls = rollsFor(lines);
@@ -208,15 +208,74 @@ export function clientWorkbook(lines: SheetLine[]) {
     ]),
   ];
   const headerAt = detail.findIndex((row) => row[0] === "Code");
+  const form = formRows(lines, report);
+  const formHeader = form.findIndex((row) => row[0] === "Code") + 1;
+  const formLast = formHeader + lines.length;
   return zipStore([
     { name: "[Content_Types].xml", data: text(CONTENT_TYPES) },
     { name: "_rels/.rels", data: text(RELS) },
     { name: "xl/workbook.xml", data: text(WORKBOOK) },
     { name: "xl/_rels/workbook.xml.rels", data: text(WORKBOOK_RELS) },
     { name: "xl/styles.xml", data: text(STYLES) },
-    { name: "xl/worksheets/sheet1.xml", data: text(sheetXml([...HEADER, [], ...body], { money: [9, 10, 12, 13, 14, 15, 16, 17, 18], flag: 21, split: 6, widths: [18, 16, 10, 16, 14, 12, 12, 10, 10, 16, 12, 8, 16, 12, 18, 14, 12, 14, 12, 8, 28, 24] })) },
-    { name: "xl/worksheets/sheet2.xml", data: text(sheetXml(detail, { money: [1, 2, 3, 4, 5, 6, 7, 8, 9], flag: 10, split: headerAt + 1, widths: [28, 14, 14, 14, 14, 14, 16, 12, 14, 28, 72] })) },
+    { name: "xl/worksheets/sheet1.xml", data: text(sheetXml(form, { money: [7, 8, 9, 10, 11], flag: 12, why: 13, split: formHeader, headerRow: formHeader, bodyEnd: formLast, widths: [14, 28, 14, 10, 12, 18, 10, 16, 16, 12, 16, 14, 28, 56], merges: ["A2:N2", "A3:N3"], filterEnd: formLast, title: true })) },
+    { name: "xl/worksheets/sheet2.xml", data: text(sheetXml([...HEADER, [], ...body], { money: [9, 10, 12, 13, 14, 15, 17, 18], flag: 21, split: 6, widths: [18, 16, 10, 16, 14, 12, 12, 10, 10, 16, 12, 8, 16, 12, 18, 14, 12, 14, 12, 8, 28, 24] })) },
+    { name: "xl/worksheets/sheet3.xml", data: text(sheetXml(detail, { money: [1, 2, 3, 4, 5, 6, 7, 8, 9], flag: 10, why: 11, split: headerAt + 1, headerRow: headerAt + 1, widths: [28, 14, 14, 14, 14, 14, 16, 16, 14, 14, 28, 72], title: true })) },
   ]);
+}
+
+function formRows(lines: SheetLine[], report: ReturnType<typeof reportRows>): (string | number | null)[][] {
+  const unknown = report.count("Unknown");
+  const mismatch = report.flagged.length - unknown;
+  const match = report.count("Match");
+  const anyYou = report.compared.some((row) => row.youPay !== null);
+  const anyThem = report.compared.some((row) => row.theirs !== null);
+  const anyDiff = report.flagged.some((row) => row.diff !== null);
+  const summary = [
+    `${lines.length} ${lines.length === 1 ? "line" : "lines"}.`,
+    `${match} match.`,
+    `${mismatch} do not match.`,
+    `${unknown} unknown.`,
+    anyYou ? `You would pay ${dollars(report.you)}.` : "You would pay no amount.",
+    anyThem ? `They want to pay ${dollars(report.them)}.` : "They did not name an amount.",
+    anyDiff ? `Difference ${dollars(report.gap)}.` : "No difference to add.",
+    unknown > 0 ? "Unknown lines were not added." : "",
+  ].filter(Boolean).join(" ");
+  return [
+    ["Lane"],
+    ["Each line is next to the posted amount. A blank was not guessed. Nothing was sent."],
+    [summary],
+    ["Code", "What it is", "Date", "Year", "Place", "Which file", "Units", "Posted per unit", "They want to pay", "Charge", "You would pay", "Difference", "Result", "Why"],
+    ...lines.map((line) => formLine(line, compareLine(line))),
+    [],
+    ["Lines", String(lines.length)],
+    ["Match", String(match)],
+    ["Does not match", String(mismatch)],
+    ["Unknown", String(unknown)],
+    ["You would pay", anyYou ? report.you / 100 : ""],
+    ["They want to pay", anyThem ? report.them / 100 : ""],
+    ["Difference", anyDiff ? report.gap / 100 : ""],
+  ];
+}
+
+function formLine(line: SheetLine, compared: Compared): (string | number | null)[] {
+  const units = line.units && line.units > 0 ? line.units : null;
+  const place = line.setting === "fac" ? "Facility" : line.setting === "nf" ? "Office" : "";
+  return [
+    line.modifier ? `${line.code}-${line.modifier}` : line.code,
+    safeText(line.name || line.code),
+    line.date,
+    line.year,
+    place,
+    formFile(line.schedule),
+    units,
+    moneyNumber(compared.file),
+    moneyNumber(compared.theirs),
+    moneyNumber(line.billedCents),
+    moneyNumber(compared.youPay),
+    moneyNumber(compared.diff),
+    compared.flag,
+    safeText(compared.why),
+  ];
 }
 
 function lineRow(line: SheetLine, compared: Compared): (string | number | null)[] {
@@ -252,6 +311,11 @@ function scheduleName(schedule: string | null) {
   return SCHEDULE[schedule] ?? schedule;
 }
 
+function formFile(schedule: string | null) {
+  if (!schedule || schedule === "none" || schedule === "other") return "";
+  return CODE_TYPES.find((type) => type.id === schedule)?.name ?? scheduleName(schedule);
+}
+
 function moneyNumber(cents: number | null) {
   return cents === null ? null : Math.round(cents) / 100;
 }
@@ -268,20 +332,38 @@ function safeText(value: string) {
   return /^[=+\-@]/.test(value) ? `'${value}` : value;
 }
 
-function sheetXml(rows: (string | number | null)[][], layout: { money: number[]; flag: number; split: number; widths: number[] }) {
+function sheetXml(rows: (string | number | null)[][], layout: { money: number[]; flag: number; why?: number; split: number; headerRow?: number; bodyEnd?: number; widths: number[]; merges?: string[]; filterEnd?: number; title?: boolean }) {
   const cols = layout.widths.map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`).join("");
+  const lastCol = columnName(layout.widths.length - 1);
+  const lastRow = Math.max(rows.length, 1);
   const body = rows.map((row, index) => {
     const flag = row[layout.flag];
-    const cells = row.map((value, column) => cellXml(index + 1, column, value, styleFor(column, value, flag, layout))).filter(Boolean);
-    return `<row r="${index + 1}">${cells.join("")}</row>`;
+    const line = index + 1;
+    const cells = row.map((value, column) => cellXml(line, column, value, styleFor(line, column, value, flag, layout))).filter(Boolean);
+    const inBody = layout.bodyEnd !== undefined && layout.headerRow !== undefined && line > layout.headerRow && line <= layout.bodyEnd;
+    const lead = layout.title === true && (line === 2 || line === 3);
+    const tall = inBody || lead ? ` ht="36" customHeight="1"` : "";
+    return `<row r="${line}"${tall}>${cells.join("")}</row>`;
   }).join("");
   const view = `<sheetViews><sheetView workbookViewId="0"><pane ySplit="${layout.split}" topLeftCell="A${layout.split + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`;
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${view}<cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
+  const filter = layout.filterEnd && layout.headerRow ? `<autoFilter ref="A${layout.headerRow}:${lastCol}${layout.filterEnd}"/>` : "";
+  const merges = layout.merges && layout.merges.length > 0 ? `<mergeCells count="${layout.merges.length}">${layout.merges.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}</mergeCells>` : "";
+  const sheetPr = `<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>`;
+  const dimension = `<dimension ref="A1:${lastCol}${lastRow}"/>`;
+  const page = `<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.5" header="0.25" footer="0.25"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="1"/>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${sheetPr}${dimension}${view}<cols>${cols}</cols><sheetData>${body}</sheetData>${filter}${merges}${page}</worksheet>`;
 }
 
-function styleFor(column: number, value: string | number | null, flag: string | number | null, layout: { money: number[]; flag: number }) {
-  if (column === layout.flag && typeof value === "string" && value !== "Match" && value !== "FLAG" && value !== "Flag") return 1;
-  if (typeof value === "number" && layout.money.includes(column)) return 2;
+function styleFor(row: number, column: number, value: string | number | null, flag: string | number | null, layout: { money: number[]; flag: number; why?: number; headerRow?: number; bodyEnd?: number; title?: boolean }) {
+  if (layout.headerRow && row === layout.headerRow) return 3;
+  if (layout.title && row === 1 && column === 0) return 6;
+  if (layout.title && (row === 2 || row === 3) && column === 0) return 7;
+  if (layout.why !== undefined && column === layout.why) return 7;
+  const bad = typeof flag === "string" && flag !== "Match" && flag !== "Result" && flag !== "FLAG" && flag !== "Flag";
+  const unknown = flag === "Unknown";
+  if (column === layout.flag && bad) return unknown ? 5 : 1;
+  if (layout.bodyEnd && typeof value === "number" && column === 1 && row > layout.bodyEnd) return 2;
+  if (typeof value === "number" && layout.money.includes(column)) return bad && !unknown ? 4 : 2;
   return 0;
 }
 
@@ -316,11 +398,11 @@ function text(value: string) {
   return new TextEncoder().encode(value);
 }
 
-const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
 const RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
-const WORKBOOK = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Lines" sheetId="1" r:id="rId1"/><sheet name="Report" sheetId="2" r:id="rId2"/></sheets></workbook>`;
-const WORKBOOK_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
-const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><sz val="11"/><color rgb="FF9A3412"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>`;
+const WORKBOOK = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Form" sheetId="1" r:id="rId1"/><sheet name="Source" sheetId="2" r:id="rId2"/><sheet name="Report" sheetId="3" r:id="rId4"/></sheets></workbook>`;
+const WORKBOOK_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="$#,##0.00"/></numFmts><fonts count="5"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF123C38"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFF2EBD9"/><name val="Calibri"/></font><font><sz val="11"/><color rgb="FF6E948C"/><name val="Calibri"/></font><font><b/><sz val="16"/><color rgb="FF1D504B"/><name val="Calibri"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1D504B"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8EFEA"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="1" fillId="3" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`;
 
 function zipStore(files: { name: string; data: Uint8Array }[]) {
   const parts: Uint8Array[] = [];

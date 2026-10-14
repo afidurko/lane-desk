@@ -12,7 +12,7 @@ import { unknownBeside } from "@/lib/lookup/reason";
 import { rankInvoice } from "@/lib/team/rank";
 import { Link } from "@tanstack/react-router";
 import { typeRollup } from "@/lib/lookup/code-types";
-import { clientWorkbook, reportRows, type SheetLine } from "@/lib/lookup/sheet-book";
+import { reportRows, type SheetLine } from "@/lib/lookup/sheet-book";
 import { AccountantDesk } from "@/components/account/desk";
 import { holdSheet } from "@/lib/account/held-sheet";
 import { asksFrom } from "@/lib/lookup/crawl";
@@ -90,7 +90,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
   const [memory, setMemory] = useState<StoredAlert[]>([]);
   const [hits, setHits] = useState<CrawlHit[] | null>(null);
   const [finding, setFinding] = useState(false);
-  const [sheetNote, setSheetNote] = useState<string | null>(null);
+  const [pageNote, setPageNote] = useState<string | null>(null);
   const [seen, setSeen] = useState(0);
   const [crawlTotal, setCrawlTotal] = useState(0);
   const wave = useRef(0);
@@ -288,32 +288,6 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
     }));
   }
 
-  async function downloadSheet() {
-    if (!rows || rows.length === 0) return;
-    const lines = sheetLines(rows);
-    const report = reportRows(lines);
-    const bytes = clientWorkbook(lines);
-    const name = fileName ? fileName.replace(/\.[^.]+$/, "") + "-check.xlsx" : "lane-check.xlsx";
-    const file = new File([bytes], name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    setSheetNote(`${lines.length} lines. ${report.flagged.length} flagged. ${name}`);
-    try {
-      if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: name });
-        return;
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-    }
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-  }
-
   function applySpider(gathered: CrawlHit[]) {
     const book = loaded.current;
     if (!book) return;
@@ -355,6 +329,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
     const token = wave.current + 1;
     wave.current = token;
     setFinding(true);
+    setPageNote(null);
     setHits([]);
     setSeen(0);
     setCrawlTotal(asks.length);
@@ -370,7 +345,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
     };
     void step()
       .catch(() => {
-        if (wave.current === token) setSheetNote("The public pages did not answer. The check is still here.");
+        if (wave.current === token) setPageNote("The public pages did not answer. The check is still here.");
       })
       .finally(() => {
         if (wave.current === token) setFinding(false);
@@ -546,7 +521,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
       {rows && rows.length === 0 ? <p className="mt-4 text-sm font-medium text-deep">No code was on those lines.</p> : null}
       {rows && rows.length > 0 ? (
         <div className="rise mt-2">
-          <AccountantDesk lines={sheetLines(rows)} note={sheetNote} onDownload={() => void downloadSheet()} />
+          <AccountantDesk lines={sheetLines(rows)} downloadName={fileName ? fileName.replace(/\.[^.]+$/, "") + "-check.xlsx" : "lane-check.xlsx"} />
           <details className="mt-4">
             <summary className="cursor-pointer text-sm text-ink">Keep these lines here</summary>
             <button type="button" onClick={place} className="mt-3 h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">
@@ -572,7 +547,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
             ))}
           </ul>
         </details>
-      ) : finding ? <p className="mt-3 text-sm text-muted">Looking up {seen} of {crawlTotal}.</p> : null}
+      ) : finding ? <p className="mt-3 text-sm text-muted">Looking up {seen} of {crawlTotal}.</p> : pageNote ? <p className="mt-3 text-sm text-muted">{pageNote}</p> : null}
       {memory.length > 0 && !rows ? (
         <details className="mt-4">
           <summary className="cursor-pointer text-sm text-ink">Last check</summary>

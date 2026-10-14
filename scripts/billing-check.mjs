@@ -513,11 +513,13 @@ const book = clientWorkbook([
   { code: "J2003", modifier: "", date: "", year: 2026, units: 1, setting: null, schedule: "none", lookupCents: null, billedCents: null, adminCents: null, seqRate: null, fileCents: null, otherCents: null, name: "=cmd", block: "Unknown for 2026." },
 ]);
 const sheetPacked = await unzipArchive(book);
-const sheetLinesXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet1.xml"));
-const sheetReportXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet2.xml"));
+const formXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet1.xml"));
+const sourceXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet2.xml"));
+const reportXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet3.xml"));
 const sheetOpened = await workbookText(book);
 const sheetAgain = readInvoiceLines(sheetOpened);
-check("the workbook keeps their columns, flags the wrong schedule, and leaves an unknown blank", oxygenLine.flag === "Wrong schedule" && oxygenLine.youPay === 3032 && oxygenLine.diff === 964 && oxygenLine.want === 3094 && blankLine.flag === "Unknown" && blankLine.want === null && sheetLinesXml.includes("SCHDULE") && sheetLinesXml.includes("COLLABRIOS") && sheetLinesXml.includes("Wrong schedule") && sheetReportXml.includes("Their lookup") && sheetAgain.some((line) => line.code === "E0431" && line.adminCents === 2068 && line.lookupCents === 3094) && sheetLinesXml.includes("'=cmd") && sheetLinesXml.includes("&") && sheetLinesXml.includes("s=\"2\"") && !sheetLinesXml.includes("J2003</t></is></c><c r=\"P"));
+const unknownRow = formXml.split(/<row\b/).find((row) => row.includes("J2003")) ?? "";
+check("the workbook opens on a form, keeps their columns, and leaves an unknown blank", oxygenLine.flag === "Wrong schedule" && oxygenLine.youPay === 3032 && oxygenLine.diff === 964 && oxygenLine.want === 3094 && blankLine.flag === "Unknown" && blankLine.want === null && formXml.includes("You would pay") && formXml.includes("A blank was not guessed") && formXml.includes("Nothing was sent") && formXml.includes("Wrong schedule") && formXml.includes(">30.94</v>") && formXml.includes("'=cmd") && formXml.includes("&" + "amp;") && formXml.includes("s=\"2\"") && formXml.indexOf("<sheetData>") < formXml.indexOf("<pageSetup") && formXml.indexOf("<mergeCells") < formXml.indexOf("<pageMargins") && !unknownRow.includes("<v>0</v>") && !unknownRow.includes("<v>0.00</v>") && sourceXml.includes("SCHDULE") && sourceXml.includes("COLLABRIOS") && sourceXml.includes("s=\"2\"") && !sourceXml.includes("J2003</t></is></c><c r=\"P") && reportXml.includes("Their lookup") && sheetAgain.some((line) => line.code === "E0431" && line.adminCents === 2068 && line.lookupCents === 3094));
 const phrasePage = readPage("<p>The rural fee for E0431 is $30.94 on the DME file.</p>", "E0431");
 const splitPage = readPage("<p>E0431 is $20.68 or $30.94 depending on the file.</p>", "E0431");
 const buried = readPage("<script>E0431 $1.00</script><p>No code here.</p>", "E0431");
