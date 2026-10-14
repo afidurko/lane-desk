@@ -5,7 +5,7 @@ import { money } from "@/lib/desk/clock";
 import { workpaper } from "@/lib/account/workpaper";
 import { readHeld, type HeldSheet } from "@/lib/account/held-sheet";
 import { compareLine, type SheetLine } from "@/lib/lookup/sheet-book";
-import { SheetSave } from "@/components/account/desk";
+import { SheetSave, ResultMail } from "@/components/account/desk";
 
 export function PayPage() {
   const [held, setHeld] = useState<HeldSheet | null>(null);
@@ -77,8 +77,11 @@ function PayList({ lines, youPay, unknown, withAdmin }: { lines: SheetLine[]; yo
       </div>
       <div className="pt-4">
         <SheetSave lines={lines} name="lane-pay.xlsx" label="Save these lines" />
+        <div className="mt-2 overflow-hidden rounded-[10px] bg-paper-2">
+          <ResultMail lines={lines} />
+        </div>
       </div>
-      <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">The file opens on a form. These lines only. Nothing is sent. Lane is not the payer.</p>
+      <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">The file opens on a form. Email opens in your mail. You send it. Lane does not. Lane is not the payer.</p>
     </>
   );
 }

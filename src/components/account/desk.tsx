@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/desk/clock";
 import { selectLines, workpaper } from "@/lib/account/workpaper";
 import { codeCrosswalk, crossNote, repeatedCodes } from "@/lib/lookup/crosswalk";
-import { clientWorkbook, profileOf, reasonChain, type SheetLine } from "@/lib/lookup/sheet-book";
+import { clientWorkbook, profileOf, reasonChain, resultLetter, type SheetLine } from "@/lib/lookup/sheet-book";
 
 const SHEET_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -44,6 +44,16 @@ export function SheetSave({ lines, name, label }: { lines: SheetLine[]; name: st
   );
 }
 
+export function ResultMail({ lines }: { lines: SheetLine[] }) {
+  const letter = resultLetter(lines);
+  const href = `mailto:?subject=${encodeURIComponent(letter.subject)}&body=${encodeURIComponent(letter.body)}`;
+  return (
+    <a href={href} className="press flex min-h-12 w-full items-center justify-center text-[17px] font-medium text-teal">
+      Email these results
+    </a>
+  );
+}
+
 export function AccountantDesk({ lines, downloadName }: { lines: SheetLine[]; downloadName: string }) {
   const [year, setYear] = useState<number | null>(null);
   const [schedule, setSchedule] = useState<string | null>(null);
@@ -73,7 +83,10 @@ export function AccountantDesk({ lines, downloadName }: { lines: SheetLine[]; do
   return (
     <section className="mt-2" aria-label="Accountant">
       <SheetSave lines={lines} name={downloadName} label="Save the spreadsheet" />
-      <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">The file opens on a form. A blank amount stays blank. Nothing is sent.</p>
+      <div className="mt-2 overflow-hidden rounded-[10px] bg-paper-2">
+        <ResultMail lines={lines} />
+      </div>
+      <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">The file opens on a form. Email opens in your mail. You send it. Lane does not. A blank amount stays blank.</p>
       <Head>Amounts</Head>
       <div className={visible ? "swap" : "swap swap-off"}>
         <Group>

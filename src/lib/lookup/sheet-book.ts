@@ -144,6 +144,49 @@ export function reportRows(lines: SheetLine[]) {
   return { compared, flagged, you, them, gap, count };
 }
 
+/** Plain text for the person's mail app. A blank stays blank. Lane does not send it. */
+export function resultLetter(lines: SheetLine[]) {
+  const report = reportRows(lines);
+  const unknown = report.count("Unknown");
+  const mismatch = report.flagged.length - unknown;
+  const anyYou = report.compared.some((row) => row.youPay !== null);
+  const anyThem = report.compared.some((row) => row.theirs !== null);
+  const head = [
+    "Lane",
+    "Each line is next to the posted amount. A blank was not guessed. Nothing was sent.",
+    [
+      `${lines.length} ${lines.length === 1 ? "line" : "lines"}.`,
+      `${report.count("Match")} match.`,
+      `${mismatch} do not match.`,
+      `${unknown} unknown.`,
+      anyYou ? `You would pay ${dollars(report.you)}.` : "You would pay no amount.",
+      anyThem ? `They want to pay ${dollars(report.them)}.` : "They did not name an amount.",
+      unknown > 0 ? "Unknown lines were not added." : "",
+    ].filter(Boolean).join(" "),
+  ];
+  const written = report.compared.map((row) => letterLine(row));
+  let body = [...head, ...written].join("\n\n");
+  if (body.length > 1800) {
+    const flagged = report.flagged.map((row) => letterLine(row));
+    body = [...head, "Lines that need a look:", ...flagged].join("\n\n");
+  }
+  if (body.length > 1800) body = `${body.slice(0, 1760).trimEnd()}\n\nThe rest is on the spreadsheet.`;
+  return { subject: "Lane results", body: body.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "") };
+}
+
+function letterLine(row: ReturnType<typeof reportRows>["compared"][number]) {
+  const place = row.line.setting === "fac" ? "Facility" : row.line.setting === "nf" ? "Office" : "";
+  const title = [row.line.modifier ? `${row.line.code}-${row.line.modifier}` : row.line.code, row.line.date, row.line.year === null ? "" : String(row.line.year), place].filter(Boolean).join(" · ");
+  const amounts = [
+    `Posted ${dollars(row.file)}.`,
+    row.theirs === null ? "They did not name an amount." : `They want ${dollars(row.theirs)}.`,
+    row.youPay === null ? "You would pay no amount." : `You would pay ${dollars(row.youPay)}.`,
+    row.diff === null ? "" : `Difference ${dollars(row.diff)}.`,
+    `${row.flag}. ${row.why}`,
+  ].filter(Boolean);
+  return `${title}\n${amounts.join(" ")}`;
+}
+
 export type Roll = { name: string; lines: number; you: number; them: number; diff: number; flagged: number };
 
 /** Dollars by year and by file. A year or a file with no lines is left out. */
