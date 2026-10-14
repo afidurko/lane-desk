@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ChevronRight } from "lucide-react";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, auditReport, gradeLookup, type CheckLine } from "@/lib/lookup/check";
@@ -8,7 +7,7 @@ import { pricedYears, reasonLine, postedBeside, yearBeside } from "@/lib/lookup/
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { auditPrice, type AmbulanceRow, type DmeRow, type LabRow, type Priced } from "@/lib/lookup/schedule-price";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
-import { prepareInvoice, readImportFile } from "@/lib/lookup/import-text";
+import { readImportFile } from "@/lib/lookup/import-text";
 import { unknownBeside } from "@/lib/lookup/reason";
 import { rankInvoice } from "@/lib/team/rank";
 import { Link } from "@tanstack/react-router";
@@ -76,7 +75,11 @@ function loadFee(path: string) {
 }
 
 export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => void }) {
-  const [text, setText] = useState("");
+  const [code, setCode] = useState("");
+  const [when, setWhen] = useState("");
+  const [units, setUnits] = useState("1");
+  const [charge, setCharge] = useState("");
+  const [paid, setPaid] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Checked[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -109,7 +112,6 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
   async function runText(raw: string) {
     const gate = rankInvoice({ look: 0, off: 0, match: 0 }, raw);
     if (gate.status === "stop") {
-      setText("");
       setFileName(null);
       setRows(null);
       setNote(gate.detail);
@@ -119,9 +121,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
     }
     const short = [...raw.matchAll(/^SHORT (\S+)$/gm)].map((item) => item[1]);
     const body = raw.replace(/^SHORT .+$/gm, "").trim();
-    const safe = prepareInvoice(body);
     const parsed = readInvoiceLines(body);
-    setText(safe);
     setBusy(true);
     setDown(false);
     setNote(short.length > 0 ? `${short.length === 1 ? "1 line had a short code" : `${short.length} lines had a short code`} (${short.join(", ")}). A full code was not guessed.` : null);
@@ -377,9 +377,38 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
       });
   }
 
-  function run(event?: FormEvent) {
-    event?.preventDefault();
-    void runText(text);
+  function dollars(value: string) {
+    const trimmed = value.trim().replace(/^\$/, "");
+    if (!trimmed) return "";
+    if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null;
+    return Number(trimmed).toFixed(2);
+  }
+
+  function checkLine(event: FormEvent) {
+    event.preventDefault();
+    const clean = code.trim().toUpperCase();
+    if (!/^(?:\d{4}[A-Z]|[A-Z]\d{4}|\d{5})(?:-[A-Z0-9]{2})?$/.test(clean)) {
+      setNote("Enter a code, such as 97110.");
+      return;
+    }
+    if (!when) {
+      setNote("Enter the date of the service.");
+      return;
+    }
+    const count = units.trim() || "1";
+    if (!/^\d{1,3}(\.\d{1,3})?$/.test(count)) {
+      setNote("Units must be a number.");
+      return;
+    }
+    const billed = dollars(charge);
+    const theyPaid = dollars(paid);
+    if (billed === null || theyPaid === null) {
+      setNote("An amount needs dollars and cents, such as 30.32. Leave it blank if you do not have it.");
+      return;
+    }
+    const line = [clean, when, `${count} unit`, billed ? `charge ${billed}` : "", theyPaid ? `paid ${theyPaid}` : ""].filter(Boolean).join(" ");
+    setFileName(null);
+    void runText(line);
   }
 
   function onFile(file: File | undefined) {
@@ -468,7 +497,35 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
       };
 
   return (
-    <form onSubmit={run}>
+    <div>
+      <form onSubmit={checkLine} className="rounded-[10px] bg-paper-2 p-4">
+        <h2 className="text-[17px] font-semibold text-ink">One line</h2>
+        <div className="mt-3 grid gap-3">
+          <label className="text-sm font-medium text-ink">
+            Code
+            <input value={code} onChange={(event) => setCode(event.target.value)} inputMode="text" autoCapitalize="characters" autoComplete="off" placeholder="97110" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper px-3 text-base text-ink" />
+          </label>
+          <label className="text-sm font-medium text-ink">
+            Date
+            <input type="date" value={when} onChange={(event) => setWhen(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper px-3 text-base text-ink" />
+          </label>
+          <label className="text-sm font-medium text-ink">
+            Units
+            <input value={units} onChange={(event) => setUnits(event.target.value)} inputMode="decimal" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper px-3 text-base text-ink" />
+          </label>
+          <label className="text-sm font-medium text-ink">
+            Charge
+            <input value={charge} onChange={(event) => setCharge(event.target.value)} inputMode="decimal" placeholder="Leave blank if you do not have it" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper px-3 text-base text-ink" />
+          </label>
+          <label className="text-sm font-medium text-ink">
+            They paid
+            <input value={paid} onChange={(event) => setPaid(event.target.value)} inputMode="decimal" placeholder="Leave blank if you do not have it" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper px-3 text-base text-ink" />
+          </label>
+        </div>
+        <button type="submit" className="press mt-4 h-12 w-full rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink" disabled={busy}>
+          {busy ? "Checking" : "Check this line"}
+        </button>
+      </form>
       <input
         ref={fileRef}
         type="file"
@@ -478,34 +535,12 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
           event.target.value = "";
         }}
       />
-      <div className="overflow-hidden rounded-[10px] bg-paper-2">
+      <div className="mt-3 overflow-hidden rounded-[10px] bg-paper-2">
         <button type="button" onClick={() => fileRef.current?.click()} className="flex min-h-12 w-full items-center justify-center text-[17px] font-medium text-teal">
-          {rows && rows.length > 0 ? "Choose another spreadsheet" : "Choose the spreadsheet"}
+          {rows && rows.length > 0 ? "Choose another spreadsheet" : "Or choose a spreadsheet"}
         </button>
       </div>
-      {rows && rows.length > 0 ? null : <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">Excel, CSV, or a PDF. Lane reads the code, the year, the place, and the amount.</p>}
-      {fileName ? <p className="px-4 pt-2 text-[13px] text-ink">{fileName}</p> : null}
-      <details className="mt-6 overflow-hidden rounded-[10px] bg-paper-2">
-        <summary className="flex min-h-12 cursor-pointer items-center justify-between px-4 text-[17px] text-ink">
-          Or type a line
-          <ChevronRight className="size-4 text-muted" />
-        </summary>
-        <div className="px-4 pb-4">
-        <label className="mt-3 block text-sm text-ink" htmlFor="invoice-lines">
-          <textarea
-            id="invoice-lines"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            rows={4}
-            placeholder={"97110  3/1/2026  1 unit  paid 30.00"}
-            className="mt-1.5 w-full rounded-[10px] bg-paper-2 bg-paper px-4 py-3 text-base text-ink"
-          />
-        </label>
-        <button type="submit" className="press mt-3 h-12 w-full rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink" disabled={busy}>
-          {busy ? "Checking" : "Check it"}
-        </button>
-        </div>
-      </details>
+      {fileName ? <p className="px-1 pt-2 text-[13px] text-ink">{fileName}</p> : null}
       {note ? <p className="mt-4 text-sm font-medium text-deep">{note}</p> : null}
       {down ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The invoice is still here. Check it again.</p> : null}
       {rows && rows.length === 0 ? <p className="mt-4 text-sm font-medium text-deep">No code was on those lines.</p> : null}
@@ -599,7 +634,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
           </section>
         );
       })}
-    </form>
+    </div>
   );
 }
 

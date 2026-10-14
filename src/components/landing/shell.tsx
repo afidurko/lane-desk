@@ -29,10 +29,10 @@ export function Mark() {
   return (
     <svg viewBox="0 0 32 32" className="size-8" aria-hidden="true">
       <rect width="32" height="32" rx="8" className="fill-deep" />
-      <circle cx="16" cy="16" r="7" className="stroke-ink" fill="none" strokeWidth="1.6" />
+      <circle cx="16" cy="16" r="7" className="stroke-paper" fill="none" strokeWidth="1.6" />
       <path
         d="M16 9.5V16.2l4.2 2.4"
-        className="stroke-ink"
+        className="stroke-paper"
         fill="none"
         strokeWidth="1.7"
         strokeLinecap="round"
