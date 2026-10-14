@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ChevronRight } from "lucide-react";
 import { money } from "@/lib/desk/clock";
 import { addToOpenClaim } from "@/lib/billing/store";
 import { readInvoiceLines, auditReport, gradeLookup, type CheckLine } from "@/lib/lookup/check";
 import { rememberPayments, readPaymentMemory, type StoredAlert } from "@/lib/lookup/memory";
-import { pricedYears, reasonLine } from "@/lib/lookup/reason";
+import { pricedYears, reasonLine, postedBeside, yearBeside } from "@/lib/lookup/reason";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
 import { auditPrice, type AmbulanceRow, type DmeRow, type LabRow, type Priced } from "@/lib/lookup/schedule-price";
 import { findAcross, loadOnce, YearPrices, type Family, type Row } from "@/components/lookup/year-lookup";
@@ -11,15 +12,33 @@ import { prepareInvoice, readImportFile } from "@/lib/lookup/import-text";
 import { unknownBeside } from "@/lib/lookup/reason";
 import { rankInvoice } from "@/lib/team/rank";
 import { Link } from "@tanstack/react-router";
-import { CodeTypeList, TypeRollup } from "@/components/lookup/code-types";
 import { typeRollup } from "@/lib/lookup/code-types";
-import { exportCheckCsv } from "@/lib/lookup/export-check";
-import { FeeTeamReport } from "@/components/lookup/fee-teams";
+import { clientWorkbook, reportRows, type SheetLine } from "@/lib/lookup/sheet-book";
+import { AccountantDesk } from "@/components/account/desk";
+import { holdSheet } from "@/lib/account/held-sheet";
+import { asksFrom } from "@/lib/lookup/crawl";
+import { findPhrases, type CrawlHit } from "@/lib/lookup/crawl-fn";
 import { detectPosted, rememberFound, type FoundCode } from "@/lib/lookup/detect";
+import { fileHint, placeCue, placeOnFile, type Post } from "@/lib/lookup/place";
 import { answerFor, rememberLookups, type Lookup } from "@/lib/lookup/persist";
 import type { SavedRow } from "@/lib/lookup/saved-codes";
 
 type Hit = { family: Family; label: string; row: Row };
+
+function physicianPosts(line: CheckLine, hits: Hit[], posts: Post[]) {
+  const next = posts.map((row) => ({ file: row.file, label: row.label, cents: row.cents, otherCents: row.otherCents }));
+  const row = hits.find((hit) => hit.family === "physician")?.row;
+  const year = line.year ? String(line.year) : "";
+  if (!row || !year) return next;
+  const modifier = line.modifier.toUpperCase();
+  if ((modifier === "26" || modifier === "TC") && typeof row.p?.[modifier]?.[year] === "number") {
+    next.push({ file: "pfs", label: `Physician, modifier ${modifier}, Rest of New York`, cents: row.p[modifier][year] as number, otherCents: null });
+    return next;
+  }
+  if (line.setting !== "fac" && typeof row.a[year] === "number") next.push({ file: "pfs", label: "Physician, office, Rest of New York", cents: row.a[year] as number, otherCents: null });
+  if (line.setting !== "nf" && typeof row.f?.[year] === "number") next.push({ file: "pfs", label: "Physician, facility, Rest of New York", cents: row.f[year] as number, otherCents: null });
+  return next;
+}
 type Checked = CheckLine & { hits: Hit[]; once: OnceRow | null; rest: OnceRow[]; priced: Priced };
 
 const files = new Map<string, Promise<{ rows: DmeRow[] } | { rows: LabRow[] } | { rows: AmbulanceRow[] } | null>>();
@@ -56,7 +75,7 @@ function loadFee(path: string) {
   return pending;
 }
 
-export function InvoiceCheck() {
+export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => void }) {
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Checked[] | null>(null);
@@ -66,6 +85,22 @@ export function InvoiceCheck() {
   const [placed, setPlaced] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [memory, setMemory] = useState<StoredAlert[]>([]);
+  const [hits, setHits] = useState<CrawlHit[] | null>(null);
+  const [finding, setFinding] = useState(false);
+  const [sheetNote, setSheetNote] = useState<string | null>(null);
+  const [seen, setSeen] = useState(0);
+  const [crawlTotal, setCrawlTotal] = useState(0);
+  const wave = useRef(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const opened = useRef(onOpen);
+  opened.current = onOpen;
+  const loaded = useRef<{ saved: SavedRow[]; fees: Map<number, { dme: { rows: DmeRow[] } | null; lab: { rows: LabRow[] } | null; ambulance: { rows: AmbulanceRow[] } | null }> } | null>(null);
+
+  useEffect(() => {
+    const label = rows && rows.length > 0 ? (fileName?.replace(/\.[^.]+$/, "") ?? "The sheet") : null;
+    opened.current?.(label);
+    if (label && rows) holdSheet(label, sheetLines(rows));
+  }, [rows, fileName]);
 
   useEffect(() => {
     setMemory(readPaymentMemory());
@@ -105,6 +140,7 @@ export function InvoiceCheck() {
         ]);
         feeByYear.set(year, { dme: dme as { rows: DmeRow[] } | null, lab: lab as { rows: LabRow[] } | null, ambulance: ambulance as { rows: AmbulanceRow[] } | null });
       }));
+      loaded.current = { saved, fees: feeByYear };
       await Promise.all([...new Set(parsed.map((line) => line.code))].map((code) => Promise.all([findAcross(code), loadOnce(code[0])])));
       for (const line of parsed) {
         const hits = await findAcross(line.code);
@@ -123,7 +159,8 @@ export function InvoiceCheck() {
           ambulance: line.schedule === "ambulance" || line.schedule === "miles" ? fee?.ambulance ?? null : null,
         });
         const settled = priced.cents === null && prior;
-        if (!settled && (priced.cents === null || line.schedule === "none" || line.schedule === "dme" || line.schedule === "ambulance")) {
+        const lookupOff = line.lookupCents !== null && (priced.cents === null || Math.abs(line.lookupCents - priced.cents) > 1);
+        if (!settled && (priced.cents === null || lookupOff || line.schedule === "none" || line.schedule === "dme" || line.schedule === "ambulance")) {
           const detected = detectPosted({
             code: line.code,
             modifier: line.modifier,
@@ -136,7 +173,12 @@ export function InvoiceCheck() {
             saved,
           });
           const related = detected.related.length > 0 ? `Related codes on that file: ${detected.related.join(", ")}.` : null;
-          if ((line.schedule === "none" || line.schedule === "other") && detected.use && priced.cents === null) {
+          const posts = physicianPosts(line, hits, detected.posts);
+          const placed = placeOnFile({ lookupCents: line.lookupCents, currentCents: priced.cents, posts });
+          const keepProfile = line.setting !== null && priced.cents !== null && placed !== null && Math.abs(placed.cents - priced.cents) > 1;
+          if (placed && !keepProfile) {
+            priced = { cents: placed.cents, label: placed.label, block: null, note: [placed.note, related].filter(Boolean).join(" "), otherCents: placed.otherCents };
+          } else if ((line.schedule === "none" || line.schedule === "other") && detected.use && priced.cents === null) {
             priced = { cents: detected.use.cents, label: detected.use.label, block: null, note: related, otherCents: detected.use.otherCents };
           } else if (priced.block && detected.elsewhere) {
             priced = { ...priced, block: `${priced.block} ${detected.elsewhere}` };
@@ -181,10 +223,25 @@ export function InvoiceCheck() {
             priced = { ...priced, block: priced.block ? `${priced.block} ${text}` : text };
           }
         }
+        if (line.schedule === "pfs" && priced.cents !== null && line.lookupCents !== null) {
+          const row = hits.find((hit) => hit.family === "physician")?.row;
+          const modifier = line.modifier.toUpperCase();
+          const part = modifier === "26" || modifier === "TC" ? row?.p?.[modifier] : undefined;
+          const beside = postedBeside(line.lookupCents, priced.cents, line.year, [
+            { name: "the office amount", amounts: part ? undefined : row?.a },
+            { name: "the facility amount", amounts: part ? undefined : row?.f },
+            { name: "the component amount", amounts: part },
+          ]);
+          if (beside) priced = { ...priced, note: [priced.note, beside].filter(Boolean).join(" ") };
+          const column = modifier === "26" || modifier === "TC" ? row?.p?.[modifier] : line.setting === "fac" ? row?.f : row?.a;
+          const older = yearBeside(line.lookupCents, line.year, column);
+          if (older) priced = { ...priced, note: [priced.note, older].filter(Boolean).join(" ") };
+        }
         checked.push({ ...line, hits, once, rest: list.filter((row) => row !== once), priced });
       }
       rememberFound(found);
       setRows(checked);
+      findCodes(checked);
       const alerts = checked.flatMap((line) => {
         const report = reviewed(line);
         if (report.kind === "match") return [];
@@ -209,32 +266,115 @@ export function InvoiceCheck() {
     }
   }
 
-  function saveCopy() {
-    if (!rows || rows.length === 0) return;
-    const body = exportCheckCsv(rows.map((line) => ({
+  function sheetLines(source: Checked[]) {
+    return source.map((line): SheetLine => ({
       code: line.code,
       modifier: line.modifier,
       date: line.date,
       year: line.year,
       units: line.units,
+      setting: line.setting,
+      claim: line.claim ?? null,
       schedule: line.schedule,
       lookupCents: line.lookupCents,
+      billedCents: line.billedCents,
       adminCents: line.adminCents,
       seqRate: line.seqRate,
-      seqPayCents: line.seqPayCents,
       fileCents: line.priced.cents,
       otherCents: line.priced.otherCents,
-      fileLabel: line.priced.label,
+      name: line.hits[0]?.row.n || line.once?.n || line.code,
       block: line.priced.block,
       note: line.priced.note,
-    })));
-    const blob = new Blob([`\uFEFF${body}`], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    }));
+  }
+
+  async function downloadSheet() {
+    if (!rows || rows.length === 0) return;
+    const lines = sheetLines(rows);
+    const report = reportRows(lines);
+    const bytes = clientWorkbook(lines);
+    const name = fileName ? fileName.replace(/\.[^.]+$/, "") + "-check.xlsx" : "lane-check.xlsx";
+    const file = new File([bytes], name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    setSheetNote(`${lines.length} lines. ${report.flagged.length} flagged. ${name}`);
+    try {
+      if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: name });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+    const url = URL.createObjectURL(file);
     const link = document.createElement("a");
     link.href = url;
-    link.download = fileName ? fileName.replace(/\.[^.]+$/, "") + "-check.csv" : "lane-check.csv";
+    link.download = name;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }
+
+  function applySpider(gathered: CrawlHit[]) {
+    const book = loaded.current;
+    if (!book) return;
+    setRows((current) => {
+      if (!current) return current;
+      return current.map((line) => {
+        if (line.priced.cents !== null && (line.lookupCents === null || Math.abs(line.lookupCents - line.priced.cents) <= 1)) return line;
+        const hits = gathered.filter((hit) => hit.found && hit.code === line.code);
+        const only = hits.map((hit) => hit.file ?? fileHint(`${hit.url} ${hit.quote ?? ""} ${hit.note}`)).find((hint) => hint !== null) ?? null;
+        const cue = placeCue(hits.map((hit) => `${hit.quote ?? ""} ${hit.note}`).join(" "));
+        if (!only && !cue) return line;
+        const fee = line.year ? book.fees.get(line.year) : undefined;
+        const detected = detectPosted({
+          code: line.code,
+          modifier: line.modifier,
+          year: line.year,
+          month: line.month,
+          schedule: "none",
+          dme: fee?.dme?.rows ?? null,
+          lab: fee?.lab?.rows ?? null,
+          ambulance: fee?.ambulance?.rows ?? null,
+          saved: book.saved,
+        });
+        let posts = physicianPosts(line, line.hits, detected.posts);
+        if (cue === "fac") posts = posts.filter((row) => /facility/i.test(row.label));
+        if (cue === "nf") posts = posts.filter((row) => /office/i.test(row.label));
+        if (posts.length === 0) return line;
+        const placed = placeOnFile({ lookupCents: line.lookupCents, currentCents: line.priced.cents, posts, only });
+        if (!placed) return line;
+        return { ...line, priced: { cents: placed.cents, label: placed.label, block: null, note: placed.note, otherCents: placed.otherCents } };
+      });
+    });
+  }
+
+  function findCodes(source?: Checked[]) {
+    const lines = source ?? rows;
+    if (!lines || lines.length === 0) return;
+    const asks = asksFrom(lines.map((line) => ({ code: line.code, year: line.year, unknown: line.priced.cents === null })));
+    const token = wave.current + 1;
+    wave.current = token;
+    setFinding(true);
+    setHits([]);
+    setSeen(0);
+    setCrawlTotal(asks.length);
+    const step = async () => {
+      const chunks: typeof asks[] = [];
+      for (let index = 0; index < asks.length; index += 4) chunks.push(asks.slice(index, index + 4));
+      const groups = await Promise.all(chunks.map((chunk, index) => findPhrases({ data: { asks: chunk, hubs: index === 0 } })));
+      if (wave.current !== token) return;
+      const gathered = groups.flat();
+      setHits(gathered);
+      setSeen(asks.length);
+      applySpider(gathered);
+    };
+    void step()
+      .catch(() => {
+        if (wave.current === token) setSheetNote("The public pages did not answer. The check is still here.");
+      })
+      .finally(() => {
+        if (wave.current === token) setFinding(false);
+      });
   }
 
   function run(event?: FormEvent) {
@@ -329,160 +469,146 @@ export function InvoiceCheck() {
 
   return (
     <form onSubmit={run}>
-      <CodeTypeList />
-      <label className="mt-6 block text-sm font-medium text-ink">
-        Import a report
-        <input
-          type="file"
-          onChange={(event) => {
-            onFile(event.target.files?.[0]);
-            event.target.value = "";
-          }}
-          className="mt-1.5 block w-full text-sm text-ink file:mr-3 file:h-11 file:rounded-full file:border-0 file:bg-teal file:px-4 file:text-sm file:font-medium file:text-teal-ink"
-        />
-      </label>
-      {fileName ? <p className="mt-2 text-sm text-muted">{fileName}</p> : null}
-      <label className="mt-4 block text-sm font-medium text-ink" htmlFor="invoice-lines">
-        Or type the lines
-        <textarea
-          id="invoice-lines"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          rows={5}
-          placeholder={"97110  3/1/2026  1 unit  paid 30.00"}
-          className="mt-1.5 w-full rounded-2xl border border-line bg-paper-2 px-4 py-3 text-base text-ink"
-        />
-      </label>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button type="submit" className="h-12 rounded-full border border-line px-5 text-sm font-medium text-ink" disabled={busy}>
+      <input
+        ref={fileRef}
+        type="file"
+        className="sr-only"
+        onChange={(event) => {
+          onFile(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+      <div className="overflow-hidden rounded-[10px] bg-paper-2">
+        <button type="button" onClick={() => fileRef.current?.click()} className="flex min-h-12 w-full items-center justify-center text-[17px] font-medium text-teal">
+          {rows && rows.length > 0 ? "Choose another spreadsheet" : "Choose the spreadsheet"}
+        </button>
+      </div>
+      {rows && rows.length > 0 ? null : <p className="px-4 pt-2 text-[13px] leading-relaxed text-muted">Excel, CSV, or a PDF. Lane reads the code, the year, the place, and the amount.</p>}
+      {fileName ? <p className="px-4 pt-2 text-[13px] text-ink">{fileName}</p> : null}
+      <details className="mt-6 overflow-hidden rounded-[10px] bg-paper-2">
+        <summary className="flex min-h-12 cursor-pointer items-center justify-between px-4 text-[17px] text-ink">
+          Or type a line
+          <ChevronRight className="size-4 text-muted" />
+        </summary>
+        <div className="px-4 pb-4">
+        <label className="mt-3 block text-sm text-ink" htmlFor="invoice-lines">
+          <textarea
+            id="invoice-lines"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            rows={4}
+            placeholder={"97110  3/1/2026  1 unit  paid 30.00"}
+            className="mt-1.5 w-full rounded-[10px] bg-paper-2 bg-paper px-4 py-3 text-base text-ink"
+          />
+        </label>
+        <button type="submit" className="press mt-3 h-12 w-full rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink" disabled={busy}>
           {busy ? "Checking" : "Check it"}
         </button>
-        {rows && rows.length > 0 ? (
-          <button type="button" onClick={saveCopy} className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
-            Save a copy
-          </button>
-        ) : null}
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-muted">Bring the sheet. The correct fee is the file for that code type. Then compare what the other party wants to pay. Equipment in Olean uses the rural file. After 0.98, that is the amount you pay. A non-rural number is the wrong schedule. Nothing is sent.</p>
-      {memory.length > 0 && !rows ? (
-        <section className="mt-4 rounded-2xl border border-alert bg-alert-wash px-4 py-3" role="alert">
-          <p className="text-sm font-medium text-ink"><span className="font-medium">Rank.</span> {rankInvoice({ look: memory.filter((item) => item.kind === "look").length, off: memory.filter((item) => item.kind === "off").length, match: 0 }).detail}</p>
-          <ul className="mt-2 space-y-2 text-sm">
-            {[...memory].sort((a, b) => Number(a.kind === "off") - Number(b.kind === "off")).map((item) => (
-              <li key={item.id} className={item.kind === "off" ? "rounded-xl border border-alert bg-alert-wash px-3 py-2 text-ink" : "rounded-xl border border-wait bg-wait-wash px-3 py-2 text-ink"}>{item.reason}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+        </div>
+      </details>
       {note ? <p className="mt-4 text-sm font-medium text-deep">{note}</p> : null}
       {down ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The invoice is still here. Check it again.</p> : null}
       {rows && rows.length === 0 ? <p className="mt-4 text-sm font-medium text-deep">No code was on those lines.</p> : null}
-      {lead ? (
-        <>
-          <p className="mt-6 font-display text-3xl leading-tight text-ink">
-            You pay {money(lead.totals.payable / 100)}. They want to pay {money(lead.totals.theirs / 100)}. {money(lead.totals.wrongGap / 100)} is on the wrong schedule.
-          </p>
-          {lead.groups.filter((type) => type.wrongLines > 0).map((type) => (
-            <p key={type.id} className="mt-1 text-sm text-ink">{type.name}. {money(type.wrongGap / 100)} on the wrong schedule.</p>
-          ))}
-        </>
-      ) : null}
-      {audit && rows ? (
-        <FeeTeamReport
-          lines={rows.map((line) => {
-            const report = reviewed(line);
-            return {
-              pricedCents: line.priced.cents,
-              block: line.priced.block,
-              adminCents: line.adminCents,
-              wrongSchedule: report.reasons[0]?.startsWith("Wrong fee schedule") === true,
-              gapCents: report.reasons[0]?.startsWith("Wrong fee schedule") ? report.gapCents : null,
-            };
-          })}
-        />
-      ) : null}
-      {audit && rows ? (
-        <TypeRollup
-          lines={rows.map((line) => ({
-            schedule: line.schedule,
-            fileCents: line.priced.cents,
-            units: line.units,
-            seqRate: line.seqRate,
-            adminCents: line.adminCents,
-            otherCents: line.priced.otherCents,
-          }))}
-        />
-      ) : null}
       {rows && rows.length > 0 ? (
-        <div className={audit ? "mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" : "mt-4 grid gap-3 sm:grid-cols-3"}>
-          {(audit ? (["match", "off", "look"] as const) : (brief?.order ?? [])).map((key) => (
-            <Summary key={key} title={cards[key].title} detail={cards[key].detail} lines={key === "look" && audit ? noDollar : sorted[key]} tone={cards[key].tone} />
-          ))}
-          {audit ? <Summary title="Administrator paid under" detail="Below the file, and 0.98 does not explain it." lines={adminUnder} tone="bad" /> : null}
+        <div className="rise mt-2">
+          <AccountantDesk lines={sheetLines(rows)} note={sheetNote} onDownload={() => void downloadSheet()} />
+          <details className="mt-4">
+            <summary className="cursor-pointer text-sm text-ink">Keep these lines here</summary>
+            <button type="button" onClick={place} className="mt-3 h-12 rounded-full border border-line px-5 text-sm font-medium text-ink">
+              Save these lines
+            </button>
+            {placed ? (
+              <p className="mt-2 text-sm text-ink" role="status">
+                {placed}{" "}
+                <Link to="/billing" className="font-medium text-teal">See saved lines.</Link>
+              </p>
+            ) : null}
+          </details>
         </div>
       ) : null}
-      {rows && rows.length > 0 ? (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={place} className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
-            Save these lines
-          </button>
-          {placed ? (
-            <p className="text-sm text-ink" role="status">
-              {placed}{" "}
-              <Link to="/billing" className="font-medium text-teal">
-                See saved lines.
-              </Link>{" "}
-              Nothing is sent.
-            </p>
-          ) : null}
-        </div>
+      {hits && hits.some((hit) => hit.found) ? (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm text-ink">{finding ? `Looking up ${seen} of ${crawlTotal}` : "Names from the public pages"}</summary>
+          <ul className="mt-3 grid gap-2">
+            {hits.filter((hit) => hit.found).slice(0, 8).map((hit) => (
+              <li key={`${hit.host}-${hit.code}-${hit.url}`} className="text-sm text-ink">
+                {hit.code}. {hit.quote ?? hit.note}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : finding ? <p className="mt-3 text-sm text-muted">Looking up {seen} of {crawlTotal}.</p> : null}
+      {memory.length > 0 && !rows ? (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm text-ink">Last check</summary>
+          <ul className="mt-2 space-y-2 text-sm">
+            {memory.slice(0, 5).map((item) => (
+              <li key={item.id}>{item.reason}</li>
+            ))}
+          </ul>
+        </details>
       ) : null}
       {labels.map((label) => {
         const lines = groups.get(label) ?? [];
-        const off = lines.filter((line) => bucket(line) === "off").length;
-        const look = lines.filter((line) => bucket(line) === "look").length;
-        const note = off > 0 ? `${off} off` : look > 0 ? `${look} need a person` : "matches";
+        const problems = lines.filter((line) => bucket(line) !== "match");
+        const list = (
+          <ul className="mt-3 space-y-3">
+            {(problems.length > 0 ? problems : lines).map((line, index) => {
+              const key = `${line.code}-${index}`;
+              const chosen = best(line);
+              const reason = facts(line);
+              const tone = bucket(line);
+              return (
+                <li key={key} className={tone === "off" ? "rounded-2xl border border-alert bg-alert-wash px-4 py-3" : tone === "look" ? "rounded-2xl border border-wait bg-wait-wash px-4 py-3" : "rounded-[10px] bg-paper-2 px-4 py-3"}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? `-${line.modifier}` : ""}</p>
+                      <p className="text-sm text-muted">{line.date || "No date"} · {amounts(line)}</p>
+                    </div>
+                    <p className={tone === "match" ? "text-right text-sm font-medium text-teal" : tone === "off" ? "text-right text-sm font-medium text-alert" : "text-right text-sm font-medium text-wait"}>{labelFor(line)}</p>
+                  </div>
+                  {tone !== "match" ? <p className="mt-2 text-sm font-medium text-ink" role="alert">{reviewed(line).reasons[0]}</p> : null}
+                  <button type="button" onClick={() => setOpen(open === key ? null : key)} className="mt-2 text-sm text-teal">
+                    {open === key ? "Hide why" : "Why"}
+                  </button>
+                  {open === key ? (
+                    <>
+                      <ol className="mt-2 space-y-1 text-sm text-muted">
+                        {reason.steps.map((step) => <li key={step}>{step}</li>)}
+                      </ol>
+                      {chosen ? <YearPrices row={chosen.row} mark={line.year} /> : null}
+                    </>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        );
+        if (problems.length === 0) {
+          return (
+            <details key={label} className="mt-4">
+              <summary className="cursor-pointer text-sm text-ink">{label}. {lines.length} match.</summary>
+              {list}
+            </details>
+          );
+        }
         return (
           <section key={label} className="mt-6">
-            <h3 className="font-display text-2xl text-ink">
-              {label}
-              <span className="ml-2 text-base text-muted">{lines.length} {lines.length === 1 ? "line" : "lines"} · {note}</span>
-            </h3>
-            <ul className="mt-3 space-y-3">
-              {lines.map((line, index) => {
-                const key = `${line.code}-${index}`;
-                const chosen = best(line);
-                const reason = facts(line);
-                const tone = bucket(line);
-                return (
-                  <li key={key} className={tone === "off" ? "rounded-2xl border border-alert bg-alert-wash px-4 py-3" : tone === "look" ? "rounded-2xl border border-wait bg-wait-wash px-4 py-3" : "rounded-2xl border border-teal bg-wash px-4 py-3"}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-ink tabular-nums">{line.code}{line.modifier ? `-${line.modifier}` : ""}</p>
-                        <p className="text-sm text-muted">{line.date || "No date"} · {amounts(line)}</p>
-                      </div>
-                      <p className={tone === "match" ? "text-right text-sm font-medium text-teal" : tone === "off" ? "text-right text-sm font-medium text-alert" : "text-right text-sm font-medium text-wait"}>{labelFor(line)}</p>
-                    </div>
-                    {tone !== "match" ? <p className="mt-2 text-sm font-medium text-ink" role="alert">{reviewed(line).reasons[0]}</p> : null}
-                    {line.rest.length > 0 ? <p className="mt-2 text-xs text-muted">Also on {line.rest.map((row) => `${row.s} ${money(row.c / 100)}`).join("; ")}.</p> : null}
-                    <ol className="mt-2 space-y-1 text-sm text-muted">
-                      {(tone === "match" ? reason.steps : reason.steps.slice(1)).map((step) => <li key={step}>{step}</li>)}
-                    </ol>
-                    {chosen ? (
-                      <button type="button" onClick={() => setOpen(open === key ? null : key)} className="mt-2 text-sm text-teal">
-                        {open === key ? "Hide the years" : "Show every year"}
-                      </button>
-                    ) : null}
-                    {open === key && chosen ? <YearPrices row={chosen.row} mark={line.year} /> : null}
-                  </li>
-                );
-              })}
-            </ul>
+            <h3 className="text-[17px] font-semibold text-ink">{label} <span className="text-base text-muted">{problems.length} to look at</span></h3>
+            {list}
           </section>
         );
       })}
     </form>
   );
+}
+
+function leadText(lead: { totals: { payable: number; theirs: number; wrongGap: number } }) {
+  const parts = [`You pay ${money(lead.totals.payable / 100)}.`];
+  if (lead.totals.theirs) parts.push(`They want ${money(lead.totals.theirs / 100)}.`);
+  if (lead.totals.wrongGap) parts.push(`${money(lead.totals.wrongGap / 100)} is the wrong schedule.`);
+  else if (lead.totals.theirs) parts.push("Nothing is on the wrong schedule.");
+  return parts.join(" ");
 }
 
 function bucket(line: Checked) {
@@ -503,6 +629,7 @@ function reviewed(line: Checked) {
       block: line.priced.block,
       note: line.priced.note,
       otherCents: line.priced.otherCents,
+      choseCents: line.paidCents,
     });
   }
   const report = auditReport({
@@ -537,7 +664,7 @@ function Summary({ title, detail, lines, tone }: { title: string; detail: string
   return (
     <div className={tone === "bad" ? "rounded-2xl border border-alert bg-alert-wash px-4 py-3" : tone === "plain" ? "rounded-2xl border border-wait bg-wait-wash px-4 py-3" : "rounded-2xl border border-teal bg-wash px-4 py-3"}>
       <p className={tone === "ok" ? "text-sm font-medium text-teal" : tone === "bad" ? "text-sm font-medium text-alert" : "text-sm font-medium text-wait"}>{title}</p>
-      <p className="mt-1 font-display text-2xl text-ink tabular-nums">{lines.length}</p>
+      <p className="mt-1 text-[17px] font-semibold text-ink tabular-nums">{lines.length}</p>
       <p className="mt-1 text-sm text-muted">{detail}</p>
       {lines.length === 0 ? <p className="mt-1 text-sm tabular-nums text-ink">None</p> : null}
       {paidLines > 0 ? <p className="mt-1 text-sm tabular-nums text-ink">Paid {money(paid / 100)}</p> : null}
@@ -596,4 +723,46 @@ function amounts(line: Checked) {
   if (shown) return shown;
   const paid = line.paidCents === null ? null : `${line.paidKind === "allowed" ? "allowed" : "paid"} ${money(line.paidCents / 100)}`;
   return paid ?? "no amount";
+}
+
+function SheetTable({ lines }: { lines: SheetLine[] }) {
+  const report = reportRows(lines);
+  const shown = report.flagged.length > 0 ? report.flagged : report.compared.slice(0, 12);
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <p className="text-sm text-ink">{report.compared.length} lines. {report.count("Match")} match. {report.flagged.length} flagged.{report.flagged.length > 0 ? ` Difference ${money(report.gap / 100)}.` : ""}</p>
+      <table className="mt-2 w-full min-w-[720px] border-collapse text-left text-sm">
+        <thead>
+          <tr className="border-b border-line text-muted">
+            <th className="py-2 pr-3 font-medium">Code</th>
+            <th className="py-2 pr-3 font-medium">Year</th>
+            <th className="py-2 pr-3 font-medium">Their lookup</th>
+            <th className="py-2 pr-3 font-medium">File</th>
+            <th className="py-2 pr-3 font-medium">They want</th>
+            <th className="py-2 pr-3 font-medium">You pay</th>
+            <th className="py-2 pr-3 font-medium">Difference</th>
+            <th className="py-2 font-medium">Flag</th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((row, index) => (
+            <tr key={`${row.line.code}-${row.line.date}-${index}`} className="border-b border-line">
+              <td className="py-2 pr-3">{row.line.code}</td>
+              <td className="py-2 pr-3">{row.line.year ?? ""}</td>
+              <td className="py-2 pr-3">{cents(row.lookup)}</td>
+              <td className="py-2 pr-3">{cents(row.file)}</td>
+              <td className="py-2 pr-3">{cents(row.theirs)}</td>
+              <td className="py-2 pr-3">{cents(row.youPay)}</td>
+              <td className="py-2 pr-3">{cents(row.diff)}</td>
+              <td className="py-2">{row.flag}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function cents(value: number | null) {
+  return value === null ? "" : money(value / 100);
 }

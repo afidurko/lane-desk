@@ -77,7 +77,7 @@ export function InstitutionRates() {
 
   return (
     <section className="mt-10">
-      <h2 className="font-display text-3xl text-ink">Institutional groups</h2>
+      <h2 className="text-[22px] font-semibold tracking-tight text-ink">Institutional groups</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
         Each year is its own file. A weight is not a dollar. Skilled nursing amounts on one row are separate components, not a total. Home health is a calendar year. The others are fiscal years.
       </p>
@@ -90,7 +90,7 @@ export function InstitutionRates() {
       </div>
       <label className="mt-4 block text-sm font-medium text-ink">
         Group
-        <input value={query} onChange={(event) => setQuery(event.target.value.toUpperCase())} placeholder="A, ES3, 0101, 001, 1FC11" className="mt-1.5 h-12 w-full max-w-xs rounded-xl border border-line bg-paper-2 px-3 text-base uppercase" />
+        <input value={query} onChange={(event) => setQuery(event.target.value.toUpperCase())} placeholder="A, ES3, 0101, 001, 1FC11" className="mt-1.5 h-12 w-full max-w-xs rounded-[10px] bg-paper-2 px-3 text-base uppercase" />
       </label>
       <button type="button" aria-pressed={rural} onClick={() => setRural((value) => !value)} className="mt-3 h-11 rounded-full border border-line px-4 text-sm font-medium text-ink">
         {rural ? "Rural skilled nursing" : "Urban skilled nursing"}
@@ -129,7 +129,7 @@ export function InstitutionRates() {
       {none ? <p className="mt-4 text-sm text-ink">Nothing in the {year} files for that group.</p> : null}
       {!file?.snf && asked ? <p className="mt-3 text-sm text-muted">No skilled nursing file for {year}.</p> : null}
       {snf.map((row) => (
-        <div key={`${row.group}-${row.nursing}`} className="mt-4 rounded-2xl border border-line p-5 text-sm leading-relaxed text-ink">
+        <div key={`${row.group}-${row.nursing}`} className="mt-4 rounded-[10px] bg-paper-2 p-5 text-sm leading-relaxed text-ink">
           <p className="text-muted">Skilled nursing, {rural ? "rural" : "urban"}, FY {year}</p>
           <p className="mt-1">{part("PT", row.pt, row.ptCents)}. {part("OT", row.ot, row.otCents)}. {part("SLP", row.slp, row.slpCents)}.</p>
           <p className="mt-1">{part(`Nursing ${row.nursing}`, row.nursingIndex, row.nursingCents)}. {part("NTA", row.nta, row.ntaCents)}.</p>
@@ -140,31 +140,31 @@ export function InstitutionRates() {
           ? Math.round(Number(row.weight) * (file.ipps.laborAtOrBelowOne + file.ipps.nonlaborAtOrBelowOne))
           : null;
         return (
-          <div key={row.drg} className="mt-4 rounded-2xl border border-line p-5 text-sm leading-relaxed text-ink">
+          <div key={row.drg} className="mt-4 rounded-[10px] bg-paper-2 p-5 text-sm leading-relaxed text-ink">
             <p className="text-muted">Inpatient, FY {year}</p>
-            <h3 className="mt-1 font-display text-2xl">MS-DRG {row.drg}</h3>
+            <h3 className="mt-1 text-[17px] font-semibold text-ink">MS-DRG {row.drg}</h3>
             <p className="mt-1">{row.title}. Weight {row.weight}.{national != null ? ` Unadjusted ${money(national / 100)} for a wage index at or below 1.` : ""} Not wage-adjusted.</p>
           </div>
         );
       })}
       {!file?.irf && asked ? null : irf.map((row) => (
-        <div key={row.cmg} className="mt-4 rounded-2xl border border-line p-5 text-sm leading-relaxed text-ink">
+        <div key={row.cmg} className="mt-4 rounded-[10px] bg-paper-2 p-5 text-sm leading-relaxed text-ink">
           <p className="text-muted">Inpatient rehabilitation, FY {year}</p>
-          <h3 className="mt-1 font-display text-2xl">CMG {row.cmg}</h3>
+          <h3 className="mt-1 text-[17px] font-semibold text-ink">CMG {row.cmg}</h3>
           <p className="mt-1">{row.name}. Tier weights {row.t1}, {row.t2}, {row.t3}, and {row.none}.{file?.irf?.standardPaymentCents ? ` Standard payment conversion factor $${(file.irf.standardPaymentCents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}.` : ""} A weight is not a dollar. Not wage-adjusted.</p>
         </div>
       ))}
       {ltch.map((row) => (
-        <div key={`ltch-${row.drg}`} className="mt-4 rounded-2xl border border-line p-5 text-sm leading-relaxed text-ink">
+        <div key={`ltch-${row.drg}`} className="mt-4 rounded-[10px] bg-paper-2 p-5 text-sm leading-relaxed text-ink">
           <p className="text-muted">Long-term care hospital, {file?.ltch?.asOf}</p>
-          <h3 className="mt-1 font-display text-2xl">MS-LTC-DRG {row.drg}</h3>
+          <h3 className="mt-1 text-[17px] font-semibold text-ink">MS-LTC-DRG {row.drg}</h3>
           <p className="mt-1">{row.title}. Weight {row.weight}.</p>
         </div>
       ))}
       {home.map((row) => (
-        <div key={row.hipps} className="mt-4 rounded-2xl border border-line p-5 text-sm leading-relaxed text-ink">
+        <div key={row.hipps} className="mt-4 rounded-[10px] bg-paper-2 p-5 text-sm leading-relaxed text-ink">
           <p className="text-muted">Home health, CY {year}</p>
-          <h3 className="mt-1 font-display text-2xl">{row.hipps}</h3>
+          <h3 className="mt-1 text-[17px] font-semibold text-ink">{row.hipps}</h3>
           <p className="mt-1">{row.name}. Weight {row.weight}. LUPA threshold {row.lupa} visits. The weight is not a dollar.</p>
         </div>
       ))}

@@ -22,12 +22,14 @@ export function payLine(input: {
   adminCents: number | null;
   otherCents: number | null;
 }) {
-  const units = input.units && input.units > 0 ? input.units : null;
-  if (input.fileCents === null || units === null) return { payable: null as number | null, theirs: input.adminCents && input.adminCents > 0 ? input.adminCents : null, wrong: false, gap: null as number | null };
-  const line = Math.round(input.fileCents * units);
-  const payable = input.seqRate ? Math.round(line * input.seqRate) : line;
-  const other = input.otherCents ? Math.round(input.otherCents * units) : null;
-  const theirs = input.adminCents && input.adminCents > 0 ? input.adminCents : null;
+  const units = typeof input.units === "number" && Number.isFinite(input.units) && input.units > 0 ? input.units : null;
+  const file = typeof input.fileCents === "number" && Number.isFinite(input.fileCents) ? input.fileCents : null;
+  const theirs = typeof input.adminCents === "number" && Number.isFinite(input.adminCents) && input.adminCents > 0 ? input.adminCents : null;
+  if (file === null || units === null) return { payable: null as number | null, theirs, wrong: false, gap: null as number | null };
+  const line = Math.round(file * units);
+  const seq = typeof input.seqRate === "number" && Number.isFinite(input.seqRate) && input.seqRate > 0 && input.seqRate < 1 ? input.seqRate : null;
+  const payable = seq ? Math.round(line * seq) : line;
+  const other = typeof input.otherCents === "number" && Number.isFinite(input.otherCents) ? Math.round(input.otherCents * units) : null;
   const wrong = theirs !== null && other !== null && Math.abs(theirs - other) <= 1 && Math.abs(theirs - payable) > 1;
   return { payable, theirs, wrong, gap: theirs === null ? null : payable - theirs };
 }

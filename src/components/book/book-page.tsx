@@ -168,8 +168,8 @@ export function BookPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Codes</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Codes</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           Medicare fee schedules from 2020 through 2026, then the sequestration rate for the date of service.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -186,7 +186,7 @@ export function BookPage() {
                 setQuery("");
                 setSelected(null);
               }}
-              className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base"
+              className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base"
             >
               <option value="physician">Physician</option>
               <option value="ambulance">Ambulance</option>
@@ -205,7 +205,7 @@ export function BookPage() {
                 setSelected(null);
                 setClinician("nonQp");
               }}
-              className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base"
+              className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base"
             >
               {YEARS.map((item) => (
                 <option key={item} value={item}>{item}</option>
@@ -214,7 +214,7 @@ export function BookPage() {
           </label>
           <label className="text-sm font-medium text-ink">
             Date of service
-            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
           </label>
           <p className="self-end text-sm leading-relaxed text-muted">{sequestrationLabel(date)} The fee itself does not change.</p>
         </div>
@@ -226,25 +226,25 @@ export function BookPage() {
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className="text-sm font-medium text-ink sm:col-span-2">
                 Code or short description
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="97110 or gait" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="97110 or gait" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
               </label>
               <label className="text-sm font-medium text-ink">
                 Setting
-                <select value={setting} onChange={(event) => setSetting(event.target.value as "nf" | "fac")} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                <select value={setting} onChange={(event) => setSetting(event.target.value as "nf" | "fac")} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                   <option value="nf">Non-facility</option>
                   <option value="fac">Facility</option>
                 </select>
               </label>
               <label className="text-sm font-medium text-ink">
                 Clinician
-                <select value={clinician} onChange={(event) => setClinician(event.target.value as "nonQp" | "qp")} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                <select value={clinician} onChange={(event) => setClinician(event.target.value as "nonQp" | "qp")} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                   <option value="nonQp">Non-QP, {physician.conversion.nonQp}</option>
                   <option value="qp" disabled={!physician.conversion.qp}>QP{physician.conversion.qp ? `, ${physician.conversion.qp}` : ", not a separate factor this year"}</option>
                 </select>
               </label>
               <label className="text-sm font-medium text-ink sm:col-span-2">
                 Where was the service
-                <select value={locality} onChange={(event) => setLocality(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                <select value={locality} onChange={(event) => setLocality(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                   <option value="national">National, GPCI 1.000</option>
                   {physician.localities.map((item) => (
                     <option key={`${item.mac}-${item.number}`} value={`${item.mac}/${item.number}`}>
@@ -256,7 +256,7 @@ export function BookPage() {
               </label>
               <label className="text-sm font-medium text-ink">
                 Modifier
-                <select value={modifier} onChange={(event) => setModifier(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                <select value={modifier} onChange={(event) => setModifier(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                   <option value="blank">No modifier</option>
                   <option value="only">Modifier rows only</option>
                   <option value="all">All rows</option>
@@ -270,7 +270,7 @@ export function BookPage() {
               <YearList family={family} code={query} quiet />
             </div>
             <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-              <ul className="overflow-hidden rounded-2xl border border-line">
+              <ul className="overflow-hidden rounded-[10px] bg-paper-2">
                 {matches.length === 0 ? (
                   <li className="px-4 py-4 text-sm text-muted">No match yet. An empty search is not a price.</li>
                 ) : (
@@ -289,11 +289,11 @@ export function BookPage() {
                   })
                 )}
               </ul>
-              <section className="rounded-2xl border border-line bg-paper-2 p-5">
+              <section className="rounded-[10px] bg-paper-2 p-5">
                 {shown && allowed !== null && cut ? (
                   <>
-                    <p className="text-xs font-medium tracking-widest text-teal uppercase">{year} {STATUS[shown.s] ?? shown.s}</p>
-                    <h2 className="mt-2 font-display text-3xl text-ink">{shown.c}{shown.m ? ` ${shown.m}` : ""} {shown.d}</h2>
+                    <p className="text-[13px] text-muted">{year} {STATUS[shown.s] ?? shown.s}</p>
+                    <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">{shown.c}{shown.m ? ` ${shown.m}` : ""} {shown.d}</h2>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div><dt className="text-xs tracking-widest text-muted uppercase">Fee schedule</dt><dd className="mt-1 font-medium text-ink tabular-nums">{money(allowed)}</dd></div>
                       <div><dt className="text-xs tracking-widest text-muted uppercase">Work / PE / MP</dt><dd className="mt-1 text-ink tabular-nums">{shown.w} / {setting === "nf" ? shown.pn : shown.pf} / {shown.mp}</dd></div>
@@ -323,7 +323,7 @@ export function BookPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-medium text-ink">
                 Carrier locality
-                <select value={`${activePlace.carrier}/${activePlace.loc}`} onChange={(event) => setPlaceKey(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                <select value={`${activePlace.carrier}/${activePlace.loc}`} onChange={(event) => setPlaceKey(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                   {places.map((item) => (
                     <option key={`${item.carrier}/${item.loc}`} value={`${item.carrier}/${item.loc}`}>{item.carrier} / {item.loc}</option>
                   ))}
@@ -331,7 +331,7 @@ export function BookPage() {
               </label>
               <label className="text-sm font-medium text-ink">
                 Ground setting
-                <select value={ground} onChange={(event) => setGround(event.target.value as "urban" | "rural" | "quartile")} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+                <select value={ground} onChange={(event) => setGround(event.target.value as "urban" | "rural" | "quartile")} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                   <option value="urban">Urban</option>
                   <option value="rural">Rural</option>
                   <option value="quartile">Rural lowest quartile</option>
@@ -339,7 +339,7 @@ export function BookPage() {
               </label>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted">{ambulance.source}</p>
-            <ul className="mt-4 overflow-hidden rounded-2xl border border-line">
+            <ul className="mt-4 overflow-hidden rounded-[10px] bg-paper-2">
               {trip.map((row) => (
                 <AmbulanceLine key={row.c} row={row} ground={ground} percent={percent} active={pickedTrip?.c === row.c} />
               ))}
@@ -360,8 +360,8 @@ export function BookPage() {
         <GapRates />
 
         <section className="mt-10 grid items-start gap-6 lg:grid-cols-2">
-          <form onSubmit={add} className="rounded-2xl border border-line bg-paper-2 p-5">
-            <h2 className="font-display text-3xl text-ink">Add a row these files do not have</h2>
+          <form onSubmit={add} className="rounded-[10px] bg-paper-2 p-5">
+            <h2 className="text-[22px] font-semibold tracking-tight text-ink">Add a row these files do not have</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">Medicaid and waiver rates are not CMS physician or ambulance files. A row needs a source and stays in this browser.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-medium text-ink">
@@ -393,12 +393,12 @@ export function BookPage() {
             <button type="submit" className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">Keep this row</button>
           </form>
           <div>
-            <h2 className="font-display text-3xl text-ink">Payment systems</h2>
+            <h2 className="text-[22px] font-semibold tracking-tight text-ink">Payment systems</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">A loaded row has a CMS rate file in this app. The rest are named so they are not mistaken for a price.</p>
             <ul className="mt-4 space-y-3">
               {PAYMENT_SYSTEMS.map((item) => (
-                <li key={item.name} className="rounded-2xl border border-line p-4">
-                  <h3 className="font-display text-2xl text-ink">{item.name}</h3>
+                <li key={item.name} className="rounded-[10px] bg-paper-2 p-4">
+                  <h3 className="text-[17px] font-semibold text-ink">{item.name}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{item.loaded ?? item.gap}</p>
                   {item.loaded && item.gap ? <p className="mt-1 text-sm leading-relaxed text-muted">{item.gap}</p> : null}
                 </li>
@@ -444,10 +444,10 @@ function LabList({ rows, query, onQuery, source, percent }: { rows: LabRow[]; qu
     <section className="mt-6">
       <label className="text-sm font-medium text-ink">
         Code or short description
-        <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="80053 or metabolic" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+        <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="80053 or metabolic" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
       </label>
       <p className="mt-3 text-sm leading-relaxed text-muted">{rows.length.toLocaleString()} codes. {source}</p>
-      <ul className="mt-4 overflow-hidden rounded-2xl border border-line">
+      <ul className="mt-4 overflow-hidden rounded-[10px] bg-paper-2">
         {matches.length === 0 ? (
           <li className="px-4 py-4 text-sm text-muted">No match yet.</li>
         ) : (
@@ -476,18 +476,18 @@ function DmeList({ rows, query, onQuery, source, percent, side, onSide }: { rows
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm font-medium text-ink">
           Code
-          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="E0601 or oxygen" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="E0601 or oxygen" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
         </label>
         <label className="text-sm font-medium text-ink">
           New York column
-          <select value={side} onChange={(event) => onSide(event.target.value as "rural" | "nr")} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+          <select value={side} onChange={(event) => onSide(event.target.value as "rural" | "nr")} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
             <option value="rural">Rural, ZIP 14760</option>
             <option value="nr">Non-rural</option>
           </select>
         </label>
       </div>
       <p className="mt-3 text-sm leading-relaxed text-muted">{rows.length.toLocaleString()} codes. {source}</p>
-      <ul className="mt-4 overflow-hidden rounded-2xl border border-line">
+      <ul className="mt-4 overflow-hidden rounded-[10px] bg-paper-2">
         {rows.length === 0 ? (
           <li className="px-4 py-4 text-sm text-muted">No fee rows in this file.</li>
         ) : matches.length === 0 ? (

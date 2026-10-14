@@ -291,19 +291,19 @@ export function BillingPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Review team</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Review team</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           What does not match.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
           These are the lines Intake saved. Review marks a charge that does not match the file. A person decides. Nothing is sent.
         </p>
         <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
-          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
-          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">2. What.</span> <span className="text-muted">Import a file or add a line.</span></li>
-          <li className="rounded-2xl border border-line bg-paper-2 p-4"><span className="font-medium text-ink">3. Ready.</span> <span className="text-muted">No alerts, then download.</span></li>
+          <li className="rounded-[10px] bg-paper-2 p-4"><span className="font-medium text-ink">1. Who.</span> <span className="text-muted">Organization and submitter.</span></li>
+          <li className="rounded-[10px] bg-paper-2 p-4"><span className="font-medium text-ink">2. What.</span> <span className="text-muted">Import a file or add a line.</span></li>
+          <li className="rounded-[10px] bg-paper-2 p-4"><span className="font-medium text-ink">3. Ready.</span> <span className="text-muted">No alerts, then download.</span></li>
         </ol>
-        <p className="mt-4 rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm text-ink">
+        <p className="mt-4 rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
           <span className="font-medium">{gap.title}.</span> {gap.detail} Pricing from the {books.physician?.year ?? fileYear} files.
         </p>
         {claim && claim.status === "draft" ? (
@@ -312,18 +312,18 @@ export function BillingPage() {
           </button>
         ) : null}
         <dl className="mt-8 grid grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-line bg-paper-2 p-5">
-            <dt className="text-xs font-medium tracking-widest text-muted uppercase">Draft</dt>
-            <dd className="mt-1 font-display text-4xl text-ink tabular-nums">{board.draft}</dd>
+          <div className="rounded-[10px] bg-paper-2 p-5">
+            <dt className="text-[13px] text-muted">Draft</dt>
+            <dd className="mt-1 text-[28px] font-bold tracking-tight text-ink tabular-nums tabular-nums">{board.draft}</dd>
           </div>
-          <div className="rounded-2xl border border-line bg-paper-2 p-5">
-            <dt className="text-xs font-medium tracking-widest text-muted uppercase">Ready for review</dt>
-            <dd className="mt-1 font-display text-4xl text-ink tabular-nums">{board.ready}</dd>
+          <div className="rounded-[10px] bg-paper-2 p-5">
+            <dt className="text-[13px] text-muted">Ready for review</dt>
+            <dd className="mt-1 text-[28px] font-bold tracking-tight text-ink tabular-nums tabular-nums">{board.ready}</dd>
           </div>
         </dl>
 
-        <form onSubmit={addClient} className="mt-8 grid gap-3 rounded-2xl border border-line bg-paper-2 p-5 sm:grid-cols-2">
-          <h2 className="font-display text-3xl text-ink sm:col-span-2">Organization</h2>
+        <form onSubmit={addClient} className="mt-8 grid gap-3 rounded-[10px] bg-paper-2 p-5 sm:grid-cols-2">
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink sm:col-span-2">Organization</h2>
           <label className="text-sm font-medium text-ink">
             Name
             <input value={org} onChange={(event) => setOrg(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base" />
@@ -345,11 +345,11 @@ export function BillingPage() {
           ) : null}
         </form>
 
-        <form onSubmit={addClaim} className="mt-6 grid gap-3 rounded-2xl border border-line p-5 sm:grid-cols-2">
-          <h2 className="font-display text-3xl text-ink sm:col-span-2">Claim worksheet</h2>
+        <form onSubmit={addClaim} className="mt-6 grid gap-3 rounded-[10px] bg-paper-2 p-5 sm:grid-cols-2">
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink sm:col-span-2">Claim worksheet</h2>
           <label className="text-sm font-medium text-ink sm:col-span-2">
             Payer
-            <select value={payer} onChange={(event) => setPayer(event.target.value as "medicare" | "medicaid")} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+            <select value={payer} onChange={(event) => setPayer(event.target.value as "medicare" | "medicaid")} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
               <option value="medicare">Federal Medicare, Rest of New York</option>
               <option value="medicaid">New York Medicaid fee-for-service</option>
             </select>
@@ -357,7 +357,7 @@ export function BillingPage() {
           {payer === "medicaid" ? (
             <label className="text-sm font-medium text-ink sm:col-span-2">
               County
-              <select value={county} onChange={(event) => setCounty(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+              <select value={county} onChange={(event) => setCounty(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
                 {(ny ? countiesOf(ny) : [NY.county]).map((name) => (
                   <option key={name} value={name}>{countyLabel(name)}</option>
                 ))}
@@ -366,11 +366,11 @@ export function BillingPage() {
           ) : null}
           <label className="text-sm font-medium text-ink">
             Date of service
-            <input type="date" value={dos} onChange={(event) => setDos(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+            <input type="date" value={dos} onChange={(event) => setDos(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
           </label>
           <label className="text-sm font-medium text-ink">
             Place of service
-            <select value={pos} onChange={(event) => setPos(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+            <select value={pos} onChange={(event) => setPos(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
               <option value="11">11 Office</option>
               <option value="12">12 Home</option>
               <option value="41">41 Ambulance, land</option>
@@ -381,15 +381,15 @@ export function BillingPage() {
           </label>
           <label className="text-sm font-medium text-ink sm:col-span-2">
             Claim number
-            <input value={claimNumber} onChange={(event) => setClaimNumber(event.target.value.toUpperCase())} placeholder="OLN-1001" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+            <input value={claimNumber} onChange={(event) => setClaimNumber(event.target.value.toUpperCase())} placeholder="OLN-1001" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
           </label>
           <label className="text-sm font-medium text-ink sm:col-span-2">
             Diagnosis code
-            <input value={diagnosis} onChange={(event) => setDiagnosis(event.target.value.toUpperCase())} placeholder="M25.561" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+            <input value={diagnosis} onChange={(event) => setDiagnosis(event.target.value.toUpperCase())} placeholder="M25.561" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
           </label>
           <label className="text-sm font-medium text-ink sm:col-span-2">
             Note, de-identified
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Therapeutic exercise, 15 minutes. No names." className="mt-1.5 w-full rounded-xl border border-line bg-paper-2 px-3 py-2 text-base" />
+            <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Therapeutic exercise, 15 minutes. No names." className="mt-1.5 w-full rounded-[10px] bg-paper-2 px-3 py-2 text-base" />
           </label>
           <button type="submit" className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink sm:col-span-2">Open a worksheet</button>
         </form>
@@ -400,9 +400,9 @@ export function BillingPage() {
             writeSubmitter(submitter);
             setMessage("Submitter saved on this browser. It is not sent anywhere.");
           }}
-          className="mt-6 grid gap-3 rounded-2xl border border-line bg-paper-2 p-5 sm:grid-cols-2"
+          className="mt-6 grid gap-3 rounded-[10px] bg-paper-2 p-5 sm:grid-cols-2"
         >
-          <h2 className="font-display text-3xl text-ink sm:col-span-2">Submitter</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink sm:col-span-2">Submitter</h2>
           <p className="text-sm text-muted sm:col-span-2">The enrolled submitter for MAC 13282. The packet will not be ready without a name, NPI, and submitter ID.</p>
           <label className="text-sm font-medium text-ink">
             Name
@@ -431,7 +431,7 @@ export function BillingPage() {
         {claims.length > 0 ? (
           <label className="mt-4 block text-sm font-medium text-ink">
             Open worksheets
-            <select value={claimId ?? ""} onChange={(event) => setClaimId(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+            <select value={claimId ?? ""} onChange={(event) => setClaimId(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
               {claims.map((item) => (
                 <option key={item.id} value={item.id}>{item.number || "No number"} · {item.dos} · {(item.payer ?? "medicare") === "medicaid" ? "NY Medicaid" : "Medicare"} · {item.status}</option>
               ))}
@@ -440,7 +440,7 @@ export function BillingPage() {
         ) : null}
 
         {claim ? (
-          <section className="mt-6 rounded-2xl border border-line p-5">
+          <section className="mt-6 rounded-[10px] bg-paper-2 p-5">
             <p className="text-sm text-muted">{claim.number || "No claim number"} · {client?.name ?? "No organization"} · {claim.dos} · {(claim.payer ?? "medicare") === "medicaid" ? `NY Medicaid, ${countyLabel(claim.county || NY.county)}` : "Medicare, Rest of New York"} · place {claim.pos || "not set"}{claim.diagnosis ? ` · ${claim.diagnosis}` : ""} · {claim.status}</p>
             {(claim.payer ?? "medicare") === "medicaid" && claim.status === "draft" ? (
               <label className="mt-4 block text-sm font-medium text-ink">
@@ -516,8 +516,8 @@ export function BillingPage() {
                 className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper px-3 text-base"
               />
             </label>
-            <section className="mt-4 rounded-2xl border border-line p-4">
-              <h2 className="font-display text-2xl text-ink">Note</h2>
+            <section className="mt-4 rounded-[10px] bg-paper-2 p-4">
+              <h2 className="text-[17px] font-semibold text-ink">Note</h2>
               <p className="mt-1 text-sm text-muted">The de-identified note for this claim. A name or member number is stopped.</p>
               <textarea
                 value={claim.note ?? ""}
@@ -538,19 +538,19 @@ export function BillingPage() {
             <form onSubmit={addLine} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className="text-sm font-medium text-ink">
                 Code
-                <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+                <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
               </label>
               <label className="text-sm font-medium text-ink">
                 Modifier
-                <input value={modifier} onChange={(event) => setModifier(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+                <input value={modifier} onChange={(event) => setModifier(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
               </label>
               <label className="text-sm font-medium text-ink">
                 Units
-                <input value={units} onChange={(event) => setUnits(event.target.value)} inputMode="numeric" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+                <input value={units} onChange={(event) => setUnits(event.target.value)} inputMode="numeric" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
               </label>
               <label className="text-sm font-medium text-ink">
                 Charge, optional
-                <input value={charge} onChange={(event) => setCharge(event.target.value)} inputMode="decimal" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+                <input value={charge} onChange={(event) => setCharge(event.target.value)} inputMode="decimal" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
               </label>
               <button type="submit" disabled={claim.status === "ready"} className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink disabled:opacity-50 lg:col-span-4">Add line</button>
             </form>
@@ -593,9 +593,9 @@ export function BillingPage() {
               const packet = buildPacket(claim, client, submitter, books, today);
               const shown = alerts;
               return (
-                <section className="mt-6 rounded-2xl border border-line bg-paper p-4">
-                  <p className="text-xs font-medium tracking-widest text-teal uppercase">{packet.ready ? "Ready for review" : "Not complete"}</p>
-                  <h2 className="mt-2 font-display text-2xl text-ink">{packet.form} · {packet.receiver}</h2>
+                <section className="mt-6 rounded-[10px] bg-paper-2 bg-paper p-4">
+                  <p className="text-[13px] text-muted">{packet.ready ? "Ready for review" : "Not complete"}</p>
+                  <h2 className="mt-2 text-[17px] font-semibold text-ink">{packet.form} · {packet.receiver}</h2>
                   <p className="mt-2 text-sm text-muted">{packet.locality}. {packet.next}</p>
                   {alerts.length > 0 ? (
                     <ul className="mt-3 space-y-2">

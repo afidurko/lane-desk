@@ -54,9 +54,9 @@ export function HelpChat() {
   }
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3">
+    <div className="fixed right-4 bottom-24 z-50 flex flex-col items-end gap-3 md:bottom-4">
       {open ? (
-        <section className="flex h-[min(32rem,calc(100vh-6rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-paper shadow-[0_16px_40px_rgba(22,56,50,0.12)]">
+        <section className="flex h-[min(32rem,calc(100vh-6rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[10px] bg-paper-2 bg-paper shadow-[0_16px_40px_rgba(22,56,50,0.12)]">
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div>
               <p className="font-display text-lg text-ink">Help</p>
@@ -75,7 +75,7 @@ export function HelpChat() {
                       ? "rounded-2xl border border-deep bg-wash px-3 py-2 text-sm leading-relaxed text-deep"
                       : turn.role === "you"
                         ? "rounded-2xl bg-ink px-3 py-2 text-sm leading-relaxed text-paper"
-                        : "rounded-2xl border border-line bg-paper-2 px-3 py-2 text-sm leading-relaxed text-ink"
+                        : "rounded-[10px] bg-paper-2 px-3 py-2 text-sm leading-relaxed text-ink"
                   }
                 >
                   {turn.text}

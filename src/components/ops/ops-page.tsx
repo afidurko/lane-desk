@@ -54,8 +54,8 @@ export function OpsPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl overflow-x-hidden px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Files</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Files</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           What is loaded, and what is next.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -74,17 +74,17 @@ export function OpsPage() {
         {report ? (
           <>
             <dl className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="min-w-0 rounded-2xl border border-line bg-paper-2 p-4">
-                <dt className="text-xs font-medium tracking-widest text-teal uppercase">Current</dt>
-                <dd className="mt-2 font-display text-3xl text-ink tabular-nums">{current}</dd>
+              <div className="min-w-0 rounded-[10px] bg-paper-2 p-4">
+                <dt className="text-[13px] text-muted">Current</dt>
+                <dd className="mt-2 text-[22px] font-semibold tracking-tight text-ink tabular-nums">{current}</dd>
               </div>
-              <div className="min-w-0 rounded-2xl border border-line bg-paper-2 p-4">
-                <dt className="text-xs font-medium tracking-widest text-deep uppercase">Gap</dt>
-                <dd className="mt-2 font-display text-3xl text-deep tabular-nums">{gap}</dd>
+              <div className="min-w-0 rounded-[10px] bg-paper-2 p-4">
+                <dt className="text-[13px] text-deep">Gap</dt>
+                <dd className="mt-2 text-[22px] font-semibold tracking-tight text-ink text-deep tabular-nums">{gap}</dd>
               </div>
-              <div className="min-w-0 rounded-2xl border border-line bg-paper-2 p-4">
-                <dt className="text-xs font-medium tracking-widest text-teal uppercase">Built</dt>
-                <dd className="mt-2 font-display text-2xl break-words text-ink">{report.built}</dd>
+              <div className="min-w-0 rounded-[10px] bg-paper-2 p-4">
+                <dt className="text-[13px] text-muted">Built</dt>
+                <dd className="mt-2 text-[17px] font-semibold text-ink break-words text-ink">{report.built}</dd>
               </div>
             </dl>
 
@@ -98,8 +98,8 @@ export function OpsPage() {
                   key={file.id}
                   className={
                     file.status === "gap"
-                      ? "min-w-0 rounded-2xl border border-line bg-wash px-4 py-3"
-                      : "min-w-0 rounded-2xl border border-line px-4 py-3"
+                      ? "min-w-0 rounded-[10px] bg-paper-2 bg-wash px-4 py-3"
+                      : "min-w-0 rounded-[10px] bg-paper-2 px-4 py-3"
                   }
                 >
                   <p className="font-medium break-words text-ink">{file.name}</p>
@@ -127,8 +127,8 @@ function DailyBridge({ report }: { report: WatchReport }) {
   );
   const open = brief.order.filter((row) => row.status !== "current");
   return (
-    <section className="mt-6 rounded-2xl border border-line px-4 py-4">
-      <p className="text-xs font-medium tracking-widest text-teal uppercase">Daily check</p>
+    <section className="mt-6 rounded-[10px] bg-paper-2 px-4 py-4">
+      <p className="text-[13px] text-muted">Daily check</p>
       <p className="mt-2 text-sm leading-relaxed text-ink">{brief.detail}</p>
       <p className="mt-1 text-sm text-muted">{brief.chain.join(" → ")}. No outside bot is called.</p>
       {open.length > 0 ? (
@@ -149,16 +149,16 @@ function SelfCheck({ duties }: { duties: Duty[] | null }) {
   const teams = [...new Set(duties?.map((duty) => duty.team) ?? [])];
   return (
     <section className="mt-8" aria-label="Self check">
-      <h2 className="font-display text-3xl text-ink">Self check</h2>
+      <h2 className="text-[22px] font-semibold tracking-tight text-ink">Self check</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
         {duties ? (failed === 0 ? "All checks passed." : `${failed} failed.`) : "Running the checks."} File, Invoice, Code, and Files each own a part. They read the loaded amounts. They do not keep a server alive and they do not send a claim.
       </p>
       {teams.map((team) => (
         <div key={team} className="mt-4">
-          <h3 className="text-xs font-medium tracking-widest text-teal uppercase">{team}</h3>
+          <h3 className="text-[13px] text-muted">{team}</h3>
           <ul className="mt-2 space-y-2">
             {duties?.filter((duty) => duty.team === team).map((duty) => (
-              <li key={`${duty.team}-${duty.sub}`} className="rounded-2xl border border-line px-4 py-3">
+              <li key={`${duty.team}-${duty.sub}`} className="rounded-[10px] bg-paper-2 px-4 py-3">
                 <p className="font-medium text-ink">{duty.sub} · {duty.name}</p>
                 <p className={duty.ok ? "text-sm font-medium text-teal" : "text-sm font-medium text-deep"}>{duty.ok ? "Pass" : "Fail"}</p>
                 <p className="mt-1 text-sm text-muted">{duty.detail}</p>

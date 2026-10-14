@@ -17,6 +17,21 @@ function put(map, code, year, cents, name, status) {
   map[key].a[String(year)] = cents;
 }
 
+function putMap(map, code, field, year, cents) {
+  const key = code.trim().toUpperCase();
+  if (!map[key] || !(cents > 0)) return;
+  if (!map[key][field]) map[key][field] = {};
+  map[key][field][String(year)] = cents;
+}
+
+function putPart(map, code, modifier, year, cents, name, status) {
+  const key = code.trim().toUpperCase();
+  if (!map[key]) map[key] = { n: name ? name.slice(0, 90) : "", a: {}, s: status };
+  if (!map[key].p) map[key].p = {};
+  if (!map[key].p[modifier]) map[key].p[modifier] = {};
+  map[key].p[modifier][String(year)] = cents;
+}
+
 const physician = bucket();
 for (const year of YEARS) {
   const file = read(`public/pfs-${year}.json`);
@@ -27,6 +42,15 @@ for (const year of YEARS) {
     const payable = row.s === "A" || row.s === "R" || row.s === "T";
     const dollars = payable && conversion && place ? localityDollars(row, "nf", place, conversion) : 0;
     put(physician, row.c, year, dollars > 0 ? Math.round(dollars * 100) : null, row.d, row.s);
+    const facility = payable && conversion && place ? localityDollars(row, "fac", place, conversion) : 0;
+    if (facility > 0) putMap(physician, row.c, "f", year, Math.round(facility * 100));
+  }
+  for (const row of file.rows) {
+    if (row.m !== "26" && row.m !== "TC") continue;
+    const conversion = conversionFor(row, "nonQp", file);
+    const payable = row.s === "A" || row.s === "R" || row.s === "T";
+    const dollars = payable && conversion && place ? localityDollars(row, "nf", place, conversion) : 0;
+    if (dollars > 0) putPart(physician, row.c, row.m, year, Math.round(dollars * 100), row.d, row.s);
   }
 }
 

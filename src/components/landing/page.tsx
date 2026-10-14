@@ -1,55 +1,35 @@
-import { Link } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { InvoiceCheck } from "@/components/lookup/invoice-check";
-import { FeeTeamList } from "@/components/lookup/fee-teams";
 import { YearLookup } from "@/components/lookup/year-lookup";
-import { DESKS } from "@/lib/team/desks";
 import { Shell } from "./shell";
 
 export function LandingPage() {
+  const [sheet, setSheet] = useState<string | null>(null);
   return (
     <Shell>
-      <main className="mx-auto max-w-6xl px-5 py-10">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean, New York</p>
-        <h1 className="mt-3 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">Four teams. One bill.</h1>
-        <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted">
-          Intake reads it. Price finds the year. New York uses the county on the file. Review marks what does not match. A person decides. Nothing is sent.
-        </p>
-        <ol className="mt-8 grid gap-4 sm:grid-cols-2">
-          {DESKS.map((desk, index) => (
-            <li key={desk.id} className="rounded-2xl border border-line p-5">
-              <p className="text-xs font-medium tracking-widest text-teal uppercase">Team {index + 1}</p>
-              <h2 className="mt-1 font-display text-3xl text-ink">{desk.name}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-ink">{desk.does}</p>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{desk.doesNot}</p>
-              <Link
-                to={desk.href}
-                hash={desk.hash}
-                className="mt-4 inline-flex h-11 items-center text-sm font-medium text-teal"
-              >
-                Open {desk.name}
-              </Link>
-            </li>
-          ))}
-        </ol>
-        <FeeTeamList />
-        <section className="mt-10 max-w-xl">
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">One code</p>
-          <h2 className="mt-2 font-display text-3xl text-ink">Every year on one card.</h2>
-          <div className="mt-4">
-            <YearLookup />
-          </div>
-        </section>
-        <p className="mt-8 max-w-2xl text-sm leading-relaxed text-muted">
-          This is not a payer. It does not submit a claim, and it does not have a monthly program payment. Those stay with the program.
-        </p>
-        <section id="intake" className="mt-12 scroll-mt-28">
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">Intake team</p>
-          <h2 className="mt-2 font-display text-3xl text-ink">The correct fee, then their amount.</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">Each code type uses one file. You pay that amount, after 0.98 when the sheet has it. Their number is compared with it. A different schedule is marked. Nothing is sent.</p>
-          <div className="mt-4">
-            <InvoiceCheck />
-          </div>
-        </section>
+      <main className="mx-auto max-w-3xl px-5 pt-8 pb-6">
+        <div key={sheet ?? "home"} className="rise">
+        <p className="text-sm text-muted">{sheet ?? "Olean, New York"}</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
+          {sheet ? "The difference." : "Bring the sheet."}
+        </h1>
+        {sheet ? null : <p className="mt-3 max-w-md text-base leading-relaxed text-muted">Lane puts their amount next to the posted file. You see the difference. Nothing is sent.</p>}
+        </div>
+        <div className="mt-8">
+          <InvoiceCheck onOpen={setSheet} />
+        </div>
+        {sheet ? null : (
+          <details className="mt-8 overflow-hidden rounded-[10px] bg-paper-2">
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between px-4 text-[17px] text-ink">
+              Look up one code
+              <ChevronRight className="size-4 text-muted" />
+            </summary>
+            <div className="px-4 pb-4">
+              <YearLookup />
+            </div>
+          </details>
+        )}
       </main>
     </Shell>
   );

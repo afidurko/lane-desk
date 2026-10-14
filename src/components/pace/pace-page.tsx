@@ -32,8 +32,8 @@ export function PacePage() {
   return (
     <Shell>
       <main className="mx-auto max-w-xl px-5 py-10">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">PACE · Cattaraugus</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-ink">The month, not the line.</h1>
+        <p className="text-[13px] text-muted">PACE · Cattaraugus</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">The month, not the line.</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
           A plan is paid a monthly amount for each enrolled person. Rank orders what is still open. A vendor bill is checked on the invoice. Nothing here is sent to CMS.
         </p>
@@ -82,7 +82,7 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
             if (!next.error) onBook(next.book);
           }}
           placeholder="Center name, no member number"
-          className="mt-1.5 h-12 w-full rounded-2xl border border-line bg-paper-2 px-4 text-base"
+          className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-4 text-base"
         />
       </label>
       <p className="mt-4 text-sm leading-relaxed text-muted">{RATE_SOURCE}</p>
@@ -90,7 +90,7 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
         {COUNTIES.map((county) => {
           const cents = medicareCents(county, book.year, false);
           return (
-            <li key={county} className="flex items-center justify-between gap-3 rounded-2xl border border-line px-4 py-3 text-sm">
+            <li key={county} className="flex items-center justify-between gap-3 rounded-[10px] bg-paper-2 px-4 py-3 text-sm">
               <span className="text-ink">{county}</span>
               <span className="font-medium text-ink tabular-nums">{cents === null ? "Not in the loaded ratebook" : money(cents / 100)}</span>
             </li>
@@ -115,18 +115,18 @@ function Month({ book, lines, total, onBook, onError }: { book: PaceBook; lines:
       >
         <label className="text-sm font-medium text-ink">
           Medicaid contract, {forCounty}
-          <input value={contract} onChange={(event) => setContract(event.target.value)} inputMode="decimal" placeholder="You enter it" className="mt-1.5 h-12 w-36 rounded-xl border border-line bg-paper-2 px-3" />
+          <input value={contract} onChange={(event) => setContract(event.target.value)} inputMode="decimal" placeholder="You enter it" className="mt-1.5 h-12 w-36 rounded-[10px] bg-paper-2 px-3" />
         </label>
-        <select value={forCounty} onChange={(event) => setForCounty(event.target.value)} className="h-12 rounded-xl border border-line bg-paper-2 px-3 text-sm">
+        <select value={forCounty} onChange={(event) => setForCounty(event.target.value)} className="h-12 rounded-[10px] bg-paper-2 px-3 text-sm">
           {COUNTIES.map((county) => <option key={county}>{county}</option>)}
         </select>
         <button type="submit" className="h-12 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">Save contract rate</button>
       </form>
-      <p className="mt-6 font-display text-3xl text-ink tabular-nums">{money(total / 100)}</p>
+      <p className="mt-6 text-[22px] font-semibold tracking-tight text-ink tabular-nums">{money(total / 100)}</p>
       <p className="text-sm text-muted">{enrolledCount(lines)} enrolled for {book.year}. This is a worksheet, not a payment.</p>
       <ul className="mt-3 space-y-2">
         {lines.map(({ person, line }) => (
-          <li key={person.id} className="rounded-2xl border border-line px-4 py-3 text-sm">
+          <li key={person.id} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm">
             <p className="font-medium text-ink">{person.label} · {person.county}</p>
             <p className="text-muted">Medicare {line.medicare === null ? "not loaded" : money(line.medicare / 100)} · Medicaid {line.medicaid === null ? "not entered" : money(line.medicaid / 100)}</p>
             {line.missing.map((item) => <p key={item} className="text-deep">{item}</p>)}
@@ -165,7 +165,7 @@ function People({ book, county, onCounty, onBook }: { book: PaceBook; county: st
       >
         <label className="text-sm font-medium text-ink">
           County
-          <select value={county} onChange={(event) => onCounty(event.target.value)} className="mt-1.5 h-12 rounded-xl border border-line bg-paper-2 px-3">
+          <select value={county} onChange={(event) => onCounty(event.target.value)} className="mt-1.5 h-12 rounded-[10px] bg-paper-2 px-3">
             {COUNTIES.map((item) => <option key={item}>{item}</option>)}
           </select>
         </label>
@@ -175,7 +175,7 @@ function People({ book, county, onCounty, onBook }: { book: PaceBook; county: st
         {book.people.map((person) => {
           const gaps = gateGaps(person);
           return (
-            <li key={person.id} className="rounded-2xl border border-line px-4 py-3">
+            <li key={person.id} className="rounded-[10px] bg-paper-2 px-4 py-3">
               <p className="font-medium text-ink">{person.label}</p>
               <p className="text-sm text-muted">{person.county}</p>
               <div className="mt-2 flex flex-wrap gap-2 text-sm">
@@ -192,7 +192,7 @@ function People({ book, county, onCounty, onBook }: { book: PaceBook; county: st
                 <select
                   value={person.loc}
                   onChange={(event) => onBook(patch(book, person.id, { loc: event.target.value as Person["loc"] }))}
-                  className="mt-1 h-11 w-full rounded-xl border border-line bg-paper-2 px-3"
+                  className="mt-1 h-11 w-full rounded-[10px] bg-paper-2 px-3"
                 >
                   <option value="open">Not reviewed</option>
                   <option value="met">State says the level is met</option>
@@ -250,8 +250,8 @@ function Meet({ book, onBook, onError }: { book: PaceBook; onBook: (book: PaceBo
           setNote("");
         }}
       >
-        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 w-full rounded-xl border border-line bg-paper-2 px-3" />
-        <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="What was decided. No names or numbers." className="w-full rounded-2xl border border-line bg-paper-2 px-4 py-3 text-base" />
+        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 w-full rounded-[10px] bg-paper-2 px-3" />
+        <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="What was decided. No names or numbers." className="w-full rounded-[10px] bg-paper-2 px-4 py-3 text-base" />
         <button type="submit" className="h-12 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink">Save the meeting</button>
       </form>
       {latest ? <p className="mt-4 text-sm text-deep">{missingSeats(latest.present).length === 0 ? `${latest.date}: every required seat was marked.` : `${latest.date} is missing ${missingSeats(latest.present).join(", ")}.`}</p> : null}
@@ -273,7 +273,7 @@ function CenterDay({ book, onBook }: { book: PaceBook; onBook: (book: PaceBook) 
           onBook({ ...book, days: [day, ...book.days] });
         }}
       >
-        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 w-full rounded-xl border border-line bg-paper-2 px-3" />
+        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 w-full rounded-[10px] bg-paper-2 px-3" />
         <div className="flex flex-wrap gap-2">
           {book.people.map((person) => (
             <button key={person.id} type="button" onClick={() => setPresent((current) => current.includes(person.id) ? current.filter((id) => id !== person.id) : [...current, person.id])} className={present.includes(person.id) ? "h-9 rounded-full bg-teal px-3 text-sm text-teal-ink" : "h-9 rounded-full border border-line px-3 text-sm text-ink"}>
@@ -306,11 +306,11 @@ function Rides({ book, onBook }: { book: PaceBook; onBook: (book: PaceBook) => v
           onBook({ ...book, rides: [ride, ...book.rides] });
         }}
       >
-        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 w-full rounded-xl border border-line bg-paper-2 px-3" />
-        <select value={personId} onChange={(event) => setPersonId(event.target.value)} className="h-12 w-full rounded-xl border border-line bg-paper-2 px-3">
+        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 w-full rounded-[10px] bg-paper-2 px-3" />
+        <select value={personId} onChange={(event) => setPersonId(event.target.value)} className="h-12 w-full rounded-[10px] bg-paper-2 px-3">
           {book.people.map((person) => <option key={person.id} value={person.id}>{person.label}</option>)}
         </select>
-        <select value={trip} onChange={(event) => setTrip(event.target.value as Ride["trip"])} className="h-12 w-full rounded-xl border border-line bg-paper-2 px-3">
+        <select value={trip} onChange={(event) => setTrip(event.target.value as Ride["trip"])} className="h-12 w-full rounded-[10px] bg-paper-2 px-3">
           <option>Center</option>
           <option>Clinic</option>
           <option>Home</option>
@@ -333,7 +333,7 @@ function Review({ book, lines }: { book: PaceBook; lines: { person: Person; line
   const brief = rankBrief(problems, book.center);
   return (
     <section className="mt-6">
-      <p className="text-xs font-medium tracking-widest text-teal uppercase">{brief.seat}</p>
+      <p className="text-[13px] text-muted">{brief.seat}</p>
       <p className="mt-2 text-sm leading-relaxed text-ink">{brief.detail}</p>
       <p className="mt-1 text-sm text-muted">{brief.chain.join(" → ")}</p>
       {brief.status === "stop" ? <p className="mt-3 text-sm font-medium text-deep">{brief.detail}</p> : null}

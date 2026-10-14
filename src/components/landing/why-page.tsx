@@ -78,8 +78,8 @@ export function WhyPage() {
     <Shell>
       <main>
         <section className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">Layer 01 · Why</p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+          <p className="text-[13px] text-muted">Layer 01 · Why</p>
+          <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
             Win the desk. Leave the chart where it is.
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
@@ -88,8 +88,8 @@ export function WhyPage() {
             ambulance, and equipment files from 2020 through 2026.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <article className="rounded-2xl border border-line bg-paper-2 p-6">
-              <h2 className="font-display text-2xl text-ink">The desk you already staff</h2>
+            <article className="rounded-[10px] bg-paper-2 p-6">
+              <h2 className="text-[17px] font-semibold text-ink">The desk you already staff</h2>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-muted">
                 <li>A person reads the note.</li>
                 <li>A person assigns the code.</li>
@@ -98,7 +98,7 @@ export function WhyPage() {
               </ul>
             </article>
             <article className="rounded-2xl border border-teal bg-wash p-6">
-              <h2 className="font-display text-2xl text-deep">Lane, in parallel</h2>
+              <h2 className="text-[17px] font-semibold text-deep">Lane, in parallel</h2>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-ink">
                 <li>The same note, de-identified, as text.</li>
                 <li>A code and an allowed amount, with the span.</li>
@@ -114,14 +114,14 @@ export function WhyPage() {
 
         <section className="border-t border-line bg-paper-2">
           <div className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
-            <h2 className="max-w-3xl font-display text-3xl text-ink sm:text-5xl">
+            <h2 className="max-w-3xl text-[22px] font-semibold tracking-tight text-ink">
               Six codes from prose. The full file behind them. Then a number.
             </h2>
             <ol className="mt-10 grid gap-6 md:grid-cols-3">
               {STEPS.map((step) => (
-                <li key={step.n} className="rounded-2xl border border-line bg-paper p-6">
+                <li key={step.n} className="rounded-[10px] bg-paper-2 bg-paper p-6">
                   <p className="font-display text-sm text-teal tabular-nums">{step.n}</p>
-                  <h3 className="mt-3 font-display text-2xl text-ink">{step.title}</h3>
+                  <h3 className="mt-3 text-[17px] font-semibold text-ink">{step.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-muted">{step.body}</p>
                 </li>
               ))}
@@ -131,22 +131,22 @@ export function WhyPage() {
 
         <section className="border-t border-line">
           <div className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
-            <h2 className="max-w-3xl font-display text-3xl text-ink sm:text-5xl">Six things the clock is allowed to do.</h2>
+            <h2 className="max-w-3xl text-[22px] font-semibold tracking-tight text-ink">Six things the clock is allowed to do.</h2>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature) => {
                 const Icon = feature.icon;
                 return (
-                  <article key={feature.title} className="rounded-2xl border border-line bg-paper-2 p-6">
+                  <article key={feature.title} className="rounded-[10px] bg-paper-2 p-6">
                     <span className="grid size-11 place-items-center rounded-xl bg-wash text-teal">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
-                    <h3 className="mt-4 font-display text-2xl text-ink">{feature.title}</h3>
+                    <h3 className="mt-4 text-[17px] font-semibold text-ink">{feature.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted">{feature.body}</p>
                   </article>
                 );
               })}
             </div>
-            <div className="mt-8 rounded-2xl border border-line px-5 py-5">
+            <div className="mt-8 rounded-[10px] bg-paper-2 px-5 py-5">
               <div className="flex items-center gap-2 text-sm font-medium text-ink">
                 <Ban className="size-4 text-teal" aria-hidden="true" />
                 Killed on purpose
@@ -164,13 +164,13 @@ export function WhyPage() {
 
         <section className="border-t border-line bg-paper-2">
           <div className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
-            <h2 className="max-w-3xl font-display text-3xl text-ink sm:text-5xl">What the room asks before a clock.</h2>
+            <h2 className="max-w-3xl text-[22px] font-semibold tracking-tight text-ink">What the room asks before a clock.</h2>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted">
               These are the questions. They are not quotes, and they are not a pilot result.
             </p>
             <div className="mt-10 grid gap-4 lg:grid-cols-3">
               {VOICES.map((voice) => (
-                <figure key={voice.role} className="flex flex-col rounded-2xl border border-line bg-paper p-6">
+                <figure key={voice.role} className="flex flex-col rounded-[10px] bg-paper-2 bg-paper p-6">
                   <blockquote className="flex-1 font-display text-xl leading-snug text-ink">{voice.quote}</blockquote>
                   <figcaption className="mt-6 border-t border-line pt-4">
                     <p className="text-sm font-medium text-ink">{voice.role}</p>

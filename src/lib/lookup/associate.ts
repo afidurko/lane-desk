@@ -47,12 +47,8 @@ export function associate(input: {
   if (usable.length > 1) return blocked("This code is on more than one file. It was not assigned.");
   if (usable.length === 1) {
     const chosen = usable[0];
-    if (chosen.family === "physician" && input.setting !== "nf") {
-      return blocked(
-        input.setting === "fac"
-          ? "The facility amount is not this file. The office amount was not used."
-          : "The invoice does not say non-facility, so the office amount was not used.",
-      );
+    if (chosen.family === "physician" && input.setting === "fac") {
+      return blocked("The facility amount is not this file. The office amount was not used.");
     }
     return { cents: chosen.cents, label: chosen.label, block: null };
   }

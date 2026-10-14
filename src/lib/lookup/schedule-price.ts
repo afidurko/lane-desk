@@ -1,4 +1,5 @@
 import type { AssocHit } from "@/lib/lookup/associate";
+import { unspecified } from "@/lib/lookup/profile";
 import { associate } from "@/lib/lookup/associate";
 import type { CheckLine } from "@/lib/lookup/check";
 import { pickOnce, type OnceRow } from "@/lib/lookup/once";
@@ -10,16 +11,23 @@ export type AmbulanceRow = { carrier: string; loc: string; c: string; rural: num
 
 const PRICE_NEUTRAL = new Set(["25", "59", "76", "77", "XE", "XP", "XS", "XU", "LT", "RT", "RH", "JZ", "TB", "FS", "SC", "HH", "GP", "GO", "GN"]);
 
+type PhysicianAmounts = {
+  a: Record<string, number | null | undefined>;
+  f?: Record<string, number | null | undefined>;
+  p?: Record<string, Record<string, number | null | undefined>>;
+};
+
 export type Priced = { cents: number | null; label: string | null; block: string | null; note: string | null; otherCents: number | null };
 
 export function scheduleOf(raw: string): CheckLine["schedule"] {
   const text = raw.trim().toLowerCase();
   if (!text || text === "0") return "none";
+  if (text.includes("non re")) return "other";
   if (text === "pfs" || text.includes("physician")) return "pfs";
   if (text === "lab") return "lab";
   if (text === "dme" || text.includes("equipment")) return "dme";
   if (text === "opps" || text.includes("outpatient")) return "opps";
-  if (text.includes("lpn") || text.includes("hha") || text.includes("nurs")) return "nursing";
+  if (text.includes("lpn") || text.includes("hha") || text.includes("nurs") || text.includes("nrs")) return "nursing";
   if (text === "amb" || text.includes("ambulance")) return "ambulance";
   if (text.includes("mile")) return "miles";
   return "other";
@@ -34,6 +42,7 @@ export function auditPrice(input: {
   lab: { rows: LabRow[] } | null;
   ambulance: { rows: AmbulanceRow[] } | null;
 }): Priced {
+  if (unspecified(input.line.code)) return blocked("This code does not name the drug or supply. No amount was used.");
   const schedule = input.line.schedule;
   if (!schedule) return { ...fromAssociate(input, input.hits, input.line.modifier), note: null, otherCents: null };
   if (schedule === "none") return unnamed(input);
@@ -48,31 +57,42 @@ export function auditPrice(input: {
 
 export function dmePrice(file: { rows: DmeRow[] } | null, line: CheckLine): Priced {
   if (!file) return blocked(line.year ? `The ${line.year} equipment file is not loaded.` : "The equipment file is not loaded.");
-  const code = line.code.toUpperCase();
-  const modifier = line.modifier.toUpperCase();
-  const rows = file.rows.filter((row) => row.c.toUpperCase() === code && row.m.toUpperCase() === modifier && !row.m2.trim());
+  const code = line.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const modifier = line.modifier.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let rows = file.rows.filter((row) => row.c.toUpperCase() === code && row.m.toUpperCase() === modifier && !row.m2.trim());
+  let note: string | null = null;
+  if (rows.length === 0 && PRICE_NEUTRAL.has(modifier)) {
+    rows = file.rows.filter((row) => row.c.toUpperCase() === code && !row.m.trim() && !row.m2.trim());
+    note = rows.length ? `${modifier} does not change the equipment amount.` : null;
+  }
   if (rows.length === 0) return blocked(modifier ? `${code} with ${modifier} is not on the New York equipment file.` : `${code} is not on the New York equipment file.`);
   const amounts = [...new Set(rows.map((row) => row.rural))];
   if (amounts.length !== 1) return blocked(`${code} has more than one rural amount. None was chosen.`);
   const rural = amounts[0];
   if (!rural) return blocked(`${code} has no rural New York amount. The non-rural amount was not used.`);
-  return { cents: rural, label: "New York rural equipment", block: null, note: null, otherCents: rows[0].nr || null };
+  return { cents: rural, label: "New York rural equipment", block: null, note, otherCents: rows[0].nr || null };
 }
 
 export function labPrice(file: { rows: LabRow[] } | null, line: CheckLine): Priced {
   if (!file) return blocked(line.year ? `The ${line.year} lab file is not loaded.` : "The lab file is not loaded.");
-  const code = line.code.toUpperCase();
-  const modifier = line.modifier.toUpperCase();
-  const rows = file.rows.filter((row) => row.c.toUpperCase() === code && (row.m ?? "").toUpperCase() === modifier && typeof row.rate === "number");
+  const code = line.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const modifier = line.modifier.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let rows = file.rows.filter((row) => row.c.toUpperCase() === code && (row.m ?? "").toUpperCase() === modifier && typeof row.rate === "number");
+  let note: string | null = null;
+  if (rows.length === 0 && PRICE_NEUTRAL.has(modifier)) {
+    rows = file.rows.filter((row) => row.c.toUpperCase() === code && !(row.m ?? "").trim() && typeof row.rate === "number");
+    note = rows.length ? `${modifier} does not change the lab amount.` : null;
+  }
   const amounts = [...new Set(rows.map((row) => row.rate as number))];
   if (amounts.length !== 1) return blocked(amounts.length === 0 ? `${code} is not on the lab file for that modifier.` : `${code} has more than one lab amount. None was chosen.`);
-  return { cents: amounts[0], label: "Clinical lab", block: null, note: null, otherCents: null };
+  return { cents: amounts[0], label: "Clinical lab", block: null, note, otherCents: null };
 }
 
 function ridePrice(file: { rows: AmbulanceRow[] } | null, line: CheckLine, schedule: "ambulance" | "miles"): Priced {
-  if (schedule === "miles" && line.code.toUpperCase() !== "A0425") return blocked(`${line.code} is not the ground mileage code. Another mileage amount was not used.`);
+  const code = line.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (schedule === "miles" && code !== "A0425") return blocked(`${line.code} is not the ground mileage code. Another mileage amount was not used.`);
   if (!file) return blocked(line.year ? `The ${line.year} ambulance file is not loaded.` : "The ambulance file is not loaded.");
-  const rows = file.rows.filter((row) => row.carrier === "13282" && row.loc === "99" && row.c.toUpperCase() === line.code.toUpperCase());
+  const rows = file.rows.filter((row) => row.carrier === "13282" && row.loc === "99" && row.c.toUpperCase().replace(/[^A-Z0-9]/g, "") === code);
   if (rows.length !== 1 || rows[0].rural === null) return blocked(`${line.code} has no Rest of New York rural ambulance amount.`);
   const note = PRICE_NEUTRAL.has(line.modifier.toUpperCase()) ? `${line.modifier.toUpperCase()} does not change this ambulance amount.` : null;
   return { cents: rows[0].rural, label: "Ambulance, Rest of New York, rural", block: null, note, otherCents: null };
@@ -86,9 +106,24 @@ function oncePrice(rows: OnceRow[], line: CheckLine, source: RegExp, name: strin
 
 function physicianPrice(input: { line: CheckLine; hits: AssocHit[]; onceList: OnceRow[] }): Priced {
   const modifier = input.line.modifier.toUpperCase();
+  const year = input.line.year ? String(input.line.year) : "";
+  const row = input.hits.find((hit) => hit.family === "physician")?.row as PhysicianAmounts | undefined;
+  if (modifier === "26" || modifier === "TC") {
+    const cents = row?.p?.[modifier]?.[year];
+    if (typeof cents !== "number") return blocked(`${input.line.code} with ${modifier} is not on the ${input.line.year ?? "named"} physician file. The full amount was not used.`);
+    return { cents, label: `Physician, modifier ${modifier}, Rest of New York`, block: null, note: null, otherCents: null };
+  }
+  if (input.line.setting === "fac") {
+    const cents = row?.f?.[year];
+    if (typeof cents !== "number") return blocked(`The facility amount for ${input.line.code} is not on the ${input.line.year ?? "named"} physician file. The office amount was not used.`);
+    return { cents, label: "Physician, facility, Rest of New York", block: null, note: PRICE_NEUTRAL.has(modifier) ? `${modifier} does not change the physician amount.` : null, otherCents: null };
+  }
   const neutral = PRICE_NEUTRAL.has(modifier);
   const priced = fromAssociate(input, input.hits.filter((hit) => hit.family === "physician"), neutral ? "" : modifier);
-  const note = neutral ? `${modifier} does not change the physician amount.` : null;
+  const note = [
+    neutral && modifier ? `${modifier} does not change the physician amount.` : null,
+    input.line.setting === null && priced.cents !== null ? "The line does not say facility. The Rest of New York office amount was used." : null,
+  ].filter(Boolean).join(" ") || null;
   if (priced.block || priced.cents !== null) return { ...priced, note };
   return { cents: null, label: null, block: `${input.line.code} is not on the physician file for ${input.line.year ?? "that year"}. No amount was guessed.`, note, otherCents: null };
 }

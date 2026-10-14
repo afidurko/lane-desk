@@ -214,8 +214,8 @@ export function DeskPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Olean · 14760</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Olean · 14760</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           Price the note for Olean.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -237,7 +237,7 @@ export function DeskPage() {
                 setKept(false);
               }}
               rows={8}
-              className="mt-1.5 w-full rounded-2xl border border-line bg-paper-2 px-4 py-3 text-base leading-relaxed text-ink"
+              className="mt-1.5 w-full rounded-[10px] bg-paper-2 px-4 py-3 text-base leading-relaxed text-ink"
             />
             <button
               type="button"
@@ -256,7 +256,7 @@ export function DeskPage() {
               </ul>
             ) : null}
             {boundary ? (
-              <p className="mt-6 rounded-2xl border border-line bg-paper-2 px-5 py-4 text-base text-ink" role="alert">
+              <p className="mt-6 rounded-[10px] bg-paper-2 px-5 py-4 text-base text-ink" role="alert">
                 {boundary}
               </p>
             ) : block ? (
@@ -278,9 +278,9 @@ export function DeskPage() {
                 value={codeQuery}
                 onChange={(event) => setCodeQuery(event.target.value)}
                 placeholder="97110 or gait training"
-                className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base"
+                className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base"
               />
-              <div className="mt-3 overflow-hidden rounded-2xl border border-line">
+              <div className="mt-3 overflow-hidden rounded-[10px] bg-paper-2">
                 <table className="w-full text-left text-sm">
                   <caption className="sr-only">Therapy codes, Rest of New York, 2026</caption>
                   <thead className="bg-paper-2 text-xs tracking-widest text-muted uppercase">
@@ -318,11 +318,11 @@ export function DeskPage() {
             </div>
           </div>
 
-          <article className="overflow-hidden rounded-2xl border border-line bg-paper-2">
+          <article className="overflow-hidden rounded-[10px] bg-paper-2">
             <div className="h-1 bg-teal" />
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <p className="text-xs font-medium tracking-widest text-teal uppercase">Script clock</p>
-              <p className="font-display text-3xl text-ink tabular-nums" aria-live="polite">
+              <p className="text-[13px] text-muted">Script clock</p>
+              <p className="text-[22px] font-semibold tracking-tight text-ink tabular-nums" aria-live="polite">
                 {phase === "idle" || (reduced && phase === "done") ? (
                   <span className="font-sans text-sm font-medium text-muted">{clock}</span>
                 ) : (
@@ -364,15 +364,15 @@ export function DeskPage() {
                       </p>
                       <dl className="mt-2 grid grid-cols-3 gap-3">
                         <div>
-                          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Code</dt>
+                          <dt className="text-[13px] text-muted">Code</dt>
                           <dd className="mt-1 font-medium text-ink tabular-nums">{line.code}</dd>
                         </div>
                         <div>
-                          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Units</dt>
+                          <dt className="text-[13px] text-muted">Units</dt>
                           <dd className="mt-1 font-medium text-ink tabular-nums">{line.units}</dd>
                         </div>
                         <div>
-                          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Allowed</dt>
+                          <dt className="text-[13px] text-muted">Allowed</dt>
                           <dd className="mt-1 font-medium text-ink tabular-nums">
                             {serviceOf(line.code)?.separate === false ? "No separate fee" : money(line.allowed)}
                           </dd>
@@ -388,7 +388,7 @@ export function DeskPage() {
                 {lane.brief ? (
                   <dl className="grid gap-3 rounded-xl border border-line bg-paper p-4">
                     <div>
-                      <dt className="text-xs font-medium tracking-widest text-teal uppercase">Brief</dt>
+                      <dt className="text-[13px] text-muted">Brief</dt>
                       <dd className="mt-1 text-sm text-muted">
                         {lane.ship ? "Proof passed this row." : "Proof has not passed a ship."} Not sent anywhere.
                       </dd>
@@ -403,7 +403,7 @@ export function DeskPage() {
                       ] as const
                     ).map(([label, value]) => (
                       <div key={label}>
-                        <dt className="text-xs font-medium tracking-widest text-muted uppercase">{label}</dt>
+                        <dt className="text-[13px] text-muted">{label}</dt>
                         <dd className="mt-1 text-sm leading-relaxed text-ink">{value}</dd>
                       </div>
                     ))}
@@ -491,7 +491,7 @@ export function DeskPage() {
         <section className="mt-14">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="font-display text-3xl text-ink">Rows on this browser</h2>
+              <h2 className="text-[22px] font-semibold tracking-tight text-ink">Rows on this browser</h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
                 {rows.length === 0
                   ? "No rows yet. A kept row is the start of the leave-behind."
@@ -514,7 +514,7 @@ export function DeskPage() {
                   ? Math.round((row.humanSeconds - row.scriptSeconds) * 100) / 100
                   : null;
               return (
-                <li key={row.id} className="rounded-2xl border border-line bg-paper-2 p-4">
+                <li key={row.id} className="rounded-[10px] bg-paper-2 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm leading-relaxed text-ink">{row.span}</p>
                     <button

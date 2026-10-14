@@ -16,8 +16,8 @@ export function RunPage() {
     <Shell>
       <main>
         <section className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">Sample file</p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+          <p className="text-[13px] text-muted">Sample file</p>
+          <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
             One note. Script side filled. Human side blank.
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
@@ -26,10 +26,10 @@ export function RunPage() {
           </p>
 
           <div className="mt-10 grid items-start gap-6 lg:grid-cols-2">
-            <article className="overflow-hidden rounded-2xl border border-line bg-paper-2">
+            <article className="overflow-hidden rounded-[10px] bg-paper-2">
               <div className="h-1 bg-teal" />
               <div className="border-b border-line px-5 py-4">
-                <p className="text-xs font-medium tracking-widest text-teal uppercase">The note</p>
+                <p className="text-[13px] text-muted">The note</p>
                 <p className="text-sm text-muted">De-identified. Not a participant.</p>
               </div>
               <p className="px-5 py-5 text-sm leading-relaxed text-ink">
@@ -50,21 +50,21 @@ export function RunPage() {
             </article>
 
             <article className="rounded-2xl border border-teal bg-wash p-6">
-              <p className="text-xs font-medium tracking-widest text-deep uppercase">Script side</p>
+              <p className="text-[13px] text-deep">Script side</p>
               <dl className="mt-4 space-y-4">
                 <div>
-                  <dt className="text-xs font-medium tracking-widest text-muted uppercase">Code</dt>
-                  <dd className="mt-1 font-display text-3xl text-ink tabular-nums">97110</dd>
+                  <dt className="text-[13px] text-muted">Code</dt>
+                  <dd className="mt-1 text-[22px] font-semibold tracking-tight text-ink tabular-nums">97110</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium tracking-widest text-muted uppercase">Allowed</dt>
-                  <dd className="mt-1 font-display text-3xl text-ink tabular-nums">$28.27</dd>
+                  <dt className="text-[13px] text-muted">Allowed</dt>
+                  <dd className="mt-1 text-[22px] font-semibold tracking-tight text-ink tabular-nums">$28.27</dd>
                   <dd className="mt-1 text-sm text-muted">
                     2026 non-facility, one unit, Rest of New York. MAC 13282, locality 99. Not a payment.
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium tracking-widest text-muted uppercase">Label</dt>
+                  <dt className="text-[13px] text-muted">Label</dt>
                   <dd className="mt-1 text-sm text-ink">Pending a clinician. Not a gold row yet.</dd>
                 </div>
               </dl>
@@ -74,13 +74,13 @@ export function RunPage() {
 
         <section className="border-t border-line bg-paper-2">
           <div className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
-            <h2 className="font-display text-3xl text-ink sm:text-4xl">The row the file would carry</h2>
+            <h2 className="text-[22px] font-semibold tracking-tight text-ink">The row the file would carry</h2>
             <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted">
               Script and human desk sit on the same row. Blank means the desk has not been timed. It does not mean
               zero.
             </p>
-            <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-paper">
-              <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,0.8fr)] border-b border-line bg-paper-2 px-4 py-3 text-xs font-medium tracking-widest text-muted uppercase">
+            <div className="mt-8 overflow-hidden rounded-[10px] bg-paper-2 bg-paper">
+              <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,0.8fr)] border-b border-line bg-paper-2 px-4 py-3 text-[13px] text-muted">
                 <span>Field</span>
                 <span>Script</span>
                 <span>Human desk</span>
@@ -102,7 +102,7 @@ export function RunPage() {
         <section className="border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:py-24">
             <div>
-              <h2 className="font-display text-3xl text-ink sm:text-4xl">What this file will not say</h2>
+              <h2 className="text-[22px] font-semibold tracking-tight text-ink">What this file will not say</h2>
               <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted">
                 <li>No name, record number, or date that identifies a person.</li>
                 <li>No portal, no scrape, no second chart.</li>
@@ -111,7 +111,7 @@ export function RunPage() {
               </ul>
             </div>
             <div className="rounded-2xl bg-ink px-6 py-8 text-paper">
-              <h2 className="font-display text-3xl">Bring the same note.</h2>
+              <h2 className="text-[22px] font-semibold tracking-tight text-ink">Bring the same note.</h2>
               <p className="mt-3 text-sm leading-relaxed text-paper/80">
                 The human column stays blank until your desk times this encounter. The list is a request. Nothing is
                 sent from the browser except what you choose to type, and that stays on this device.

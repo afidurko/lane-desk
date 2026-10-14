@@ -25,8 +25,8 @@ export function PrivateGate({ children }: { children: ReactNode }) {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5">
-      <p className="text-xs font-medium tracking-widest text-teal uppercase">Private</p>
-      <h1 className="mt-3 font-display text-4xl text-ink">This desk is not public.</h1>
+      <p className="text-[13px] text-muted">Private</p>
+      <h1 className="mt-3 text-[28px] font-bold tracking-tight text-ink tabular-nums">This desk is not public.</h1>
       <p className="mt-3 text-sm leading-relaxed text-muted">
         Enter the code to view it. Nothing here is published until you say so.
       </p>
@@ -42,7 +42,7 @@ export function PrivateGate({ children }: { children: ReactNode }) {
             setValue(event.target.value);
             setWrong(false);
           }}
-          className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base text-ink"
+          className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base text-ink"
         />
         {wrong ? (
           <p className="mt-2 text-sm font-medium text-deep" role="alert">

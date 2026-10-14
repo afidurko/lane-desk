@@ -14,7 +14,13 @@ export const FAMILIES = [
 ] as const;
 
 export type Family = (typeof FAMILIES)[number]["id"];
-export type Row = { n: string; a: Record<string, number | null>; s?: string };
+export type Row = {
+  n: string;
+  a: Record<string, number | null>;
+  s?: string;
+  f?: Record<string, number | null>;
+  p?: Record<string, Record<string, number | null>>;
+};
 
 let savedCache: Promise<SavedRow[]> | null = null;
 
@@ -133,7 +139,7 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
 
   return (
     <div>
-      <p className="font-display text-3xl text-ink">{code.trim().toUpperCase()}</p>
+      <p className="text-[22px] font-semibold tracking-tight text-ink">{code.trim().toUpperCase()}</p>
       {row.n ? <p className="mt-1 text-sm leading-relaxed text-muted">{row.n}</p> : null}
       <YearPrices row={row} />
     </div>
@@ -142,21 +148,22 @@ export function YearList({ family, code, quiet = false }: { family: Family; code
 
 export function YearPrices({ row, mark }: { row: Row; mark?: number | null }) {
   return (
-    <ol className="mt-3 grid grid-cols-2 gap-2">
-      {YEARS.map((year) => {
+    <ol className="mt-3 overflow-hidden rounded-[10px] bg-paper-2">
+      {YEARS.map((year, index) => {
         const cents = row.a[String(year)];
         const older = row.a[String(year - 1)];
         const changed = typeof cents === "number" && typeof older === "number" && cents !== older;
         const marked = mark === year;
+        const last = index === YEARS.length - 1;
         return (
-          <li key={year} className={marked ? "rounded-xl border border-teal bg-paper-2 px-3 py-2" : "rounded-xl border border-line px-3 py-2"}>
-            <span className="block text-xs text-muted">{year}{marked ? " · on the invoice" : ""}</span>
-            <span className="mt-0.5 block text-base font-medium text-ink tabular-nums">
+          <li key={year} className={last ? "flex min-h-12 items-center justify-between gap-3 px-4" : "flex min-h-12 items-center justify-between gap-3 border-b border-line px-4"}>
+            <span>
+              <span className="block text-[17px] text-ink">{year}{marked ? " · on the invoice" : ""}</span>
+              {changed ? <span className="text-[13px] text-teal">{cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}</span> : null}
+            </span>
+            <span className={marked ? "num text-[17px] font-medium text-teal tabular-nums" : "num text-[17px] text-ink tabular-nums"}>
               {typeof cents === "number" ? money(cents / 100) : cents === null ? "No amount" : "Not on file"}
             </span>
-            {changed ? (
-              <span className="text-xs text-teal">{cents - older > 0 ? "Up" : "Down"} {money(Math.abs(cents - older) / 100)}</span>
-            ) : null}
           </li>
         );
       })}
@@ -218,7 +225,7 @@ export function YearLookup() {
           placeholder="97110"
           autoCapitalize="characters"
           autoCorrect="off"
-          className="mt-1.5 h-14 w-full rounded-2xl border border-line bg-paper-2 px-4 font-display text-2xl text-ink"
+          className="mt-1.5 h-14 w-full rounded-[10px] bg-paper-2 px-4 text-[17px] font-semibold text-ink"
         />
       </label>
       <div className="mt-5">
@@ -229,7 +236,7 @@ export function YearLookup() {
         {state === "down" ? <p className="text-sm font-medium text-deep">The year files did not load. Type the code again.</p> : null}
         {hits.map((hit) => (
           <section key={hit.family} className="mt-4">
-            <p className="text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
+            <p className="text-[13px] text-muted">{hit.label}</p>
             {hit.row.n && hit.row.n !== text.trim().toUpperCase() ? <p className="mt-1 text-sm text-muted">{hit.row.n}</p> : null}
             <YearPrices row={hit.row} />
             {typeof hit.row.a["2026"] === "number" ? null : (

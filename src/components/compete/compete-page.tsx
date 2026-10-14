@@ -34,8 +34,8 @@ export function CompetePage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Leave-behind</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Leave-behind</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           Price the note. Leave the chart.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -43,26 +43,26 @@ export function CompetePage() {
         </p>
 
         <dl className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-line bg-paper-2 p-4">
-            <dt className="text-xs font-medium tracking-widest text-teal uppercase">MAC</dt>
-            <dd className="mt-2 font-display text-2xl text-ink">13282 / 99</dd>
+          <div className="rounded-[10px] bg-paper-2 p-4">
+            <dt className="text-[13px] text-muted">MAC</dt>
+            <dd className="mt-2 text-[17px] font-semibold text-ink">13282 / 99</dd>
             <dd className="mt-1 text-sm text-muted">Rest of New York. National Government Services, Jurisdiction K.</dd>
           </div>
-          <div className="rounded-2xl border border-line bg-paper-2 p-4">
-            <dt className="text-xs font-medium tracking-widest text-teal uppercase">Sequestration</dt>
-            <dd className="mt-2 font-display text-2xl text-ink">2 percent</dd>
+          <div className="rounded-[10px] bg-paper-2 p-4">
+            <dt className="text-[13px] text-muted">Sequestration</dt>
+            <dd className="mt-2 text-[17px] font-semibold text-ink">2 percent</dd>
             <dd className="mt-1 text-sm text-muted">Federal, CARC 253, for dates of service on or after July 1, 2022. It cuts the Medicare payment, not the fee.</dd>
           </div>
-          <div className="rounded-2xl border border-line bg-paper-2 p-4">
-            <dt className="text-xs font-medium tracking-widest text-teal uppercase">Codes on the desk</dt>
-            <dd className="mt-2 font-display text-2xl text-ink">19,000+</dd>
+          <div className="rounded-[10px] bg-paper-2 p-4">
+            <dt className="text-[13px] text-muted">Codes on the desk</dt>
+            <dd className="mt-2 text-[17px] font-semibold text-ink">19,000+</dd>
             <dd className="mt-1 text-sm text-muted">Physician file for 2026. Not six. The six are what the clock can read from prose.</dd>
           </div>
         </dl>
 
         <section className="mt-12 grid gap-6 lg:grid-cols-2">
-          <article className="rounded-2xl border border-line bg-paper-2 p-6">
-            <h2 className="font-display text-2xl text-ink">What our competitors run</h2>
+          <article className="rounded-[10px] bg-paper-2 p-6">
+            <h2 className="text-[17px] font-semibold text-ink">What our competitors run</h2>
             <ul className="mt-4 space-y-2 text-sm leading-relaxed text-ink">
               {THEY.map((item) => (
                 <li key={item}>{item}</li>
@@ -71,7 +71,7 @@ export function CompetePage() {
             <p className="mt-4 text-sm text-muted">No competitor price is published on this page.</p>
           </article>
           <article className="rounded-2xl border border-teal bg-wash p-6">
-            <h2 className="font-display text-2xl text-deep">What this desk automates</h2>
+            <h2 className="text-[17px] font-semibold text-deep">What this desk automates</h2>
             <ul className="mt-4 space-y-2 text-sm leading-relaxed text-ink">
               {WE.map((item) => (
                 <li key={item}>{item}</li>
@@ -81,18 +81,18 @@ export function CompetePage() {
         </section>
 
         <section className="mt-12">
-          <h2 className="font-display text-3xl text-ink">Loaded since 2022</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">Loaded since 2022</h2>
           <ul className="mt-4 space-y-3">
             {LOADED.map((row) => (
-              <li key={row.name} className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">
+              <li key={row.name} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
                 <span className="font-medium">{row.name}.</span> {row.span}. {row.count}. {row.note}
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="mt-12 rounded-2xl border border-line bg-paper-2 p-6">
-          <h2 className="font-display text-2xl text-ink">What is not claimed</h2>
+        <section className="mt-12 rounded-[10px] bg-paper-2 p-6">
+          <h2 className="text-[17px] font-semibold text-ink">What is not claimed</h2>
           <ul className="mt-4 space-y-2 text-sm leading-relaxed text-muted">
             <li>This is not an EHR. It does not replace a chart.</li>
             <li>It does not submit a claim, log into a portal, or store an identifier.</li>

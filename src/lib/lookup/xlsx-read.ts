@@ -29,6 +29,7 @@ export function sheetToInvoice(grid: string[][]) {
   const dataStart = band + 3;
   const seqCol = rateColumn(grid, dataStart);
   const settingCol = findSetting(grid, dataStart);
+  const claimCol = findClaim(grid, dataStart);
   const lines: string[] = [];
   const short: string[] = [];
   for (const row of grid.slice(dataStart)) {
@@ -48,15 +49,21 @@ export function sheetToInvoice(grid: string[][]) {
     const setting = settingCol >= 0 ? (row[settingCol] ?? "").trim().toUpperCase() : "";
     if (setting === "NON FACILITY") parts.push("office");
     if (setting === "FACILITY") parts.push("facility");
+    const claim = claimCol >= 0 ? (row[claimCol] ?? "").trim() : "";
+    if (/^institutional$/i.test(claim)) parts.push("institutional");
+    else if (/^professional$/i.test(claim)) parts.push("professional");
+    else if (/other paper/i.test(claim)) parts.push("other paper");
     if (scheduleCol >= 0) parts.push(`schedule ${scheduleOf(row[scheduleCol] ?? "")}`);
     const lookup = lookupCol >= 0 ? cents(row[lookupCol] ?? "") : null;
     if (lookup) parts.push(`lookup ${(lookup / 100).toFixed(2)}`);
     const charge = chargeCol >= 0 ? cents(row[chargeCol] ?? "") : null;
-    if (charge !== null) parts.push(`charge ${(charge / 100).toFixed(2)}`);
+    if (charge !== null && charge !== 0) parts.push(`charge ${(charge / 100).toFixed(2)}`);
     const paid = paidCol >= 0 ? cents(row[paidCol] ?? "") : null;
-    if (paid !== null) parts.push(`paid ${(paid / 100).toFixed(2)}`);
+    const scaled = lookup && units ? Math.round(lookup * units) : lookup;
+    if (paid && (scaled === null || Math.abs(paid - scaled) > 1)) parts.push(`paid ${(paid / 100).toFixed(2)}`);
     const admin = competitorCol >= 0 ? cents(row[competitorCol] ?? "") : null;
     if (admin) parts.push(`admin ${(admin / 100).toFixed(2)}`);
+    else if (admin === 0 && lookup) parts.push("admin 0.00");
     if (seqCol >= 0 && Math.abs(Number(row[seqCol] ?? "") - 0.98) < 0.001) {
       parts.push("seq 0.98");
       const reduced = cents(row[seqCol + 1] ?? "");
@@ -111,6 +118,23 @@ function findSetting(grid: string[][], start: number) {
     let count = 0;
     for (const row of grid.slice(start, start + 40)) {
       if (/^(NON\s+)?FACILITY$/i.test((row[column] ?? "").trim())) count += 1;
+    }
+    if (count > score) {
+      score = count;
+      best = column;
+    }
+  }
+  return score >= 3 ? best : -1;
+}
+
+function findClaim(grid: string[][], start: number) {
+  const width = Math.max(...grid.slice(start, start + 40).map((row) => row.length), 0);
+  let best = -1;
+  let score = 0;
+  for (let column = 0; column < width; column += 1) {
+    let count = 0;
+    for (const row of grid.slice(start, start + 40)) {
+      if (/^(professional|institutional|other paper invoice)$/i.test((row[column] ?? "").trim())) count += 1;
     }
     if (count > score) {
       score = count;

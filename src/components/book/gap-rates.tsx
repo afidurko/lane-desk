@@ -60,16 +60,16 @@ export function GapRates() {
 
   return (
     <section className="mt-10">
-      <h2 className="font-display text-3xl text-ink">Olean and Allegany</h2>
+      <h2 className="text-[22px] font-semibold tracking-tight text-ink">Olean and Allegany</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
         Personal care from the January 1, 2024 workbook. Olean is Cattaraugus. The same workbook is loaded for every county it names. Open New York and pick the county. A zero on the sheet is not shown.
       </p>
       {failed ? <p className="mt-3 text-sm font-medium text-deep">The file did not load.</p> : null}
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {(LOCAL_CARE).map((place) => (
-          <article key={place.place} className="rounded-2xl border border-line p-5">
-            <p className="text-xs font-medium tracking-widest text-teal uppercase">{place.county} County</p>
-            <h3 className="mt-1 font-display text-3xl text-ink">{place.place}</h3>
+          <article key={place.place} className="rounded-[10px] bg-paper-2 p-5">
+            <p className="text-[13px] text-muted">{place.county} County</p>
+            <h3 className="mt-1 text-[22px] font-semibold tracking-tight text-ink">{place.place}</h3>
             <p className="mt-1 text-sm text-muted">{LOCAL_AS_OF}</p>
             {place.agencies.map((agency) => (
               <div key={agency.name} className="mt-4">
@@ -89,9 +89,9 @@ export function GapRates() {
       </div>
       <p className="mt-3 max-w-2xl text-sm text-muted">The January 1, 2025 public sheet does not name Cattaraugus or Allegany. Erie, Chautauqua, and Wyoming rows from that sheet are on the New York page. Another county’s rate is not used.</p>
 
-      <div className="mt-5 rounded-2xl border border-line p-5">
+      <div className="mt-5 rounded-[10px] bg-paper-2 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-display text-2xl text-ink">Cattaraugus hospice</h3>
+          <h3 className="text-[17px] font-semibold text-ink">Cattaraugus hospice</h3>
           <div className="flex gap-2">
             {(["high", "low"] as const).map((level) => (
               <button key={level} type="button" onClick={() => setIntensity(level)} className={intensity === level ? "h-11 rounded-full bg-teal px-4 text-sm font-medium text-teal-ink" : "h-11 rounded-full border border-line px-4 text-sm font-medium text-ink"}>
@@ -114,8 +114,8 @@ export function GapRates() {
         </button>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-line p-5">
-        <h3 className="font-display text-2xl text-ink">Olean Manor assisted living</h3>
+      <div className="mt-4 rounded-[10px] bg-paper-2 p-5">
+        <h3 className="text-[17px] font-semibold text-ink">Olean Manor assisted living</h3>
         <p className="mt-2 text-sm text-muted">January 1, 2025 rate, Erie wage region. This is the facility rate, not a procedure code.</p>
         <ul className="mt-4 space-y-2">
           {(found?.alp.rows ?? []).map((row) => (
@@ -127,8 +127,8 @@ export function GapRates() {
         </ul>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-line p-5">
-        <h3 className="font-display text-2xl text-ink">Home health visit</h3>
+      <div className="mt-4 rounded-[10px] bg-paper-2 p-5">
+        <h3 className="text-[17px] font-semibold text-ink">Home health visit</h3>
         <p className="mt-2 text-sm text-muted">Statewide weighted average, effective September 6, 2024. A physical therapy visit is revenue code 0421. It is not procedure 97110.</p>
         <ul className="mt-4 space-y-2">
           {(found?.homeHealth.rows ?? []).map((row) => (
@@ -142,17 +142,17 @@ export function GapRates() {
 
       <label className="mt-6 block max-w-md text-sm font-medium text-ink">
         Drug name, NDC, dental code, or equipment code
-        <input value={query} onChange={(event) => setQuery(event.target.value.toUpperCase())} placeholder="LISINOPRIL, D0120, or A4258" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+        <input value={query} onChange={(event) => setQuery(event.target.value.toUpperCase())} placeholder="LISINOPRIL, D0120, or A4258" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
       </label>
       <ul className="mt-4 space-y-3">
         {drugs.map((row) => (
-          <li key={row.ndc} className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">
+          <li key={row.ndc} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
             {row.name}. NDC {row.ndc}. {row.kind}. ${row.perUnit} per {row.unit}. Acquisition cost for the week of October 7, 2026. Not a payment.
           </li>
         ))}
-        {dental ? <li className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">Workers’ compensation dental. {dental.c} {dental.name}. {dental.cents == null ? "No fee" : money(dental.cents / 100)}. Effective November 13, 2025.</li> : null}
-        {equipment ? <li className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">Workers’ compensation equipment. {equipment.c} {equipment.name}. {equipment.cents == null ? "No fee" : money(equipment.cents / 100)}. Effective June 28, 2024.</li> : null}
-        {clinic ? <li className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">Clinic procedure on the APG fee schedule. {clinic.c} {clinic.name}. {money(clinic.cents / 100)}{clinic.units ? `, max ${clinic.units}` : ""}. July 1, 2026. Not a visit rate.</li> : null}
+        {dental ? <li className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">Workers’ compensation dental. {dental.c} {dental.name}. {dental.cents == null ? "No fee" : money(dental.cents / 100)}. Effective November 13, 2025.</li> : null}
+        {equipment ? <li className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">Workers’ compensation equipment. {equipment.c} {equipment.name}. {equipment.cents == null ? "No fee" : money(equipment.cents / 100)}. Effective June 28, 2024.</li> : null}
+        {clinic ? <li className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">Clinic procedure on the APG fee schedule. {clinic.c} {clinic.name}. {money(clinic.cents / 100)}{clinic.units ? `, max ${clinic.units}` : ""}. July 1, 2026. Not a visit rate.</li> : null}
         {text.length >= 3 && drugs.length === 0 && !dental && !equipment && !clinic ? <li className="text-sm text-muted">No row in the October 7 acquisition file, the workers’ compensation dental file, the equipment file, or the July 1, 2026 clinic procedure list.</li> : null}
       </ul>
     </section>

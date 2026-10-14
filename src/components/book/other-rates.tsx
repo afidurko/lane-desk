@@ -100,13 +100,13 @@ export function OtherRates() {
 
   return (
     <section className="mt-10">
-      <h2 className="font-display text-3xl text-ink">Build a line</h2>
+      <h2 className="text-[22px] font-semibold tracking-tight text-ink">Build a line</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
         Look up a code, then turn on only the add-ons that fit. The starting number is the published rate. Nothing here is sent.
       </p>
       <label className="mt-4 block max-w-md text-sm font-medium text-ink">
         Code or MS-DRG
-        <input value={query} onChange={(event) => changeQuery(event.target.value)} placeholder="10005 or 90371" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+        <input value={query} onChange={(event) => changeQuery(event.target.value)} placeholder="10005 or 90371" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
       </label>
       {failed ? <p className="mt-3 text-sm font-medium text-deep">The rate file did not load.</p> : null}
 
@@ -121,9 +121,9 @@ export function OtherRates() {
       ) : null}
 
       {choice ? (
-        <div className="mt-4 rounded-2xl border border-line p-5">
+        <div className="mt-4 rounded-[10px] bg-paper-2 p-5">
           <p className="text-sm text-muted">{choice.schedule}{choice.status ? ` · status ${choice.status}` : ""}</p>
-          <h3 className="mt-1 font-display text-3xl text-ink">{query.trim().toUpperCase()}</h3>
+          <h3 className="mt-1 text-[22px] font-semibold tracking-tight text-ink">{query.trim().toUpperCase()}</h3>
           <p className="mt-2 text-sm leading-relaxed text-ink">{choice.name}</p>
           {choice.cents == null ? (
             <p className="mt-4 text-sm text-muted">This file has no separate rate, so there is nothing to add on.</p>
@@ -131,7 +131,7 @@ export function OtherRates() {
             <>
               <div className="mt-5 flex items-center gap-3">
                 <button type="button" aria-label={miles ? "Fewer miles" : "Fewer units"} onClick={() => setUnits((value) => Math.max(1, value - 1))} className="h-12 w-12 rounded-full border border-line text-lg text-ink">−</button>
-                <p className="min-w-16 text-center font-display text-3xl text-ink tabular-nums">{units}</p>
+                <p className="min-w-16 text-center text-[22px] font-semibold tracking-tight text-ink tabular-nums">{units}</p>
                 <button type="button" aria-label={miles ? "More miles" : "More units"} onClick={() => setUnits((value) => Math.min(99, value + 1))} className="h-12 w-12 rounded-full border border-line text-lg text-ink">+</button>
                 <p className="text-sm text-muted">{miles ? "miles" : units === 1 ? "unit" : "units"}</p>
               </div>
@@ -151,7 +151,7 @@ export function OtherRates() {
               </p>
               {math ? (
                 <div className="mt-5">
-                  <p className="font-display text-4xl text-ink tabular-nums">{money(math.allowedCents / 100)}</p>
+                  <p className="text-[28px] font-bold tracking-tight text-ink tabular-nums tabular-nums">{money(math.allowedCents / 100)}</p>
                   <p className="mt-2 text-sm leading-relaxed text-ink">
                     {units} × {money(choice.cents / 100)}
                     {canOffset && offset ? ", then the 340B ratio" : ""}
@@ -162,7 +162,7 @@ export function OtherRates() {
               ) : null}
               <label className="mt-4 block text-sm font-medium text-ink">
                 Date of service
-                <input type="date" value={dos} onChange={(event) => { setDos(event.target.value); setNotice(null); }} className="mt-1.5 h-12 w-full max-w-xs rounded-xl border border-line bg-paper-2 px-3 text-base" />
+                <input type="date" value={dos} onChange={(event) => { setDos(event.target.value); setNotice(null); }} className="mt-1.5 h-12 w-full max-w-xs rounded-[10px] bg-paper-2 px-3 text-base" />
               </label>
               <p className="mt-2 text-sm leading-relaxed text-muted">This drug, outpatient, and surgery-center file is only {QUARTER.label}. A date in another quarter needs that quarter’s file, and it is not loaded.</p>
               <button type="button" onClick={addLine} className="mt-5 h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">Add to the open worksheet</button>
@@ -173,9 +173,9 @@ export function OtherRates() {
       ) : null}
 
       {drg && file ? (
-        <div className="mt-4 rounded-2xl border border-line p-5">
+        <div className="mt-4 rounded-[10px] bg-paper-2 p-5">
           <p className="text-sm text-muted">Inpatient</p>
-          <h3 className="mt-1 font-display text-3xl text-ink">MS-DRG {drg.drg}</h3>
+          <h3 className="mt-1 text-[22px] font-semibold tracking-tight text-ink">MS-DRG {drg.drg}</h3>
           <p className="mt-2 text-sm leading-relaxed text-ink">{drg.title}. Weight {drg.weight}.</p>
           <button type="button" aria-pressed={weightOn} onClick={() => setWeightOn((value) => !value)} className={weightOn ? "mt-4 h-11 rounded-full bg-ink px-4 text-sm font-medium text-paper" : "mt-4 h-11 rounded-full border border-line px-4 text-sm font-medium text-ink"}>
             Unadjusted amount
@@ -192,7 +192,7 @@ export function OtherRates() {
 
       <ul className="mt-6 space-y-3">
         {(file?.bases ?? []).map((item) => (
-          <li key={item.name} className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">
+          <li key={item.name} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
             <span className="font-medium">{item.name}.</span> {item.cents === null ? "" : `${money(item.cents / 100)}. `}{item.note}
           </li>
         ))}

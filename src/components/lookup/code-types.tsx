@@ -22,7 +22,7 @@ export function CodeTypeList() {
     <div>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {CODE_TYPES.filter((type) => type.id !== "none" && type.id !== "other").map((type) => (
-          <li key={type.id} className="rounded-2xl border border-line px-4 py-3">
+          <li key={type.id} className="rounded-[10px] bg-paper-2 px-4 py-3">
             <p className="text-sm font-medium text-ink">{type.name}</p>
             <p className="mt-1 text-sm leading-relaxed text-muted">{type.file}</p>
           </li>
@@ -42,7 +42,7 @@ export function TypeRollup({ lines }: { lines: Array<{ schedule: CheckLine["sche
   if (roll.groups.length === 0) return null;
   return (
     <section className="mt-4">
-      <h3 className="font-display text-2xl text-ink">By code type</h3>
+      <h3 className="text-[17px] font-semibold text-ink">By code type</h3>
       <p className="mt-1 text-sm text-muted">
         You pay {money(roll.totals.payable / 100)} on {roll.totals.payableLines} priced {roll.totals.payableLines === 1 ? "line" : "lines"}.
         Their amount is {money(roll.totals.theirs / 100)}.

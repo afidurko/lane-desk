@@ -63,8 +63,8 @@ export function NyPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">New York team</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">New York team</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           New York.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -72,41 +72,41 @@ export function NyPage() {
         </p>
         <label className="mt-8 block max-w-md text-sm font-medium text-ink">
           County
-          <select value={county} onChange={(event) => setCounty(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+          <select value={county} onChange={(event) => setCounty(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
             {counties.map((name) => (
               <option key={name} value={name}>{countyLabel(name)}</option>
             ))}
           </select>
         </label>
-        <h2 className="mt-8 font-display text-3xl text-ink">Personal care, {countyLabel(county)}</h2>
+        <h2 className="mt-8 text-[22px] font-semibold tracking-tight text-ink">Personal care, {countyLabel(county)}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{NY_CARE_AFTER} The January 1, 2024 workbook names 51 counties. A zero in that workbook is not shown.</p>
         {later.length > 0 ? <CareList title="January 1, 2025" rows={later} /> : null}
         {agencies.length > 0 ? <CareList title="January 1, 2024" rows={agencies} /> : <p className="mt-4 text-sm text-muted">No personal care agency for {countyLabel(county)} is on the January 1, 2024 workbook.</p>}
         <form className="mt-10 max-w-md" onSubmit={(event) => event.preventDefault()}>
           <label className="block text-sm font-medium text-ink">
             Code
-            <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+            <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
           </label>
         </form>
         {failed ? <p className="mt-4 text-sm font-medium text-deep">A fee file did not load.</p> : null}
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">Physician and laboratory fees are the same in every county. Transportation uses the county you pick. These Medicare amounts are locality 99, Rest of New York. They are not Manhattan, Queens, New York City suburbs, or Poughkeepsie.</p>
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <article className="rounded-2xl border border-line p-5">
-            <p className="text-xs font-medium tracking-widest text-teal uppercase">Federal</p>
-            <h2 className="mt-2 font-display text-3xl text-ink">Medicare</h2>
+          <article className="rounded-[10px] bg-paper-2 p-5">
+            <p className="text-[13px] text-muted">Federal</p>
+            <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">Medicare</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">{federal.schedule}</p>
             <p className="mt-3 font-medium text-ink tabular-nums">{federal.allowedCents === null ? "No amount" : money(federal.allowedCents / 100)}</p>
             <p className="mt-2 text-sm leading-relaxed text-ink">{federal.note}</p>
           </article>
-          <article className="rounded-2xl border border-line p-5">
-            <p className="text-xs font-medium tracking-widest text-teal uppercase">State</p>
-            <h2 className="mt-2 font-display text-3xl text-ink">NY Medicaid</h2>
+          <article className="rounded-[10px] bg-paper-2 p-5">
+            <p className="text-[13px] text-muted">State</p>
+            <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">NY Medicaid</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">{state?.schedule ?? "Loading the eMedNY file."}</p>
             <p className="mt-3 font-medium text-ink tabular-nums">{state ? (state.allowedCents === null ? "No amount" : money(state.allowedCents / 100)) : ""}</p>
             <p className="mt-2 text-sm leading-relaxed text-ink">{state?.note}</p>
           </article>
         </div>
-        <h2 className="mt-10 font-display text-3xl text-ink">Other New York manuals</h2>
+        <h2 className="mt-10 text-[22px] font-semibold tracking-tight text-ink">Other New York manuals</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           These were not in the physician, laboratory, or transportation files. Olean uses the upstate private-duty rate and the rest-of-state doula rate. A rental, facility, downstate, or New York City amount is labeled when the file has one.
         </p>
@@ -115,7 +115,7 @@ export function NyPage() {
             <li className="text-sm text-muted">No row for this code on DME, dental, nurse practitioner, podiatry, vision, hearing, midwife, private duty nursing, nutrition, doula, applied behavior analysis, or ordered ambulatory.</li>
           ) : (
             others.map((row) => (
-              <li key={`${row.family}-${row.name}`} className="rounded-2xl border border-line px-4 py-3">
+              <li key={`${row.family}-${row.name}`} className="rounded-[10px] bg-paper-2 px-4 py-3">
                 <p className="font-medium text-ink">{row.family}</p>
                 <p className="mt-1 text-sm text-ink">{row.name}</p>
                 <p className="mt-1 text-sm tabular-nums text-ink">{row.fee === null ? "No dollar fee" : money(row.fee / 100)}{row.extra === null ? "" : `. ${extraLabel(row.family)} ${money(row.extra / 100)}`}</p>
@@ -129,9 +129,9 @@ export function NyPage() {
           {THERAPY.map((code) => {
             const row = therapy?.[code];
             return (
-              <article key={code} className="rounded-2xl border border-line p-5">
-                <p className="text-xs font-medium tracking-widest text-teal uppercase">Medicare, Rest of New York</p>
-                <h2 className="mt-1 font-display text-3xl text-ink">{code}</h2>
+              <article key={code} className="rounded-[10px] bg-paper-2 p-5">
+                <p className="text-[13px] text-muted">Medicare, Rest of New York</p>
+                <h2 className="mt-1 text-[22px] font-semibold tracking-tight text-ink">{code}</h2>
                 <p className="mt-1 text-sm text-muted">{row?.n ?? "Loading the physician file."}</p>
                 <ul className="mt-3 divide-y divide-line">
                   {YEARS.map((year) => {
@@ -160,9 +160,9 @@ function CareList({ title, rows }: { title: string; rows: CareRow[] }) {
   return (
     <div className="mt-4 grid gap-4 lg:grid-cols-2">
       {rows.map((agency) => (
-        <article key={`${title}-${agency.name}`} className="rounded-2xl border border-line p-5">
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">{title}</p>
-          <h3 className="mt-1 font-display text-2xl text-ink">{countyLabel(agency.name)}</h3>
+        <article key={`${title}-${agency.name}`} className="rounded-[10px] bg-paper-2 p-5">
+          <p className="text-[13px] text-muted">{title}</p>
+          <h3 className="mt-1 text-[17px] font-semibold text-ink">{countyLabel(agency.name)}</h3>
           <ul className="mt-2 divide-y divide-line">
             {agency.rates.map((rate) => (
               <li key={rate.level} className="flex items-baseline justify-between gap-3 py-2 text-sm text-ink">

@@ -59,11 +59,11 @@ export function CodePage() {
 
   return (
     <Shell>
-      <main className="mx-auto max-w-xl px-5 py-10">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Price team</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-ink">One code. Every year.</h1>
-        <label className="mt-6 block text-sm font-medium text-ink" htmlFor="one-code">
-          Code
+      <main className="mx-auto max-w-3xl px-5 pt-8 pb-6">
+        <p className="text-[13px] text-muted">One code</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">Price</h1>
+        <label className="mt-6 block" htmlFor="one-code">
+          <span className="px-4 text-[13px] text-muted">Code</span>
           <input
             id="one-code"
             value={text}
@@ -71,7 +71,7 @@ export function CodePage() {
             placeholder="97110"
             autoCapitalize="characters"
             autoCorrect="off"
-            className="mt-1.5 h-14 w-full rounded-2xl border border-line bg-paper-2 px-4 font-display text-2xl text-ink"
+            className="mt-2 h-14 w-full rounded-[10px] bg-paper-2 px-4 text-[22px] font-medium text-ink outline-none"
           />
         </label>
         {state === "idle" ? <p className="mt-4 text-sm text-muted">Type a code, like 97110. The name and the price for each year show up here.</p> : null}
@@ -80,17 +80,20 @@ export function CodePage() {
         {state === "miss" ? <p className="mt-4 text-sm font-medium text-deep">That code is not on a loaded schedule for 2020 through 2026.</p> : null}
         {state === "down" ? <p className="mt-4 text-sm font-medium text-deep">The year files did not load. The page is still here. Type the code again.</p> : null}
         {hits.map((hit) => (
-          <article key={hit.family} className="mt-8">
-            <p className="font-display text-4xl text-ink tabular-nums">{text.trim().toUpperCase()}</p>
-            <p className="mt-1 text-xs font-medium tracking-widest text-teal uppercase">{hit.label}</p>
-            <h2 className="mt-4 text-sm font-medium text-ink">What it is</h2>
-            <p className="mt-1 text-lg text-ink">{hit.row.n || "The file has no short name for this code."}</p>
-            <h2 className="mt-4 text-sm font-medium text-ink">Description</h2>
-            <p className="mt-1 text-base leading-relaxed text-ink">{describeCode(hit.label, hit.row)}</p>
-            <h2 className="mt-4 text-sm font-medium text-ink">Years and amounts</h2>
+          <article key={hit.family} className="mt-6">
+            <h2 className="px-4 pb-2 text-[13px] text-muted">{hit.label}</h2>
+            <div className="overflow-hidden rounded-[10px] bg-paper-2">
+              <div className="border-b border-line px-4 py-3">
+                <p className="text-[17px] font-medium text-ink tabular-nums">{text.trim().toUpperCase()}</p>
+                <p className="mt-1 text-[15px] leading-relaxed text-ink">{hit.row.n || "The file has no short name for this code."}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-muted">{describeCode(hit.label, hit.row)}</p>
+              </div>
+            </div>
+            <h2 className="px-4 pt-7 pb-2 text-[13px] text-muted">Years and amounts</h2>
             <YearPrices row={hit.row} />
             <PriorNote row={hit.row} />
-            <div className="mt-3 flex flex-wrap gap-2">
+            <h2 className="px-4 pt-7 pb-2 text-[13px] text-muted">Keep a year</h2>
+            <div className="overflow-hidden rounded-[10px] bg-paper-2">
               {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => {
                 const cents = hit.row.a[String(year)];
                 if (typeof cents !== "number") return null;
@@ -98,7 +101,7 @@ export function CodePage() {
                   <button
                     key={year}
                     type="button"
-                    className="h-11 rounded-full border border-line px-3 text-sm text-ink"
+                    className="press flex min-h-12 w-full items-center justify-between border-b border-line px-4 text-left text-[17px] text-teal last:border-b-0"
                     onClick={() => {
                       addToOpenClaim({
                         code: text.trim().toUpperCase(),
@@ -113,7 +116,8 @@ export function CodePage() {
                       setNote(`${year} ${money(cents / 100)} is on the claim. Nothing is sent.`);
                     }}
                   >
-                    Use {year}
+                    <span>Use {year}</span>
+                    <span className="text-ink tabular-nums">{money(cents / 100)}</span>
                   </button>
                 );
               })}
@@ -121,18 +125,18 @@ export function CodePage() {
           </article>
         ))}
         {once.length > 0 ? (
-          <section className="mt-8">
-            <h2 className="text-sm font-medium text-ink">This period only</h2>
-            <ul className="mt-3 space-y-3">
+          <section className="mt-2">
+            <h2 className="px-4 pt-7 pb-2 text-[13px] text-muted">This period only</h2>
+            <div className="overflow-hidden rounded-[10px] bg-paper-2">
               {once.map((row) => (
-                <li key={`${row.s}-${row.t}`} className="rounded-2xl border border-line px-4 py-3">
-                  <p className="text-xs font-medium tracking-widest text-teal uppercase">{row.s}</p>
-                  <p className="mt-1 text-sm text-muted">{row.n}</p>
-                  <p className="mt-1 text-base font-medium text-ink tabular-nums">{money(row.c / 100)}</p>
-                  <p className="text-xs text-muted">{row.t}</p>
+                <div key={`${row.s}-${row.t}`} className="border-b border-line px-4 py-3 last:border-b-0">
+                  <p className="text-[17px] text-ink">{row.s}</p>
+                  <p className="mt-1 text-[15px] text-muted">{row.n}</p>
+                  <p className="mt-1 text-[17px] font-medium text-ink tabular-nums">{money(row.c / 100)}</p>
+                  <p className="text-[13px] text-muted">{row.t}</p>
                   <button
                     type="button"
-                    className="mt-2 h-11 rounded-full border border-line px-3 text-sm text-ink"
+                    className="press mt-2 text-[17px] text-teal"
                     onClick={() => {
                       const year = Number(row.t.match(/20\d{2}/)?.[0] ?? "2026");
                       addToOpenClaim({
@@ -150,9 +154,9 @@ export function CodePage() {
                   >
                     Use this amount
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
         ) : null}
         {note ? (

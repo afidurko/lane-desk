@@ -1,22 +1,31 @@
 import { quoteCode } from "../src/lib/billing/billing.ts";
 import { readFileSync } from "node:fs";
-import { workbookText } from "../src/lib/lookup/xlsx-read.ts";
+import { workbookText, unzipArchive } from "../src/lib/lookup/xlsx-read.ts";
 import { readImportBytes } from "../src/lib/lookup/import-text.ts";
 import { describeCode } from "../src/lib/lookup/describe.ts";
 import { canEnroll, blockedText, monthLine, missingSeats, SEATS } from "../src/lib/pace/gates.ts";
 import { medicareCents } from "../src/lib/pace/rates.ts";
 import { dailyBridge, placeOnSheet } from "../src/lib/team/bridge.ts";
 import { rankBrief, rankInvoice, rankMemory } from "../src/lib/team/rank.ts";
-import { previousUse, reasonLine, reasonMonth } from "../src/lib/lookup/reason.ts";
+import { previousUse, reasonLine, reasonMonth, postedBeside, yearBeside } from "../src/lib/lookup/reason.ts";
 import { readInvoiceLines, payBucket, paymentAlert, auditReport, gradeLookup } from "../src/lib/lookup/check.ts";
 import { payLine, typeRollup } from "../src/lib/lookup/code-types.ts";
 import { detectPosted } from "../src/lib/lookup/detect.ts";
 import { lastPosted, morePosted, unknownBeside } from "../src/lib/lookup/reason.ts";
 import { exportCheckCsv } from "../src/lib/lookup/export-check.ts";
+import { clientWorkbook, compareLine, rollsFor } from "../src/lib/lookup/sheet-book.ts";
+import { selectLines, workpaper } from "../src/lib/account/workpaper.ts";
+import { fileHint, placeOnFile } from "../src/lib/lookup/place.ts";
+import { codeCrosswalk, crossNote, repeatedCodes } from "../src/lib/lookup/crosswalk.ts";
+import { profilePlace, unspecified } from "../src/lib/lookup/profile.ts";
+import { asksFrom, codesInLinks, exactPhrase, hubLinks, linkedPages, pagesFor, readListing, readPage } from "../src/lib/lookup/crawl.ts";
+import { HUBS } from "../src/lib/lookup/crawl.ts";
 import { feeTeamReport } from "../src/lib/team/fee-teams.ts";
 import { answerFor, dropOldest } from "../src/lib/lookup/persist.ts";
 import { pickSaved } from "../src/lib/lookup/saved-codes.ts";
-import { auditPrice, dmePrice } from "../src/lib/lookup/schedule-price.ts";
+import { sheetToInvoice } from "../src/lib/lookup/xlsx-read.ts";
+import { auditPrice, dmePrice, labPrice, scheduleOf } from "../src/lib/lookup/schedule-price.ts";
+import { DETECTION_FLOOR, detectionRate } from "../src/lib/lookup/detect-rate.ts";
 import { associate } from "../src/lib/lookup/associate.ts";
 import { pickOnce } from "../src/lib/lookup/once.ts";
 import { parseInvoice, claimsFromInvoice } from "../src/lib/billing/invoice.ts";
@@ -130,7 +139,22 @@ const office = associate({ code: "97110", modifier: "", year: 2026, setting: nul
 const both = associate({ code: "97110", modifier: "", year: 2026, setting: "nf", payer: null, ambiguous: false, chargeKnown: true, hits: [{ family: "physician", label: "Physician", row: { a: { "2026": 2827 } } }, { family: "lab", label: "Lab", row: { a: { "2026": 700 } } }], once: null });
 const ride = associate({ code: "A0428", modifier: "", year: 2026, setting: null, payer: null, ambiguous: false, chargeKnown: true, hits: [{ family: "physician", label: "Physician", row: { a: { "2026": 100 } } }, { family: "ambulance", label: "Ambulance", row: { a: { "2026": 27709 } } }], once: null });
 const part = associate({ code: "97110", modifier: "26", year: 2026, setting: "nf", payer: null, ambiguous: false, chargeKnown: true, hits: [{ family: "physician", label: "Physician", row: { a: { "2026": 2827 } } }], once: null });
-check("a physician line without non-facility is not matched", office.block !== null && office.cents === null);
+const labPost = { file: "lab", label: "Clinical lab", cents: 1234, otherCents: null };
+const dmePost = { file: "dme", label: "New York rural equipment", cents: 3094, otherCents: 2068 };
+const learned = sheetToInvoice([
+  ["", "", "", "DATE OF", "SCHDULE", "CPT", "MODIFIER", "", "UNITS", "CODE", "GROSS", "", "PROVIDER", "GROSS", "WANT TO", "TO", "", "SEQ"],
+  ["", "", "", "SERVICE", "", "CODE", "", "", "", "LOOKUP", "", "", "BILLED", "", "PAY", "PAY", "", ""],
+  ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "COLLABRIOS", "I WANT", "", ""],
+  ["Professional", "FACILITY", "2026", "03/12/2026", "LAB", "80053", "", "1", "1", "0", "0", "", "65", "65", "10.35", "0", "0.98", "0"],
+  ["Professional", "NON FACILITY", "2026", "01/07/2026", "PFS", "99213", "", "1.2", "1", "85.86", "85.86", "", "74.16", "74.16", "74.16", "74.16", "0.98", "72.68"],
+  ["Professional", "NON FACILITY", "2025", "01/01/2025", "HHA HR", "S9124", "", "1", "1", "50.24", "50.24", "", "50.24", "50.24", "0", "50.24", "0.98", "49.24"],
+  ["Institutional", "FACILITY", "2026", "01/01/2026", "NRS ASSESS", "T1001", "", "1", "1", "0", "0", "", "100", "100", "146", "0", "0.98", "0"],
+]);
+check("a zero lookup is blank, I want is the lookup times the units, and a real zero is kept", /80053[^\n]*admin 10\.35/.test(learned) && !/80053[^\n]*lookup/.test(learned) && !/80053[^\n]*paid/.test(learned) && /99213[^\n]*paid 74\.16/.test(learned) && /S9124[^\n]*admin 0\.00/.test(learned) && !/S9124[^\n]*paid/.test(learned) && scheduleOf("NRS ASSESS") === "nursing" && scheduleOf("0") === "none" && scheduleOf("NON RE*") === "other");
+check("a physician line that does not say facility uses the office amount", office.cents === 2827 && office.block === null);
+check("a lookup that matches one posted file is used, and the other schedule amount is not the price", placeOnFile({ lookupCents: 1234, currentCents: null, posts: [labPost, dmePost] })?.label === "Clinical lab" && placeOnFile({ lookupCents: 2068, currentCents: null, posts: [dmePost] })?.cents === 3094);
+check("the spider can name the file and cannot name the dollar", fileHint("https://www.cms.gov/medicare/payment/fee-schedules/dmepos") === "dme" && placeOnFile({ lookupCents: null, currentCents: null, posts: [labPost, dmePost], only: "dme" })?.cents === 3094);
+check("a side modifier does not hide a posted lab amount", labPrice({ rows: [{ c: "80053", m: "", rate: 1234 }] }, { code: "80053", modifier: "LT", year: 2026 }).cents === 1234);
 check("two files are not assigned to Physician", both.block !== null);
 check("an ambulance code uses the ambulance file", ride.cents === 27709 && ride.label === "Ambulance");
 check("modifier 26 is not priced from the full amount", part.block !== null && part.cents === null);
@@ -194,7 +218,7 @@ check("97110 history is the 2020 amount down to 2026", therapy.from === 2020 && 
 const aaronText = await workbookText(new Uint8Array(readFileSync("attachments/AARON.xlsx")));
 const aaron = readInvoiceLines(aaronText);
 const oxygen = aaron.find((line) => line.code === "E0431" && line.modifier === "RR");
-check("the workbook reads the oxygen line", oxygen?.year === 2025 && oxygen.billedCents === 5002 && oxygen.paidCents === 3094 && oxygen.units === 1 && oxygen.setting === "nf");
+check("the workbook reads the oxygen line", oxygen?.year === 2025 && oxygen.billedCents === 5002 && oxygen.lookupCents === 3094 && oxygen.paidCents === null && oxygen.units === 1 && oxygen.setting === "nf");
 const visit = aaron.find((line) => line.code === "99213" && line.year === 2026);
 check("the workbook keeps the 2026 office visit", visit?.setting === "nf" && visit.billedCents === 7416 && visit.paidCents === 7416);
 const hospital = aaron.find((line) => line.code === "99232" && line.date === "2025-12-29");
@@ -480,6 +504,25 @@ const savedCopy = exportCheckCsv([{ code: "E0431", modifier: "", date: "3/1/2026
 check("a saved copy has the file amount and leaves a missing dollar blank", savedCopy.includes("E0431") && savedCopy.includes("30.32") && savedCopy.includes("20.68") && savedCopy.includes("Wrong fee schedule") && exportCheckCsv([{ code: "J2003", modifier: "", date: "", year: 2026, units: 1, schedule: "none", lookupCents: null, adminCents: null, seqRate: null, seqPayCents: null, fileCents: null, otherCents: null, fileLabel: null, block: "Unknown for 2026.", note: null }]).includes("Unknown for 2026") && !exportCheckCsv([{ code: "J2003", modifier: "", date: "", year: 2026, units: 1, schedule: "none", lookupCents: null, adminCents: null, seqRate: null, seqPayCents: null, fileCents: null, otherCents: null, fileLabel: null, block: "Unknown for 2026.", note: null }]).includes(",0.00,"));
 const poked = exportCheckCsv([{ code: "E0431", modifier: "", date: "", year: 2026, units: 1, schedule: "dme", lookupCents: null, adminCents: null, seqRate: null, seqPayCents: null, fileCents: null, otherCents: null, fileLabel: null, block: null, note: "=cmd|' /C calc'!A0" }]);
 check("a saved copy does not let a note start a spreadsheet formula", poked.includes("'=cmd") && !poked.split("\n")[1].startsWith("="));
+const oxygenLine = compareLine({ code: "E0431", modifier: "RR", date: "06/24/2025", year: 2025, units: 1, setting: "nf", schedule: "dme", lookupCents: 3094, billedCents: 5002, adminCents: 2068, seqRate: 0.98, fileCents: 3094, otherCents: 2068, name: "Portable gaseous 02", block: null });
+const blankLine = compareLine({ code: "J2003", modifier: "", date: "", year: 2026, units: 1, setting: null, schedule: "none", lookupCents: null, billedCents: null, adminCents: null, seqRate: null, fileCents: null, otherCents: null, name: "=cmd", block: "Unknown for 2026." });
+const book = clientWorkbook([
+  { code: "E0431", modifier: "RR", date: "06/24/2025", year: 2025, units: 1, setting: "nf", schedule: "dme", lookupCents: 3094, billedCents: 5002, adminCents: 2068, seqRate: 0.98, fileCents: 3094, otherCents: 2068, name: "Portable gaseous 02", block: null },
+  { code: "A0428", modifier: "", date: "01/02/2026", year: 2026, units: 1, setting: "nf", schedule: "ambulance", lookupCents: 100, billedCents: 100, adminCents: 100, seqRate: 0.98, fileCents: 100, otherCents: null, name: "Ambulance", block: null },
+  { code: "97110", modifier: "", date: "01/03/2026", year: 2026, units: 1, setting: "nf", schedule: "pfs", lookupCents: 200, billedCents: 200, adminCents: 196, seqRate: 0.98, fileCents: 200, otherCents: null, name: "A & B", block: null },
+  { code: "J2003", modifier: "", date: "", year: 2026, units: 1, setting: null, schedule: "none", lookupCents: null, billedCents: null, adminCents: null, seqRate: null, fileCents: null, otherCents: null, name: "=cmd", block: "Unknown for 2026." },
+]);
+const sheetPacked = await unzipArchive(book);
+const sheetLinesXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet1.xml"));
+const sheetReportXml = new TextDecoder().decode(sheetPacked.get("xl/worksheets/sheet2.xml"));
+const sheetOpened = await workbookText(book);
+const sheetAgain = readInvoiceLines(sheetOpened);
+check("the workbook keeps their columns, flags the wrong schedule, and leaves an unknown blank", oxygenLine.flag === "Wrong schedule" && oxygenLine.youPay === 3032 && oxygenLine.diff === 964 && oxygenLine.want === 3094 && blankLine.flag === "Unknown" && blankLine.want === null && sheetLinesXml.includes("SCHDULE") && sheetLinesXml.includes("COLLABRIOS") && sheetLinesXml.includes("Wrong schedule") && sheetReportXml.includes("Their lookup") && sheetAgain.some((line) => line.code === "E0431" && line.adminCents === 2068 && line.lookupCents === 3094) && sheetLinesXml.includes("'=cmd") && sheetLinesXml.includes("&") && sheetLinesXml.includes("s=\"2\"") && !sheetLinesXml.includes("J2003</t></is></c><c r=\"P"));
+const phrasePage = readPage("<p>The rural fee for E0431 is $30.94 on the DME file.</p>", "E0431");
+const splitPage = readPage("<p>E0431 is $20.68 or $30.94 depending on the file.</p>", "E0431");
+const buried = readPage("<script>E0431 $1.00</script><p>No code here.</p>", "E0431");
+const asks = asksFrom([{ code: "J2003", year: 2026, unknown: true }, { code: "E0431", year: 2026, unknown: false }, { code: "e04310", year: 2026, unknown: true }, ...Array.from({ length: 8 }, (_, index) => ({ code: `A${String(1000 + index)}`, year: 2026, unknown: true }))]);
+check("a phrase search uses the exact code, ignores a buried code, and does not take two amounts", exactPhrase({ code: "E0431", year: 2026 }) === "\"E0431\" 2026" && phrasePage.found && phrasePage.pageCents === 3094 && phrasePage.note.includes("not used") && phrasePage.note.includes("posted file") && splitPage.pageCents === null && buried.found === false && asks[0].code === "J2003" && asks.length === 16 && asks.filter((ask) => ask.code === "E0431").length === 1 && asks.some((ask) => ask.code === "97110") && pagesFor({ code: "E0431", year: 2026 }).every((page) => page.url.startsWith("https://www.cms.gov/") || page.url.startsWith("https://www.health.ny.gov/") || page.url.startsWith("https://clinicaltables.nlm.nih.gov/")) && readPage("<p>E04310 is $9.00</p>", "E0431").found === false && readListing('[1,["E0431"],null,[["E0431","Portable gaseous 02"]]]', "E0431").found === true && readListing('[1,["E0431"],null,[["E0431","Portable gaseous 02"]]]', "E0431").pageCents === null && linkedPages('<a href="https://evil.example/E0431"></a><a href="https://www.cms.gov/files/E0431.pdf"></a>', "E0431", "https://www.cms.gov/search").length === 1 && linkedPages('<a href="https://www.cms.gov/medicare/payment/fee-schedules">E0431</a>', "E0431", "https://www.cms.gov/search").length === 1 && hubLinks('<a href="https://www.cms.gov/medicare/payment/fee-schedules"></a><a href="https://www.cms.gov/files/a.zip"></a><a href="https://evil.example/fee"></a>', "https://www.cms.gov/medicare/payment/fee-schedules").length === 1 && readPage("<p>E0431 is with E1390.</p>", "E0431").related.includes("E1390") && codesInLinks('<a href="https://www.cms.gov/medicare/payment/fee-schedules/A0428">ride</a>').includes("A0428") && readPage("<p>E0431 <a href=\"https://www.cms.gov/fee/E1390\">the link</a></p>", "E0431").related.includes("E1390") && HUBS.some((hub) => hub.url.endsWith("/physician")) && HUBS.some((hub) => hub.url.endsWith("/ambulance")) && HUBS.some((hub) => hub.url.includes("clinical-laboratory")));
 const unnamed = auditPrice({
   line: { code: "J1644", modifier: "JZ", year: 2026, month: 3, date: "2026-03-01", units: 1, billedCents: 100, paidCents: null, paidKind: null, setting: "nf", payer: null, ambiguous: false, chargeKnown: true, schedule: "none", lookupCents: null, adminCents: null, seqRate: null, seqPayCents: null },
   hits: [{ family: "physician", label: "Physician", row: { a: { "2026": 500 } } }],
@@ -489,6 +532,70 @@ const unnamed = auditPrice({
   ambulance: null,
 });
 check("a blank schedule does not borrow a physician amount", Boolean(unnamed.block?.includes("did not name a schedule")) && unnamed.cents === null);
+const head = JSON.parse(readFileSync("public/years/physician/7.json", "utf8"));
+const visits = JSON.parse(readFileSync("public/years/physician/9.json", "utf8"));
+const pricedLine = (code, modifier, setting) => ({ code, modifier, date: "", year: 2026, month: null, units: 1, billedCents: null, paidCents: null, paidKind: null, setting, payer: null, ambiguous: false, chargeKnown: true, schedule: "pfs", lookupCents: 1, adminCents: null, seqRate: null, seqPayCents: null });
+const component = auditPrice({ line: pricedLine("70450", "26", "fac"), hits: [{ family: "physician", label: "Physician", row: head["70450"] }], onceList: [], dme: null, lab: null, ambulance: null });
+const facility = auditPrice({ line: pricedLine("99214", "", "fac"), hits: [{ family: "physician", label: "Physician", row: visits["99214"] }], onceList: [], dme: null, lab: null, ambulance: null });
+const cases = [];
+for (const shard of [head, visits]) {
+  for (const [code, row] of Object.entries(shard)) {
+    if (typeof row.a?.["2026"] === "number" && row.a["2026"] > 0) {
+      cases.push({ posted: row.a["2026"], pulled: auditPrice({ line: pricedLine(code, "", "nf"), hits: [{ family: "physician", label: "Physician", row }], onceList: [], dme: null, lab: null, ambulance: null }).cents });
+    }
+    if (typeof row.f?.["2026"] === "number" && row.f["2026"] > 0) {
+      cases.push({ posted: row.f["2026"], pulled: auditPrice({ line: pricedLine(code, "", "fac"), hits: [{ family: "physician", label: "Physician", row }], onceList: [], dme: null, lab: null, ambulance: null }).cents });
+    }
+    for (const modifier of ["26", "TC"]) {
+      const posted = row.p?.[modifier]?.["2026"];
+      if (typeof posted !== "number") continue;
+      cases.push({ posted, pulled: auditPrice({ line: pricedLine(code, modifier, "nf"), hits: [{ family: "physician", label: "Physician", row }], onceList: [], dme: null, lab: null, ambulance: null }).cents });
+    }
+  }
+}
+const dmeFile = JSON.parse(readFileSync("public/dme-2026.json", "utf8"));
+const dmeGroups = new Map();
+for (const row of dmeFile.rows) {
+  const key = `${row.c}|${row.m}|${row.m2 ?? ""}`;
+  dmeGroups.set(key, [...(dmeGroups.get(key) ?? []), row]);
+}
+for (const rows of dmeGroups.values()) {
+  if (rows.length !== 1 || !(rows[0].rural > 0) || String(rows[0].m2 ?? "").trim()) continue;
+  const row = rows[0];
+  cases.push({ posted: row.rural, pulled: dmePrice({ rows: dmeFile.rows }, { ...pricedLine(row.c, row.m, "nf"), schedule: "dme" }).cents });
+}
+const labFile = JSON.parse(readFileSync("public/clfs-2026.json", "utf8"));
+const labGroups = new Map();
+for (const row of labFile.rows) {
+  if (row.m) continue;
+  labGroups.set(row.c, [...(labGroups.get(row.c) ?? []), row.rate]);
+}
+for (const [code, rates] of labGroups) {
+  const amounts = [...new Set(rates.filter((rate) => typeof rate === "number" && rate > 0))];
+  if (amounts.length !== 1) continue;
+  cases.push({ posted: amounts[0], pulled: labPrice({ rows: labFile.rows }, { ...pricedLine(code, "", "nf"), schedule: "lab" }).cents });
+}
+const rate = detectionRate(cases);
+check("a component is not priced from the full amount, and a facility line uses the facility amount", component.cents === head["70450"].p["26"]["2026"] && component.cents !== head["70450"].a["2026"] && facility.cents === visits["99214"].f["2026"] && facility.cents !== visits["99214"].a["2026"]);
+check("a lookup that matches a different posted year is named and not used", postedBeside(8586, 9186, 2026, [{ name: "the office amount", amounts: { 2025: 8586, 2026: 9186 } }]) === "Their lookup is the office amount for 2025. That amount was not used.");
+check("the service year profile is kept when the lookup is an older year", yearBeside(3796, 2026, { 2025: 3796, 2026: 3842 })?.includes("2025") && yearBeside(3842, 2026, { 2025: 3796, 2026: 3842 }) === null);
+const profiled = readInvoiceLines("70450-26 2026-02-02 professional facility schedule pfs lookup 37.96");
+const institutional = readInvoiceLines("99232 2026-02-01 institutional schedule pfs");
+const officePos = readInvoiceLines("99213 2026-01-07 professional pos 11 schedule pfs");
+check("the invoice profile is professional, facility, and the component", profiled[0]?.claim === "professional" && profiled[0].setting === "fac" && profiled[0].modifier === "26" && profiled[0].schedule === "pfs");
+check("an institutional line with no place uses the facility amount, and place 11 stays office", institutional[0]?.setting === "fac" && officePos[0]?.setting === "nf" && profilePlace("pos 99", "professional") === null && unspecified("J3490"));
+check("posted amounts are pulled at or above 93 percent", cases.length > 1000 && rate >= DETECTION_FLOOR);
+
+const deskOxygen = { code: "E0431", modifier: "RR", date: "06/24/2025", year: 2025, units: 1, setting: "nf", schedule: "dme", lookupCents: 3094, billedCents: 5002, adminCents: 2068, seqRate: 0.98, fileCents: 3094, otherCents: 2068, name: "Portable gaseous 02", block: null };
+const deskBlank = { ...deskOxygen, code: "G0467", fileCents: null, otherCents: null, adminCents: null, lookupCents: null, schedule: "none" };
+const paper = workpaper([deskOxygen, deskBlank]);
+const only2026 = selectLines([{ ...deskOxygen, year: 2026 }, deskOxygen], { year: 2025, schedule: "dme" });
+check("the accountant run prices the file, flags the wrong schedule, and leaves a blank amount blank", paper.youPay === 3032 && paper.theirs === 2068 && paper.wrongCents === 964 && paper.unknown === 1 && paper.exceptions[0].line.code === "E0431" && paper.exceptions[0].compared.flag === "Wrong schedule" && paper.steps[1].didNot.includes("No dollar was used") && only2026.length === 1 && rollsFor([deskOxygen, { ...deskOxygen, year: 2026, adminCents: 3032, otherCents: null }]).years.length === 2);
+const crossed = codeCrosswalk([
+  { ...deskOxygen, year: 2025, setting: "nf", modifier: "", fileCents: 3094, lookupCents: 3094 },
+  { ...deskOxygen, year: 2026, setting: "fac", modifier: "26", fileCents: 3842, lookupCents: 3796 },
+], "E0431");
+check("the same code cross-references the sheet and does not change the price", crossed.length === 2 && crossNote(crossed)?.includes("26") && selectLines([deskOxygen, { ...deskOxygen, code: "E1390" }], { year: null, schedule: null, code: "E0431" }).length === 1 && repeatedCodes([deskOxygen, deskOxygen, { ...deskOxygen, code: "E1390" }])[0] === "E0431");
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures }));
 if (failures.length > 0) process.exit(1);

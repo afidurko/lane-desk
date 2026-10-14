@@ -73,14 +73,14 @@ export function Instrument() {
     phase === "idle" ? "Not run" : reduced && phase === "done" ? "—" : (elapsed / 1000).toFixed(2);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-paper-2 shadow-sm">
+    <div className="overflow-hidden rounded-[10px] bg-paper-2 shadow-sm">
       <div className="h-1 bg-teal" />
       <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
         <div>
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">Sample note</p>
+          <p className="text-[13px] text-muted">Sample note</p>
           <p className="text-sm text-muted">De-identified. Not a participant.</p>
         </div>
-        <p className="font-display text-3xl text-ink tabular-nums" aria-live="polite">
+        <p className="text-[22px] font-semibold tracking-tight text-ink tabular-nums" aria-live="polite">
           <span className="sr-only">Script clock </span>
           {phase === "idle" ? (
             <span className="font-sans text-sm font-medium text-muted">{clockText}</span>
@@ -134,7 +134,7 @@ export function Instrument() {
 
       <dl className="mt-5 grid grid-cols-1 gap-px border-t border-line bg-line sm:grid-cols-3">
         <div className="bg-paper-2 px-5 py-4">
-          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Code</dt>
+          <dt className="text-[13px] text-muted">Code</dt>
           <dd className="mt-2 text-sm text-ink">
             {showSample ? (
               <span className="flex flex-wrap gap-1.5">
@@ -150,13 +150,13 @@ export function Instrument() {
           </dd>
         </div>
         <div className="bg-paper-2 px-5 py-4">
-          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Allowed</dt>
+          <dt className="text-[13px] text-muted">Allowed</dt>
           <dd className="mt-2 font-medium text-ink tabular-nums">
             {showSample ? "$28.27" : <span className="font-normal text-muted">Not run yet</span>}
           </dd>
         </div>
         <div className="bg-paper-2 px-5 py-4">
-          <dt className="text-xs font-medium tracking-widest text-muted uppercase">Human desk</dt>
+          <dt className="text-[13px] text-muted">Human desk</dt>
           <dd className="mt-2 text-sm text-ink">Not timed. Bring the same encounter.</dd>
         </div>
       </dl>

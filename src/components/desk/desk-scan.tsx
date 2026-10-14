@@ -80,8 +80,8 @@ export function DeskScan() {
 
   return (
     <section className="mt-8">
-      <p className="text-xs font-medium tracking-widest text-teal uppercase">Scan · 2025 against 2026</p>
-      <h2 className="mt-2 font-display text-3xl text-ink">What changed on the loaded files.</h2>
+      <p className="text-[13px] text-muted">Scan · 2025 against 2026</p>
+      <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">What changed on the loaded files.</h2>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
         Rest of New York, MAC 13282, locality 99. Physician amounts are non-facility, non-QP. Ambulance and DME use the rural amount. {sequestrationLabel(date)} Not a payment.
       </p>
@@ -89,9 +89,9 @@ export function DeskScan() {
       {cards.length === 0 && !failed ? <p className="mt-4 text-sm text-muted">Reading the 2025 and 2026 files.</p> : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <article key={card.schedule} className="rounded-2xl border border-line bg-paper-2 p-4">
-            <p className="text-xs font-medium tracking-widest text-muted uppercase">{card.schedule}</p>
-            <p className="mt-2 font-display text-3xl text-ink tabular-nums">{card.changed.toLocaleString()}</p>
+          <article key={card.schedule} className="rounded-[10px] bg-paper-2 p-4">
+            <p className="text-[13px] text-muted">{card.schedule}</p>
+            <p className="mt-2 text-[22px] font-semibold tracking-tight text-ink tabular-nums">{card.changed.toLocaleString()}</p>
             <p className="mt-1 text-sm text-ink">changed of {card.compared.toLocaleString()} compared</p>
             <p className="mt-2 text-xs leading-relaxed text-muted">{card.priorYear} to {card.year}. {card.rows.toLocaleString()} rows on the {card.year} file.</p>
           </article>
@@ -114,7 +114,7 @@ export function DeskScan() {
       </div>
       {listed.length > 0 ? (
         <>
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-line">
+          <div className="mt-4 overflow-x-auto rounded-[10px] bg-paper-2">
             <table className="w-full min-w-[36rem] text-left text-sm">
               <caption className="sr-only">Codes whose 2026 amount differs from 2025</caption>
               <thead className="bg-paper-2 text-xs tracking-widest text-muted uppercase">
@@ -151,8 +151,8 @@ export function DeskScan() {
         </>
       ) : null}
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl border border-line p-5">
-          <h3 className="font-display text-2xl text-ink">Open claims</h3>
+        <article className="rounded-[10px] bg-paper-2 p-5">
+          <h3 className="text-[17px] font-semibold text-ink">Open claims</h3>
           <ul className="mt-3 space-y-2">
             {claims.length === 0 ? <li className="text-sm text-muted">No claim on this browser yet.</li> : null}
             {claims.map((claim) => (
@@ -165,8 +165,8 @@ export function DeskScan() {
             Open a claim
           </Link>
         </article>
-        <article className="rounded-2xl border border-line p-5">
-          <h3 className="font-display text-2xl text-ink">On this desk</h3>
+        <article className="rounded-[10px] bg-paper-2 p-5">
+          <h3 className="text-[17px] font-semibold text-ink">On this desk</h3>
           <ul className="mt-3 space-y-2 text-sm text-ink">
             <li>Physician, ambulance, lab, and New York DME files, 2020 through 2026.</li>
             <li>The note clock reads 2026 therapy codes only. Other codes stay on the table.</li>

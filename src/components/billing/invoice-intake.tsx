@@ -85,8 +85,8 @@ export function InvoiceIntake({
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-line p-5">
-      <h2 className="font-display text-3xl text-ink">Import an invoice</h2>
+    <section className="mt-6 rounded-[10px] bg-paper-2 p-5">
+      <h2 className="text-[22px] font-semibold tracking-tight text-ink">Import an invoice</h2>
       <p className="mt-2 text-sm text-muted">
         Bring a spreadsheet, a PDF, a Word document, a web page, a message, or a zip of those. A workbook is read from the code, the date, the units, the provider billed amount, and the amount you want to pay. A photo with no text stored in the file is not read. The file stays in this browser. It is not sent.
       </p>
@@ -104,32 +104,32 @@ export function InvoiceIntake({
         </label>
         <label className="text-sm font-medium text-ink">
           Date if a line has none
-          <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+          <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
         </label>
         <label className="text-sm font-medium text-ink">
           Or paste the invoice
-          <textarea value={text} onChange={(event) => setText(event.target.value)} rows={7} placeholder={"Entity: Olean General\n97110 Therapeutic exercise 2026-07-01 28.27"} className="mt-1.5 w-full rounded-xl border border-line bg-paper-2 px-3 py-2 text-base" />
+          <textarea value={text} onChange={(event) => setText(event.target.value)} rows={7} placeholder={"Entity: Olean General\n97110 Therapeutic exercise 2026-07-01 28.27"} className="mt-1.5 w-full rounded-[10px] bg-paper-2 px-3 py-2 text-base" />
         </label>
         <button type="submit" className="h-12 rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">Read pasted invoice</button>
       </form>
       {invoices.map((invoice) => (
-        <article key={invoice.id} className="mt-5 rounded-2xl border border-line p-4">
+        <article key={invoice.id} className="mt-5 rounded-[10px] bg-paper-2 p-4">
           <p className="text-sm text-ink">
             Amount due {invoice.amountDueCents === null ? "not on the invoice" : money(invoice.amountDueCents / 100)}. {invoice.lines.length} coded lines. {invoice.entities.length} entities.
             {invoice.alerts > 0 ? ` High alert on ${invoice.alerts} line${invoice.alerts === 1 ? "" : "s"}.` : " No high alerts."}
           </p>
           {invoice.entities.map((entity) => (
             <section key={entity} className="mt-4">
-              <h3 className="font-display text-2xl text-ink">{entity}</h3>
+              <h3 className="text-[17px] font-semibold text-ink">{entity}</h3>
               <p className="text-sm text-muted">Entity total {(() => {
                 const total = entityTotal(invoice, entity);
                 return total === null ? "not listed" : money(total / 100);
               })()}.</p>
               <ul className="mt-2 space-y-2">
                 {invoice.lines.filter((line) => line.entity === entity).map((line) => (
-                  <li key={line.id} className={line.alert ? "rounded-2xl border border-deep bg-paper-2 px-4 py-3" : "rounded-2xl border border-line px-4 py-3"}>
-                    {line.alert ? <p className="text-xs font-medium tracking-widest text-deep uppercase">High alert</p> : null}
-                    <p className="mt-1 text-xs font-medium tracking-widest text-teal uppercase">{line.category}</p>
+                  <li key={line.id} className={line.alert ? "rounded-2xl border border-deep bg-paper-2 px-4 py-3" : "rounded-[10px] bg-paper-2 px-4 py-3"}>
+                    {line.alert ? <p className="text-[13px] text-deep">High alert</p> : null}
+                    <p className="mt-1 text-[13px] text-muted">{line.category}</p>
                     <p className="mt-1 font-medium text-ink tabular-nums">{line.code}{line.modifier ? ` ${line.modifier}` : ""}</p>
                     <p className="mt-1 text-sm text-ink">{line.service}</p>
                     <p className="mt-1 text-sm text-muted">{line.date} · claimed {line.amountCents === null ? "not listed" : money(line.amountCents / 100)} · allowed {line.allowedCents === null ? "none on the Olean file" : money(line.allowedCents / 100)}</p>

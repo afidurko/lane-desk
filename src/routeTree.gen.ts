@@ -23,9 +23,11 @@ import { Route as NyRouteImport } from './routes/ny'
 import { Route as OperateRouteImport } from './routes/operate'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PaceRouteImport } from './routes/pace'
+import { Route as PayRouteImport } from './routes/pay'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as RunRouteImport } from './routes/run'
 import { Route as TeamRouteImport } from './routes/team'
+import { Route as TrendsRouteImport } from './routes/trends'
 import { Route as WhyRouteImport } from './routes/why'
 
 const IndexRoute = IndexRouteImport.update({
@@ -98,6 +100,11 @@ const PaceRoute = PaceRouteImport.update({
   path: '/pace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PayRoute = PayRouteImport.update({
+  id: '/pay',
+  path: '/pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -111,6 +118,11 @@ const RunRoute = RunRouteImport.update({
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrendsRoute = TrendsRouteImport.update({
+  id: '/trends',
+  path: '/trends',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WhyRoute = WhyRouteImport.update({
@@ -134,9 +146,11 @@ export interface FileRoutesByFullPath {
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
   '/pace': typeof PaceRoute
+  '/pay': typeof PayRoute
   '/pricing': typeof PricingRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
+  '/trends': typeof TrendsRoute
   '/why': typeof WhyRoute
 }
 export interface FileRoutesByTo {
@@ -154,9 +168,11 @@ export interface FileRoutesByTo {
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
   '/pace': typeof PaceRoute
+  '/pay': typeof PayRoute
   '/pricing': typeof PricingRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
+  '/trends': typeof TrendsRoute
   '/why': typeof WhyRoute
 }
 export interface FileRoutesById {
@@ -175,9 +191,11 @@ export interface FileRoutesById {
   '/operate': typeof OperateRoute
   '/ops': typeof OpsRoute
   '/pace': typeof PaceRoute
+  '/pay': typeof PayRoute
   '/pricing': typeof PricingRoute
   '/run': typeof RunRoute
   '/team': typeof TeamRoute
+  '/trends': typeof TrendsRoute
   '/why': typeof WhyRoute
 }
 export interface FileRouteTypes {
@@ -197,9 +215,11 @@ export interface FileRouteTypes {
     | '/operate'
     | '/ops'
     | '/pace'
+    | '/pay'
     | '/pricing'
     | '/run'
     | '/team'
+    | '/trends'
     | '/why'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -217,9 +237,11 @@ export interface FileRouteTypes {
     | '/operate'
     | '/ops'
     | '/pace'
+    | '/pay'
     | '/pricing'
     | '/run'
     | '/team'
+    | '/trends'
     | '/why'
   id:
     | '__root__'
@@ -237,9 +259,11 @@ export interface FileRouteTypes {
     | '/operate'
     | '/ops'
     | '/pace'
+    | '/pay'
     | '/pricing'
     | '/run'
     | '/team'
+    | '/trends'
     | '/why'
   fileRoutesById: FileRoutesById
 }
@@ -258,9 +282,11 @@ export interface RootRouteChildren {
   OperateRoute: typeof OperateRoute
   OpsRoute: typeof OpsRoute
   PaceRoute: typeof PaceRoute
+  PayRoute: typeof PayRoute
   PricingRoute: typeof PricingRoute
   RunRoute: typeof RunRoute
   TeamRoute: typeof TeamRoute
+  TrendsRoute: typeof TrendsRoute
   WhyRoute: typeof WhyRoute
 }
 
@@ -364,6 +390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pay': {
+      id: '/pay'
+      path: '/pay'
+      fullPath: '/pay'
+      preLoaderRoute: typeof PayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -383,6 +416,13 @@ declare module '@tanstack/react-router' {
       path: '/team'
       fullPath: '/team'
       preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trends': {
+      id: '/trends'
+      path: '/trends'
+      fullPath: '/trends'
+      preLoaderRoute: typeof TrendsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/why': {
@@ -410,9 +450,11 @@ const rootRouteChildren: RootRouteChildren = {
   OperateRoute: OperateRoute,
   OpsRoute: OpsRoute,
   PaceRoute: PaceRoute,
+  PayRoute: PayRoute,
   PricingRoute: PricingRoute,
   RunRoute: RunRoute,
   TeamRoute: TeamRoute,
+  TrendsRoute: TrendsRoute,
   WhyRoute: WhyRoute,
 }
 export const routeTree = rootRouteImport

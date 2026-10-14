@@ -67,8 +67,8 @@ export function PricingPage() {
     <Shell>
       <main>
         <section className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-          <p className="text-xs font-medium tracking-widest text-teal uppercase">Pricing</p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+          <p className="text-[13px] text-muted">Pricing</p>
+          <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
             Price the desk. Don’t rent another platform.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted">
@@ -81,12 +81,12 @@ export function PricingPage() {
                 className={
                   tier.featured
                     ? "flex flex-col rounded-2xl border border-teal bg-paper-2 p-6 shadow-sm"
-                    : "flex flex-col rounded-2xl border border-line bg-paper-2 p-6"
+                    : "flex flex-col rounded-[10px] bg-paper-2 p-6"
                 }
               >
-                <p className="text-xs font-medium tracking-widest text-teal uppercase">{tier.kicker}</p>
-                <h2 className="mt-2 font-display text-3xl text-ink">{tier.name}</h2>
-                <p className="mt-4 font-display text-4xl text-ink">{tier.price}</p>
+                <p className="text-[13px] text-muted">{tier.kicker}</p>
+                <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">{tier.name}</h2>
+                <p className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">{tier.price}</p>
                 <p className="text-sm text-muted">{tier.unit}</p>
                 <p className="mt-4 text-sm leading-relaxed text-muted">{tier.lede}</p>
                 <ul className="mt-5 flex-1 space-y-2 text-sm text-ink">

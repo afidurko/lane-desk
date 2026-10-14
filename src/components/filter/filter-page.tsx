@@ -106,8 +106,8 @@ export function FilterPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Filter</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Filter</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           Find a code, then check every year.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -117,7 +117,7 @@ export function FilterPage() {
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-sm font-medium text-ink">
             Schedule
-            <select value={family} onChange={(event) => setFamily(event.target.value as Family)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+            <select value={family} onChange={(event) => setFamily(event.target.value as Family)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
               <option value="physician">Physician</option>
               <option value="ambulance">Ambulance</option>
               <option value="lab">Clinical lab</option>
@@ -126,7 +126,7 @@ export function FilterPage() {
           </label>
           <label className="text-sm font-medium text-ink">
             Year
-            <select value={year} onChange={(event) => setYear(Number(event.target.value))} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+            <select value={year} onChange={(event) => setYear(Number(event.target.value))} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
               {YEARS.map((item) => (
                 <option key={item} value={item}>{item}</option>
               ))}
@@ -134,7 +134,7 @@ export function FilterPage() {
           </label>
           <label className="text-sm font-medium text-ink">
             Set
-            <select value={preset} onChange={(event) => setPreset(event.target.value as Preset)} className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base">
+            <select value={preset} onChange={(event) => setPreset(event.target.value as Preset)} className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base">
               <option value="all">Any code</option>
               <option value="procedure">Procedures, 10021–69990</option>
               <option value="transport">Transportation</option>
@@ -142,7 +142,7 @@ export function FilterPage() {
           </label>
           <label className="text-sm font-medium text-ink">
             Words or code
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="knee or A0130" className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="knee or A0130" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base" />
           </label>
         </div>
 
@@ -150,7 +150,7 @@ export function FilterPage() {
           {family === "physician" ? (
             <label className="text-sm font-medium text-ink">
               Status
-              <select value={status} onChange={(event) => setStatus(event.target.value)} className="ml-2 h-12 rounded-xl border border-line bg-paper-2 px-3 text-base">
+              <select value={status} onChange={(event) => setStatus(event.target.value)} className="ml-2 h-12 rounded-[10px] bg-paper-2 px-3 text-base">
                 <option value="any">Any</option>
                 <option value="A">Active</option>
                 <option value="I">Not valid for Medicare</option>
@@ -185,7 +185,7 @@ export function FilterPage() {
           </p>
         ) : null}
 
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-line">
+        <div className="mt-4 overflow-x-auto rounded-[10px] bg-paper-2">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="border-b border-line bg-paper-2 text-xs tracking-widest text-muted uppercase">
               <tr>
@@ -238,7 +238,7 @@ export function FilterPage() {
           </button>
         ) : null}
 
-        <h2 className="mt-12 font-display text-3xl text-ink">Kept in this browser</h2>
+        <h2 className="mt-12 text-[22px] font-semibold tracking-tight text-ink">Kept in this browser</h2>
         <ul className="mt-4 space-y-2">
           {interest.length === 0 ? (
             <li className="text-sm text-muted">None yet.</li>

@@ -123,8 +123,8 @@ export function Signup({ plan, onPlan }: { plan: PlanId; onPlan: (plan: PlanId) 
   if (saved) {
     return (
       <div className="rounded-2xl bg-paper p-6 text-ink sm:p-8" role="status">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Proof list</p>
-        <h3 className="mt-2 font-display text-3xl text-ink">The therapy schedule. You’re on it.</h3>
+        <p className="text-[13px] text-muted">Proof list</p>
+        <h3 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">The therapy schedule. You’re on it.</h3>
         <p className="mt-3 text-base leading-relaxed text-muted">
           {labelFor(ENCOUNTERS, saved.encounter)} · {PLAN_LABEL[saved.plan]} · {labelFor(ROLES, saved.role)}.
           The gold row is written before anyone labels it. Saved for {saved.email} in this browser only —
@@ -143,8 +143,8 @@ export function Signup({ plan, onPlan }: { plan: PlanId; onPlan: (plan: PlanId) 
 
   return (
     <form onSubmit={onSubmit} noValidate className="rounded-2xl bg-paper p-6 text-ink sm:p-8">
-      <p className="text-xs font-medium tracking-widest text-teal uppercase">Proof list</p>
-      <h3 className="mt-2 font-display text-3xl text-ink">Bring the adult-day schedule.</h3>
+      <p className="text-[13px] text-muted">Proof list</p>
+      <h3 className="mt-2 text-[22px] font-semibold tracking-tight text-ink">Bring the adult-day schedule.</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Work email only. Stored in this browser so you can see the confirmation. No live PHI. No chart login.
       </p>
@@ -192,7 +192,7 @@ export function Signup({ plan, onPlan }: { plan: PlanId; onPlan: (plan: PlanId) 
           onChange={(event) => setEmail(event.target.value)}
           aria-invalid={errors.email ? true : undefined}
           aria-describedby={errors.email ? `${baseId}-email-error` : undefined}
-          className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base text-ink"
+          className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base text-ink"
           placeholder="you@center.org"
         />
         {errors.email ? (
@@ -213,7 +213,7 @@ export function Signup({ plan, onPlan }: { plan: PlanId; onPlan: (plan: PlanId) 
           onChange={(event) => setRole(event.target.value)}
           aria-invalid={errors.role ? true : undefined}
           aria-describedby={errors.role ? `${baseId}-role-error` : undefined}
-          className="mt-1.5 h-12 w-full rounded-xl border border-line bg-paper-2 px-3 text-base text-ink"
+          className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-3 text-base text-ink"
         >
           <option value="">Select a role</option>
           {ROLES.map((item) => (
@@ -231,7 +231,7 @@ export function Signup({ plan, onPlan }: { plan: PlanId; onPlan: (plan: PlanId) 
 
       <div className="mt-4">
         <p className="text-sm font-medium text-ink">Encounter on the clock</p>
-        <p className="mt-1.5 flex min-h-12 items-center rounded-xl border border-line bg-paper-2 px-3 text-base text-ink">
+        <p className="mt-1.5 flex min-h-12 items-center rounded-[10px] bg-paper-2 px-3 text-base text-ink">
           {ENCOUNTERS[0].label}
         </p>
         <p className="mt-1.5 text-sm text-muted">One type until this run has a number.</p>

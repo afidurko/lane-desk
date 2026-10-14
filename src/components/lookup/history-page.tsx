@@ -63,8 +63,8 @@ export function HistoryPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-xl px-5 py-10">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">2020–2026</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-ink">Codes that changed.</h1>
+        <p className="text-[13px] text-muted">2020–2026</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">Codes that changed.</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">{note || "The first loaded amount against the last loaded amount."}</p>
         <div className="mt-5 flex gap-2 overflow-x-auto">
           {families.map((item) => (
@@ -85,14 +85,14 @@ export function HistoryPage() {
         ))}
         <label className="mt-4 block text-sm font-medium text-ink">
           Find a code or a name
-          <input value={query} onChange={(event) => { setQuery(event.target.value); setShown(30); }} placeholder="97110" className="mt-1.5 h-12 w-full rounded-2xl border border-line bg-paper-2 px-4 text-base" />
+          <input value={query} onChange={(event) => { setQuery(event.target.value); setShown(30); }} placeholder="97110" className="mt-1.5 h-12 w-full rounded-[10px] bg-paper-2 px-4 text-base" />
         </label>
         {state === "loading" ? <p className="mt-4 text-sm text-muted">Loading this schedule.</p> : null}
         {state === "down" ? <p className="mt-4 text-sm text-deep">The history file did not load.</p> : null}
         <ul className="mt-4 space-y-2">
           {visible.map((row) => (
             <li key={row.c}>
-              <a href={`/code?c=${row.c}`} className="block rounded-2xl border border-line px-4 py-3">
+              <a href={`/code?c=${row.c}`} className="block rounded-[10px] bg-paper-2 px-4 py-3">
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="font-medium text-ink">{row.c}</span>
                   <span className={row.d < 0 ? "text-sm font-medium text-deep" : "text-sm font-medium text-teal"}>{row.d < 0 ? "Down" : "Up"} {money(Math.abs(row.d) / 100)}</span>

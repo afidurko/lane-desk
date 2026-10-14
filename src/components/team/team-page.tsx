@@ -41,8 +41,8 @@ export function TeamPage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Team</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Team</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           The same four teams.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -50,20 +50,20 @@ export function TeamPage() {
         </p>
         <ol className="mt-8 grid gap-3 lg:grid-cols-2">
           {DESKS.map((desk) => (
-            <li key={desk.id} className="rounded-2xl border border-line bg-paper-2 p-4">
-              <h2 className="font-display text-2xl text-ink">{desk.name}</h2>
+            <li key={desk.id} className="rounded-[10px] bg-paper-2 p-4">
+              <h2 className="text-[17px] font-semibold text-ink">{desk.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-ink">{desk.does}</p>
               <p className="mt-2 text-sm text-muted">{desk.doesNot}</p>
             </li>
           ))}
         </ol>
         <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">Inside the bill</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">Inside the bill</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">Fee management holds the file. Finder stops at unknown. Audit compares their amount with the correct fee. Nothing is sent.</p>
           <ol className="mt-4 grid gap-3 lg:grid-cols-3">
             {FEE_TEAMS.map((team) => (
-              <li key={team.id} className="rounded-2xl border border-line bg-paper-2 p-4">
-                <h3 className="font-display text-2xl text-ink">{team.name}</h3>
+              <li key={team.id} className="rounded-[10px] bg-paper-2 p-4">
+                <h3 className="text-[17px] font-semibold text-ink">{team.name}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-ink">{team.does}</p>
                 <p className="mt-2 text-sm text-muted">{team.doesNot}</p>
               </li>
@@ -72,14 +72,14 @@ export function TeamPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">What the team already verified</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">What the team already verified</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             {findings?.source ?? "Loading."} {findings?.note}
           </p>
           {findings ? (
             <div className="mt-4 space-y-6">
               <div>
-                <h3 className="text-sm font-medium tracking-widest text-teal uppercase">Physician and lab</h3>
+                <h3 className="text-[13px] text-muted">Physician and lab</h3>
                 <ul className="mt-2 space-y-1 text-sm text-ink">
                   {findings.physician.map((row) => (
                     <li key={`${row.code}-${row.year}`}>{row.code} {row.name}, {row.year}, {row.locality}: {dollars(row.cents)}</li>
@@ -90,7 +90,7 @@ export function TeamPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-sm font-medium tracking-widest text-teal uppercase">Hospice</h3>
+                <h3 className="text-[13px] text-muted">Hospice</h3>
                 <ul className="mt-2 space-y-1 text-sm text-ink">
                   {findings.hospice.map((row) => (
                     <li key={`${row.name}-${row.year}`}>{row.year}. {row.name}: {row.index != null ? row.index : dollars(row.cents)}</li>
@@ -98,7 +98,7 @@ export function TeamPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-sm font-medium tracking-widest text-teal uppercase">PACE capitation, Medicare A/B</h3>
+                <h3 className="text-[13px] text-muted">PACE capitation, Medicare A/B</h3>
                 <ul className="mt-2 space-y-1 text-sm text-ink">
                   {findings.pace.map((row) => (
                     <li key={`${row.name}-${row.year}`}>{row.year}. {row.name}: {dollars(row.cents)}</li>
@@ -106,7 +106,7 @@ export function TeamPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-sm font-medium tracking-widest text-teal uppercase">Unit limits</h3>
+                <h3 className="text-[13px] text-muted">Unit limits</h3>
                 <ul className="mt-2 space-y-1 text-sm text-ink">
                   {findings.mue.map((row) => (
                     <li key={row.code}>{row.code}: {row.limit} {row.unit}, {row.span}</li>
@@ -114,7 +114,7 @@ export function TeamPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-sm font-medium tracking-widest text-teal uppercase">Blocked</h3>
+                <h3 className="text-[13px] text-muted">Blocked</h3>
                 <ul className="mt-2 space-y-1 text-sm text-muted">
                   {findings.blocked.map((item) => (
                     <li key={item}>{item}</li>
@@ -126,11 +126,11 @@ export function TeamPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">Queued for the team</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">Queued for the team</h2>
           <ul className="mt-4 space-y-2">
             {queue.length === 0 ? <li className="text-sm text-muted">No packet is waiting.</li> : null}
             {queue.map((packet) => (
-              <li key={packet.id} className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">
+              <li key={packet.id} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
                 {packet.status}. {packet.reason} {packet.codes.map((line) => line.code).join(", ")}
               </li>
             ))}
@@ -138,7 +138,7 @@ export function TeamPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">Scoreboard</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">Scoreboard</h2>
           <ul className="mt-4 space-y-2">
             {board.length === 0 ? <li className="text-sm text-muted">No run has been recorded.</li> : null}
             {board.map((row) => (
@@ -151,7 +151,7 @@ export function TeamPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">Gold set</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">Gold set</h2>
           <p className="mt-2 text-sm text-muted">{gold.length} rows. {labeled} labeled. A label is yours. The desk does not invent one.</p>
           <ul className="mt-4 space-y-2">
             {gold.slice(0, 8).map((row) => (
@@ -161,10 +161,10 @@ export function TeamPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">File updates</h2>
+          <h2 className="text-[22px] font-semibold tracking-tight text-ink">File updates</h2>
           <ul className="mt-4 space-y-3">
             {UPDATES.map((row) => (
-              <li key={row.name} className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">
+              <li key={row.name} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
                 <span className="font-medium">{row.name}.</span> {row.cadence}. Loaded: {row.loaded}. Next: {row.next}.
                 {row.gap ? <span className="mt-1 block text-muted">{row.gap}</span> : null}
               </li>

@@ -130,3 +130,36 @@ export function previousUse(
   const nearest = older[0];
   return `In ${nearest.year} this code was ${money(nearest.cents / 100)}. That older amount is not used for ${year}.`;
 }
+
+/** Their lookup matches a different posted amount. That amount is not applied. */
+export function postedBeside(
+  lookup: number | null,
+  used: number | null,
+  year: number | null,
+  tables: { name: string; amounts?: Record<string, number | null | undefined> }[],
+) {
+  if (lookup === null || used === null || Math.abs(lookup - used) <= 1) return null;
+  const found: string[] = [];
+  for (const table of tables) {
+    for (const [key, cents] of Object.entries(table.amounts ?? {})) {
+      if (typeof cents !== "number" || Math.abs(cents - lookup) > 1) continue;
+      found.push(key === String(year) ? table.name : `${table.name} for ${key}`);
+    }
+  }
+  const unique = [...new Set(found)];
+  if (unique.length === 0) return null;
+  if (unique.length === 1) return `Their lookup is ${unique[0]}. That amount was not used.`;
+  return `Their lookup matches ${unique.join(" and ")}. None of those amounts was used.`;
+}
+
+/** Their lookup is this profile in another year. That year is not the price. */
+export function yearBeside(lookup: number | null, year: number | null, amounts: Record<string, number | null | undefined> | undefined) {
+  if (lookup === null || year === null || !amounts) return null;
+  const used = amounts[String(year)];
+  if (typeof used === "number" && Math.abs(used - lookup) <= 1) return null;
+  for (const [key, cents] of Object.entries(amounts)) {
+    if (key === String(year) || typeof cents !== "number" || Math.abs(cents - lookup) > 1) continue;
+    return `Their lookup is the ${key} amount for this profile. The service year is ${year}. The ${key} amount was not used.`;
+  }
+  return null;
+}

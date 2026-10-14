@@ -26,14 +26,14 @@ export function detectPosted(input: {
   const others = ownFile ? candidates.filter((row) => row.file !== ownFile) : candidates;
   if (!open) {
     const listed = (ownFile ? others : candidates).map((row) => `${row.label}, ${dollars(row.cents)}`).join("; ");
-    return { use: null as Candidate | null, elsewhere: listed ? `Also on file: ${listed}. That file was not used.` : null, related: own[0]?.related ?? [] };
+    return { use: null as Candidate | null, elsewhere: listed ? `Also on file: ${listed}. That file was not used.` : null, related: own[0]?.related ?? [], posts: candidates };
   }
   const amounts = [...new Map(candidates.map((row) => [row.cents, row])).values()];
   if (amounts.length !== 1) {
     const elsewhere = candidates.length === 0 ? null : `Found on more than one file: ${candidates.map((row) => `${row.label}, ${dollars(row.cents)}`).join("; ")}. No amount was chosen.`;
-    return { use: null as Candidate | null, elsewhere, related: [] };
+    return { use: null as Candidate | null, elsewhere, related: [], posts: candidates };
   }
-  return { use: amounts[0], elsewhere: null, related: amounts[0].related };
+  return { use: amounts[0], elsewhere: null, related: amounts[0].related, posts: candidates };
 }
 
 function candidatesFor(input: {

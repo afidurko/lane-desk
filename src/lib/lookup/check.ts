@@ -1,4 +1,5 @@
 import { money } from "@/lib/desk/clock";
+import { profilePlace } from "@/lib/lookup/profile";
 
 const CODE = /\b(\d{4}[A-Z]|[A-Z]\d{4}|\d{5})(?:-([A-Z0-9]{2}))?\b/;
 const DATE = /(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4})/;
@@ -14,6 +15,7 @@ export type CheckLine = {
   paidCents: number | null;
   paidKind: "paid" | "allowed" | null;
   setting: "nf" | "fac" | null;
+  claim?: "professional" | "institutional" | "other" | null;
   payer: "medicare" | "medicaid" | null;
   ambiguous: boolean;
   chargeKnown: boolean;
@@ -160,12 +162,16 @@ export function gradeLookup(input: {
   block: string | null;
   note: string | null;
   otherCents: number | null;
+  choseCents?: number | null;
 }) {
   if (input.block) return { kind: "look" as const, side: "look" as const, gapCents: null, adminUnder: false, bare: true, reasons: [input.block] };
   if (!input.year) return { kind: "look" as const, side: "look" as const, gapCents: null, adminUnder: false, bare: true, reasons: [`${input.code} has no year. It cannot be priced.`] };
   const reasons: string[] = [];
   if (input.note) reasons.push(input.note);
   const units = input.units && input.units > 0 ? input.units : null;
+  if (input.choseCents && input.lookupCents && units && Math.abs(input.choseCents - Math.round(input.lookupCents * units)) > 1) {
+    reasons.push(`They chose ${money(input.choseCents / 100)}. The lookup for ${units} ${units === 1 ? "unit" : "units"} is ${money(Math.round(input.lookupCents * units) / 100)}.`);
+  }
   const lineFile = input.fileCents !== null && units !== null ? Math.round(input.fileCents * units) : null;
   const paid = describeAdmin(input.adminCents, lineFile, input.otherCents, units, input.seqRate);
   const adminUnder = paid.kind === "under" || paid.kind === "wrong";
@@ -279,7 +285,8 @@ function fromSheet(rows: string[]): CheckLine[] | null {
       billedCents: chargeKnown ? centsOf(cells[moneyCol] ?? "") : null,
       paidCents: paidKind ? centsOf(cells[paidSource] ?? "") : null,
       paidKind: paidKind && centsOf(cells[paidSource] ?? "") !== null ? paidKind : null,
-      setting: settingIn(settingCell),
+      setting: profilePlace(`${settingCell} ${payerCell}`, claimIn(payerCell || settingCell)),
+      claim: claimIn(payerCell || settingCell),
       payer: payerIn(payerCell),
       ambiguous: false,
       chargeKnown,
@@ -328,7 +335,8 @@ function fromLines(rows: string[]): CheckLine[] {
         billedCents: ambiguous ? null : billedCents,
         paidCents: ambiguous ? null : paidCents,
         paidKind: ambiguous ? null : paidKind,
-        setting: settingIn(row),
+        setting: profilePlace(row, claimIn(row)),
+        claim: claimIn(row),
         payer: payerIn(row),
         ambiguous,
         chargeKnown: !ambiguous && billedCents !== null,
@@ -347,7 +355,8 @@ function fromLines(rows: string[]): CheckLine[] {
       billedCents: ambiguous || amounts.length === 0 ? null : Math.round(Number(amounts[0]) * 100),
       paidCents: null,
       paidKind: null,
-      setting: settingIn(row),
+      setting: profilePlace(row, claimIn(row)),
+      claim: claimIn(row),
       payer: payerIn(row),
       ambiguous,
       chargeKnown: true,
@@ -438,9 +447,10 @@ function seqOf(row: string) {
   return { rate: rate ? Number(rate[1]) : null, pay };
 }
 
-function settingIn(text: string): "nf" | "fac" | null {
-  if (/non-?\s*facility|\boffice\b/i.test(text)) return "nf";
-  if (/\bfacility\b/i.test(text)) return "fac";
+function claimIn(text: string): "professional" | "institutional" | "other" | null {
+  if (/\binstitutional\b/i.test(text)) return "institutional";
+  if (/\bprofessional\b/i.test(text)) return "professional";
+  if (/\bother paper\b/i.test(text)) return "other";
   return null;
 }
 

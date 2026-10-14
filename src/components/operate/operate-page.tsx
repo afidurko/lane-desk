@@ -27,8 +27,8 @@ export function OperatePage() {
   return (
     <Shell>
       <main className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
-        <p className="text-xs font-medium tracking-widest text-teal uppercase">Rules</p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl">
+        <p className="text-[13px] text-muted">Rules</p>
+        <h1 className="mt-1 text-[34px] leading-none font-bold tracking-tight text-ink">
           The boundary runs before any skill. It does not keep the text.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
@@ -37,17 +37,17 @@ export function OperatePage() {
 
         <ul className="mt-8 space-y-3">
           {REFUSALS.map((rule) => (
-            <li key={rule} className="rounded-2xl border border-line bg-paper-2 px-4 py-3 text-sm leading-relaxed text-ink">
+            <li key={rule} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm leading-relaxed text-ink">
               {rule}
             </li>
           ))}
         </ul>
 
-        <h2 className="mt-12 font-display text-3xl text-ink">Skills that exist</h2>
+        <h2 className="mt-12 text-[22px] font-semibold tracking-tight text-ink">Skills that exist</h2>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {SKILLS.map((skill) => (
-            <li key={skill.id} className="rounded-2xl border border-line p-4">
-              <h3 className="font-display text-2xl text-ink">{skill.name}</h3>
+            <li key={skill.id} className="rounded-[10px] bg-paper-2 p-4">
+              <h3 className="text-[17px] font-semibold text-ink">{skill.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{skill.does}</p>
             </li>
           ))}
@@ -62,7 +62,7 @@ export function OperatePage() {
             value={request}
             onChange={(event) => setRequest(event.target.value)}
             rows={4}
-            className="mt-1.5 w-full rounded-2xl border border-line bg-paper-2 px-4 py-3 text-base"
+            className="mt-1.5 w-full rounded-[10px] bg-paper-2 px-4 py-3 text-base"
           />
           <button type="submit" className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-teal px-5 text-sm font-medium text-teal-ink">
             Scan it
@@ -75,7 +75,7 @@ export function OperatePage() {
           {actions.length > 0 ? (
             <ul className="mt-4 space-y-2">
               {actions.map((action) => (
-                <li key={`${action.team}-${action.threat}`} className="rounded-2xl border border-line px-4 py-3 text-sm text-ink">
+                <li key={`${action.team}-${action.threat}`} className="rounded-[10px] bg-paper-2 px-4 py-3 text-sm text-ink">
                   {action.team}. {action.action}
                 </li>
               ))}
@@ -83,12 +83,12 @@ export function OperatePage() {
           ) : null}
         </form>
 
-        <h2 className="mt-12 font-display text-3xl text-ink">Patch network</h2>
+        <h2 className="mt-12 text-[22px] font-semibold tracking-tight text-ink">Patch network</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           The screen strips markup and drops an identifier or an oversized request. A later check stops a submit, a portal, a scrape, or a transmit, then closes pricing, storage, and export. The text is not kept.
         </p>
 
-        <h2 className="mt-12 font-display text-3xl text-ink">Stops recorded here</h2>
+        <h2 className="mt-12 text-[22px] font-semibold tracking-tight text-ink">Stops recorded here</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">The log keeps the decision and the reason. It does not keep the text.</p>
         <ul className="mt-4 space-y-2">
           {audit.length === 0 ? (
