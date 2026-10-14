@@ -64,7 +64,7 @@ export function pagesFor(ask: CrawlAsk) {
   ];
 }
 
-/** Every full code on the sheet. Unknowns go first. There is no cap. */
+/** The lines on this sheet, unknowns first. A code that is not on the sheet is not added. */
 export function asksFrom(lines: { code: string; year: number | null; unknown: boolean }[]) {
   const ranked = [...lines].sort((a, b) => Number(b.unknown) - Number(a.unknown));
   const seen = new Set<string>();
@@ -75,12 +75,6 @@ export function asksFrom(lines: { code: string; year: number | null; unknown: bo
     if (!CODE.test(code) || seen.has(key)) continue;
     seen.add(key);
     asks.push({ code, year: line.year });
-  }
-  for (const code of SEEDED) {
-    if (seen.has(`${code}:`)) continue;
-    if ([...seen].some((key) => key.startsWith(`${code}:`))) continue;
-    seen.add(`${code}:`);
-    asks.push({ code, year: null });
   }
   return asks;
 }

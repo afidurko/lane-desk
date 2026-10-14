@@ -26,8 +26,12 @@ export function readPaymentMemory(): StoredAlert[] {
 
 export function rememberPayments(rows: StoredAlert[]) {
   if (typeof window === "undefined") return;
-  const kept = rows.filter((row) => row.kind !== "match").slice(0, 40);
-  window.localStorage.setItem(KEY, JSON.stringify(kept));
+  try {
+    const kept = rows.filter((row) => row.kind !== "match").slice(0, 40);
+    window.localStorage.setItem(KEY, JSON.stringify(kept));
+  } catch {
+    // The amounts stay on the page if the browser will not store them.
+  }
 }
 
 function isAlert(value: unknown): value is StoredAlert {

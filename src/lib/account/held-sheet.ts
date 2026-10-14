@@ -6,7 +6,11 @@ export type HeldSheet = { name: string; lines: SheetLine[] };
 
 export function holdSheet(name: string, lines: SheetLine[]) {
   if (typeof sessionStorage === "undefined") return;
-  sessionStorage.setItem(KEY, JSON.stringify({ name, lines }));
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify({ name, lines }));
+  } catch {
+    // The check stays on the page if the browser will not store it.
+  }
 }
 
 export function readHeld(): HeldSheet | null {

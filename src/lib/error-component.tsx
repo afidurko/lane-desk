@@ -24,6 +24,7 @@ export function AppErrorComponent({ error }: ErrorComponentProps) {
       <p className="max-w-md text-sm break-words text-muted">
         {errorMessage(error)}
       </p>
+      <a href="/" className="mt-2 text-sm font-medium text-teal">Back to the sheet</a>
     </main>
   );
 }

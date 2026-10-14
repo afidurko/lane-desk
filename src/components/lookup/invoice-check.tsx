@@ -239,25 +239,29 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
         }
         checked.push({ ...line, hits, once, rest: list.filter((row) => row !== once), priced });
       }
-      rememberFound(found);
       setRows(checked);
-      findCodes(checked);
-      const alerts = checked.flatMap((line) => {
-        const report = reviewed(line);
-        if (report.kind === "match") return [];
-        return [{
-          id: `${line.code}-${line.year ?? "none"}-${line.paidCents ?? line.billedCents ?? "none"}`,
-          at: new Date().toISOString(),
-          code: line.code,
-          year: line.year,
-          billedCents: line.billedCents,
-          fileCents: decision(line).cents,
-          kind: report.kind,
-          reason: report.reasons[0] ?? "",
-        }];
-      });
-      rememberPayments(alerts);
-      setMemory(alerts);
+      try {
+        findCodes(checked);
+        rememberFound(found);
+        const alerts = checked.flatMap((line) => {
+          const report = reviewed(line);
+          if (report.kind === "match") return [];
+          return [{
+            id: `${line.code}-${line.year ?? "none"}-${line.paidCents ?? line.billedCents ?? "none"}`,
+            at: new Date().toISOString(),
+            code: line.code,
+            year: line.year,
+            billedCents: line.billedCents,
+            fileCents: decision(line).cents,
+            kind: report.kind,
+            reason: report.reasons[0] ?? "",
+          }];
+        });
+        rememberPayments(alerts);
+        setMemory(alerts);
+      } catch {
+        // A note that could not be stored does not remove the amounts.
+      }
     } catch {
       setRows(null);
       setDown(true);
@@ -294,7 +298,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
     setRows((current) => {
       if (!current) return current;
       return current.map((line) => {
-        if (line.priced.cents !== null && (line.lookupCents === null || Math.abs(line.lookupCents - line.priced.cents) <= 1)) return line;
+        if (line.priced.cents !== null) return line;
         const hits = gathered.filter((hit) => hit.found && hit.code === line.code);
         const only = hits.map((hit) => hit.file ?? fileHint(`${hit.url} ${hit.quote ?? ""} ${hit.note}`)).find((hint) => hint !== null) ?? null;
         const cue = placeCue(hits.map((hit) => `${hit.quote ?? ""} ${hit.note}`).join(" "));
@@ -323,11 +327,22 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
   }
 
   function findCodes(source?: Checked[]) {
-    const lines = source ?? rows;
-    if (!lines || lines.length === 0) return;
-    const asks = asksFrom(lines.map((line) => ({ code: line.code, year: line.year, unknown: line.priced.cents === null })));
     const token = wave.current + 1;
     wave.current = token;
+    const lines = (source ?? rows)?.filter((line) => line.priced.cents === null) ?? [];
+    if (lines.length === 0) {
+      setFinding(false);
+      setHits(null);
+      setSeen(0);
+      setCrawlTotal(0);
+      setPageNote(null);
+      return;
+    }
+    const asks = asksFrom(lines.map((line) => ({ code: line.code, year: line.year, unknown: true })));
+    if (asks.length === 0) {
+      setFinding(false);
+      return;
+    }
     setFinding(true);
     setPageNote(null);
     setHits([]);
@@ -336,20 +351,29 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
     const step = async () => {
       const chunks: typeof asks[] = [];
       for (let index = 0; index < asks.length; index += 4) chunks.push(asks.slice(index, index + 4));
-      const groups = await Promise.all(chunks.map((chunk, index) => findPhrases({ data: { asks: chunk, hubs: index === 0 } })));
+      const groups: CrawlHit[][] = [];
+      let slow = false;
+      let done = 0;
+      for (const chunk of chunks) {
+        if (wave.current !== token) return;
+        const group = await Promise.race([
+          findPhrases({ data: { asks: chunk, hubs: false } }).then((rows) => ({ rows, slow: false })).catch(() => ({ rows: [] as CrawlHit[], slow: true })),
+          new Promise<{ rows: CrawlHit[]; slow: boolean }>((resolve) => setTimeout(() => resolve({ rows: [], slow: true }), 8000)),
+        ]);
+        if (group.slow) slow = true;
+        groups.push(group.rows);
+        done += chunk.length;
+        if (wave.current === token) setSeen(done);
+      }
       if (wave.current !== token) return;
       const gathered = groups.flat();
       setHits(gathered);
-      setSeen(asks.length);
+      if (slow && !gathered.some((hit) => hit.found)) setPageNote("The public pages did not answer. The check is still here.");
       applySpider(gathered);
     };
-    void step()
-      .catch(() => {
-        if (wave.current === token) setPageNote("The public pages did not answer. The check is still here.");
-      })
-      .finally(() => {
-        if (wave.current === token) setFinding(false);
-      });
+    void step().finally(() => {
+      if (wave.current === token) setFinding(false);
+    });
   }
 
   function dollars(value: string) {

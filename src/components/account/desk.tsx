@@ -13,17 +13,27 @@ export function SheetSave({ lines, name, label }: { lines: SheetLine[]; name: st
   const signature = lines.map((line) => [line.code, line.modifier, line.date, line.year ?? "", line.units ?? "", line.setting ?? "", line.schedule ?? "", line.lookupCents ?? "", line.billedCents ?? "", line.adminCents ?? "", line.fileCents ?? "", line.otherCents ?? "", line.seqRate ?? "", line.name, line.block ?? "", line.note ?? ""].join(":")).join("|");
   const fileRef = useRef<File | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    const bytes = clientWorkbook(linesRef.current);
-    const file = new File([bytes], name, { type: SHEET_TYPE });
-    const next = URL.createObjectURL(file);
-    fileRef.current = file;
-    setUrl(next);
+    let next: string | null = null;
+    try {
+      const bytes = clientWorkbook(linesRef.current);
+      const file = new File([bytes], name, { type: SHEET_TYPE });
+      next = URL.createObjectURL(file);
+      fileRef.current = file;
+      setFailed(false);
+      setUrl(next);
+    } catch {
+      fileRef.current = null;
+      setUrl(null);
+      setFailed(true);
+    }
     return () => {
-      URL.revokeObjectURL(next);
-      if (fileRef.current === file) fileRef.current = null;
+      if (next) URL.revokeObjectURL(next);
+      if (fileRef.current) fileRef.current = null;
     };
   }, [signature, name]);
+  if (failed) return <p className="flex min-h-12 w-full items-center justify-center rounded-[10px] bg-paper-2 px-4 text-center text-[15px] text-ink">The spreadsheet could not be built. The amounts above are still here.</p>;
   if (!url) return <div className="flex min-h-12 w-full items-center justify-center rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink">{label}</div>;
   return (
     <a
@@ -32,10 +42,15 @@ export function SheetSave({ lines, name, label }: { lines: SheetLine[]; name: st
       className="press flex min-h-12 w-full items-center justify-center rounded-[10px] bg-teal text-[17px] font-semibold text-teal-ink"
       onClick={(event) => {
         const file = fileRef.current;
+        const link = event.currentTarget;
         if (!file || typeof navigator.share !== "function" || !navigator.canShare?.({ files: [file] })) return;
         event.preventDefault();
         void navigator.share({ files: [file], title: name }).catch((error: unknown) => {
           if (error instanceof DOMException && error.name === "AbortError") return;
+          const fallback = document.createElement("a");
+          fallback.href = link.href;
+          fallback.download = name;
+          fallback.click();
         });
       }}
     >
@@ -45,8 +60,13 @@ export function SheetSave({ lines, name, label }: { lines: SheetLine[]; name: st
 }
 
 export function ResultMail({ lines }: { lines: SheetLine[] }) {
-  const letter = resultLetter(lines);
-  const href = `mailto:?subject=${encodeURIComponent(letter.subject)}&body=${encodeURIComponent(letter.body)}`;
+  let href = "mailto:?subject=Lane%20results";
+  try {
+    const letter = resultLetter(lines);
+    href = `mailto:?subject=${encodeURIComponent(letter.subject)}&body=${encodeURIComponent(letter.body)}`;
+  } catch {
+    href = "mailto:?subject=Lane%20results&body=The%20amounts%20are%20on%20the%20screen.%20Nothing%20was%20sent.";
+  }
   return (
     <a href={href} className="press flex min-h-12 w-full items-center justify-center text-[17px] font-medium text-teal">
       Email these results

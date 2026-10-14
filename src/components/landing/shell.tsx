@@ -48,13 +48,22 @@ export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
   useEffect(() => {
     let last = 0;
+    let frame = 0;
     const onScroll = () => {
-      const y = window.scrollY;
-      setCompact(y > last && y > 48);
-      last = y;
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        const next = y > last && y > 48;
+        last = y;
+        setCompact((current) => (current === next ? current : next));
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   return (
