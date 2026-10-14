@@ -82,7 +82,7 @@ export function sheetToInvoice(grid: string[][]) {
     if (charge !== null && charge !== 0) parts.push(`charge ${(charge / 100).toFixed(2)}`);
     const paid = paidCol >= 0 ? cents(row[paidCol] ?? "") : null;
     const scaled = lookup && units ? Math.round(lookup * units) : lookup;
-    if (paid && (scaled === null || Math.abs(paid - scaled) > 1)) parts.push(`paid ${(paid / 100).toFixed(2)}`);
+    if (paid && scaled !== null && Math.abs(paid - scaled) > 1) parts.push(`paid ${(paid / 100).toFixed(2)}`);
     const admin = competitorCol >= 0 ? cents(row[competitorCol] ?? "") : null;
     if (admin) parts.push(`admin ${(admin / 100).toFixed(2)}`);
     else if (admin === 0 && lookup) parts.push("admin 0.00");
@@ -137,7 +137,7 @@ function findSetting(grid: string[][], start: number) {
       best = column;
     }
   }
-  return score >= 3 ? best : -1;
+  return score >= 1 ? best : -1;
 }
 
 function findClaim(grid: string[][], start: number) {
@@ -154,7 +154,7 @@ function findClaim(grid: string[][], start: number) {
       best = column;
     }
   }
-  return score >= 3 ? best : -1;
+  return score >= 1 ? best : -1;
 }
 
 function wholeUnits(raw: string) {

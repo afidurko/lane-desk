@@ -75,6 +75,10 @@ export type Compared = {
   why: string;
 };
 
+export function theyNamed(adminCents: number | null, paidCents: number | null) {
+  return adminCents !== null && adminCents !== undefined ? adminCents : paidCents;
+}
+
 export function compareLine(line: SheetLine): Compared {
   const units = typeof line.units === "number" && Number.isFinite(line.units) && line.units > 0 ? line.units : null;
   const file = typeof line.fileCents === "number" && Number.isFinite(line.fileCents) ? line.fileCents : null;
@@ -329,7 +333,8 @@ function dollars(cents: number | null) {
 }
 
 function safeText(value: string) {
-  return /^[=+\-@]/.test(value) ? `'${value}` : value;
+  const cleaned = value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "");
+  return /^\s*[=+\-@]/.test(cleaned) ? `'${cleaned}` : cleaned;
 }
 
 function sheetXml(rows: (string | number | null)[][], layout: { money: number[]; flag: number; why?: number; split: number; headerRow?: number; bodyEnd?: number; widths: number[]; merges?: string[]; filterEnd?: number; title?: boolean }) {
@@ -387,7 +392,7 @@ function columnName(index: number) {
 }
 
 function escapeXml(value: string) {
-  return value.replace(/[&<>]/g, (char) => {
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "").replace(/[&<>]/g, (char) => {
     if (char === "&") return "&" + "amp;";
     if (char === "<") return "&" + "lt;";
     return "&" + "gt;";

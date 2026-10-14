@@ -12,7 +12,7 @@ import { unknownBeside } from "@/lib/lookup/reason";
 import { rankInvoice } from "@/lib/team/rank";
 import { Link } from "@tanstack/react-router";
 import { typeRollup } from "@/lib/lookup/code-types";
-import { reportRows, type SheetLine } from "@/lib/lookup/sheet-book";
+import { reportRows, theyNamed, type SheetLine } from "@/lib/lookup/sheet-book";
 import { AccountantDesk } from "@/components/account/desk";
 import { holdSheet } from "@/lib/account/held-sheet";
 import { asksFrom } from "@/lib/lookup/crawl";
@@ -278,7 +278,7 @@ export function InvoiceCheck({ onOpen }: { onOpen?: (label: string | null) => vo
       schedule: line.schedule,
       lookupCents: line.lookupCents,
       billedCents: line.billedCents,
-      adminCents: line.adminCents,
+      adminCents: theyNamed(line.adminCents, line.paidCents),
       seqRate: line.seqRate,
       fileCents: line.priced.cents,
       otherCents: line.priced.otherCents,
