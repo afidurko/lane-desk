@@ -12,20 +12,37 @@ export type Check = {
 /**
  * Pass the other lines on the same claim (siblings) so the therapy reduction can rank the units.
  * Without them a line is checked alone, which is right for any line that is not therapy.
- * Optional county is used for New York Medicaid county fees.
+ * Optional county is used for New York Medicaid county fees. A county may also be passed in the siblings slot
+ * (checkLine(line, books, "medicaid", ny, "ERIE")); a string there is the county, never a list of lines.
  */
 export function checkLine(
   line: Line,
   books: Books,
   payer: "medicare" | "medicaid" = "medicare",
   ny: NyMedicaidFile | null = null,
-  siblings: readonly Line[] = [line],
-  county?: string,
+  siblingsOrCounty: readonly Line[] | string = [line],
+  countyArg?: string,
 ): Check {
+  const siblings: readonly Line[] = typeof siblingsOrCounty === "string" ? [line] : siblingsOrCounty;
+  const county = typeof siblingsOrCounty === "string" ? siblingsOrCounty : countyArg;
   if (payer === "medicaid") return checkMedicaid(line, ny, county);
   const quoted = quoteCode(books, line.code, line.modifier);
   if (quoted.mppr && quoted.allowedCents !== null && line.chargeCents !== null) {
-    const day = withReduction(siblings.some((item) => item.id === line.id) ? siblings : [...siblings, line], books, payer);
+    // The expected amount comes from the loaded file, never from the allowed amount typed on the line. Clear each
+    // line's own allowed so withReduction fills it from the file; otherwise a stale charge copied into allowed
+    // (a 2024 amount, say) would be "expected" and pass as clear.
+    // A line that repeats a code and modifier already on the claim is not a second service, so it is not one of the
+    // day's units. Price it by itself, or the reduction would be applied to it and the expected amount would be wrong.
+    const duplicate = siblings.some((item) => item.id !== line.id && item.code === line.code && item.modifier === line.modifier);
+    const group = duplicate ? [line] : siblings.some((item) => item.id === line.id) ? siblings : [...siblings, line];
+    // The expected amount comes from the loaded file, never from the allowed amount typed on the line. Clear each
+    // line's own allowed so withReduction fills it from the file; otherwise a stale charge copied into allowed
+    // (a 2024 amount, say) would be "expected" and pass as clear.
+    const day = withReduction(
+      group.map((item) => ({ ...item, allowedCents: null })),
+      books,
+      payer,
+    );
     const expectedTotal = allowedByLine(day)[line.id];
     if (expectedTotal !== null && expectedTotal !== undefined) {
       const chargeTotal = line.chargeCents * line.units;

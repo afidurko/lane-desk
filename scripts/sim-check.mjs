@@ -168,7 +168,10 @@ check("a code with no file amount is not rewritten", unpriced.claim.lines[0].cha
 const borrowed = checkLine(line("97110", 2827, "GP"), books, "medicaid", ny, "ERIE");
 check("Medicaid does not accept the Medicare therapy amount", borrowed.level === "high" && borrowed.expectedCents === null);
 check("Cattaraugus PACE is not the Erie PACE rate", medicareCents("Cattaraugus", 2026, false) === 126349 && medicareCents("Erie", 2026, false) === 139641);
-check("an unknown PACE year is not filled in", medicareCents("Cattaraugus", 2024, false) === null);
+// 2024 is a checked PACE year: CMS 2024 ratebook (CountyRate2024PACE.csv) lists Cattaraugus (33040) risk A/B $1,115.39
+// (healthcare-pfs/index/pace_history.sqlite, gate 2024 CHECKED). A year with no CMS file must still be null.
+check("the 2024 PACE year reads the CMS 2024 ratebook", medicareCents("Cattaraugus", 2024, false) === 111539);
+check("an unknown PACE year is not filled in", medicareCents("Cattaraugus", 2019, false) === null);
 
 console.log(JSON.stringify({ ran, failCount: failures.length, failures: failures.slice(0, 12), labClash }));
 if (failures.length > 0) process.exit(1);
