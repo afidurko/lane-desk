@@ -86,6 +86,9 @@ export const INTERNAL_ONLY = [
   /^file-status\.json$/,
   /^proof-internal\.json$/,
   /^history\//, // Rest of New York year-over-year changes, includes lab
+  /^institution\.json$/, // institutional rates (hh, hospice, ipps, irf, snf): internal only
+  /^institution\//,
+  /^ny-care-\d{4}\.json$/, // New York care data: internal only
 ];
 
 /**

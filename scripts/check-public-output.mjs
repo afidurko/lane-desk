@@ -42,6 +42,8 @@ check("static assets folder exists with scripts", walk(join(root, "static/assets
 const files = walk(join(root, "static"));
 check("no held-back file is in the static output", files.filter(removable).length === 0, files.filter(removable).join(", "));
 check("no year shards, period shards or lab files", !files.some((p) => /^(years|once)\//.test(p) || /clfs|^afs|^dme|medicaid|^pfs-20(1|2[0-5])|found-rates|gap-rates|medicare-other|ny-more/.test(p)));
+const isInstitutionOrNyCare = (path) => /(^|\/)(institution|ny-care)[^/]*/.test(path);
+check("no institution* or ny-care* file in the static output", !files.some(isInstitutionOrNyCare), files.filter(isInstitutionOrNyCare).slice(0, 5).join(", "));
 const data = files.filter((p) => p.endsWith(".json"));
 check("the only price file is pfs-national-2026.json", data.filter((p) => p !== "proof.json").join() === "pfs-national-2026.json", data.join(", "));
 const national = JSON.parse(readFileSync(join(root, "static/pfs-national-2026.json"), "utf8"));

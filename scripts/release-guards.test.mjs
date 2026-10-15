@@ -98,3 +98,18 @@ test("therapy table: no matcher that ships in every build equals or starts a CMS
   assert.ok(shipped.length > 50);
   assert.deepEqual(shipped.filter((p) => descriptorHits(p, real.names).length > 0), []);
 });
+
+test("public build prunes institution* and ny-care* data, and check:output fails on them", () => {
+  const mode = readFileSync("src/lib/config/mode.ts", "utf8");
+  const block = mode.slice(mode.indexOf("export const INTERNAL_ONLY"), mode.indexOf("];", mode.indexOf("export const INTERNAL_ONLY")));
+  const rules = [...block.matchAll(/^\s*\/(.+)\/,/gm)].map((m) => new RegExp(m[1]));
+  const pruned = (p) => rules.some((r) => r.test(p));
+  for (const p of ["institution.json", "institution/index.json", "institution/hh-2026.json", "institution/hospice-2027.json", "institution/ipps-2020.json", "institution/irf-2025.json", "institution/snf-2024.json", "ny-care-2024.json"]) {
+    assert.ok(pruned(p), `${p} must be internal-only`);
+  }
+  assert.ok(!pruned("pfs-national-2026.json") && !pruned("proof.json"));
+  const check = readFileSync("scripts/check-public-output.mjs", "utf8");
+  assert.match(check, /no institution\* or ny-care\* file in the static output/);
+  const isBad = (path) => /(^|\/)(institution|ny-care)[^/]*/.test(path);
+  assert.ok(isBad("institution.json") && isBad("institution/snf-2026.json") && isBad("ny-care-2024.json") && !isBad("pfs-national-2026.json"));
+});
