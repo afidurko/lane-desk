@@ -15,7 +15,11 @@ export type ScanChange = {
   /** Non-payable status on that year (B, I, N, X and the like): Medicare does not pay it, so no amount. */
   priorNotPaid?: boolean;
   currentNotPaid?: boolean;
+  /** The status changed but neither year has a dollar amount (e.g. dental D-codes): a status change, not a price. */
+  statusOnly?: boolean;
 };
+
+export const STATUS_ONLY_LABEL = "Status change only, no price";
 
 export type ScanCard = {
   schedule: ScanChange["schedule"];
@@ -73,6 +77,7 @@ export function scanPhysician(current: PfsFile, prior: PfsFile): { card: ScanCar
       ...(currentNotOffice ? { currentNotOffice } : {}),
       ...(priorNotPaid ? { priorNotPaid } : {}),
       ...(currentNotPaid ? { currentNotPaid } : {}),
+      ...(priorCents === null && currentCents === null ? { statusOnly: true } : {}),
     });
   }
   return {

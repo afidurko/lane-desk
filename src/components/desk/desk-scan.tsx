@@ -10,7 +10,7 @@ import { nextGap } from "@/lib/billing/packet";
 import { readBilling } from "@/lib/billing/store";
 import { readSubmitter } from "@/lib/billing/submitter";
 import { money } from "@/lib/desk/clock";
-import { scanAmbulance, scanDme, scanLab, scanNeeds2024Note, scanPhysician, type ScanCard, type ScanChange } from "@/lib/desk/scan";
+import { scanAmbulance, scanDme, scanLab, scanNeeds2024Note, scanPhysician, STATUS_ONLY_LABEL, type ScanCard, type ScanChange } from "@/lib/desk/scan";
 
 type ClaimRow = { id: string; title: string; detail: string };
 
@@ -137,8 +137,8 @@ export function DeskScan() {
                       <span className="mt-1 block text-muted">{row.name}</span>
                     </td>
                     <td className="px-3 py-3 text-ink">{row.schedule}</td>
-                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.prior, row.priorNotOffice, row.priorNotPaid)}</td>
-                    <td className="px-3 py-3 tabular-nums text-ink">{cents(row.current, row.currentNotOffice, row.currentNotPaid)}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{row.statusOnly ? STATUS_ONLY_LABEL : cents(row.prior, row.priorNotOffice, row.priorNotPaid)}</td>
+                    <td className="px-3 py-3 tabular-nums text-ink">{row.statusOnly ? STATUS_ONLY_LABEL : cents(row.current, row.currentNotOffice, row.currentNotPaid)}</td>
                   </tr>
                 ))}
               </tbody>
