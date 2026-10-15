@@ -11,10 +11,16 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { INTERNAL_ONLY, NEVER_PUBLIC } from "../src/lib/config/mode.ts";
+import { INTERNAL_ONLY, NEVER_PUBLIC, resolveMode } from "../src/lib/config/mode.ts";
 import { localityPrices } from "../src/lib/pricing/locality.ts";
 import { NEAR_DESCRIPTOR_PHRASES, THERAPY } from "../src/lib/desk/therapy-codes.ts";
 import { descriptorHits, loadCmsDescriptors2026 } from "./cms-descriptors.mjs";
+
+// Public builds only. Internal builds keep Rest of NY / PACE / year files; those would fail every check here.
+if (resolveMode(process.env.VITE_DEMO_MODE) === "internal" || process.env.LANE_INTERNAL_BUILD) {
+  console.log("check:output skipped (internal build)");
+  process.exit(0);
+}
 
 function walk(dir, base = dir, out = []) {
   for (const name of readdirSync(dir)) {
